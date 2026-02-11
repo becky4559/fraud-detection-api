@@ -10,18 +10,22 @@
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chart.js for visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <style>
         :root {
             --primary: #6366f1;
             --dark-bg: #0f172a;
+            --sidebar-bg: #1e293b;
             --card-bg: #1e293b;
+            --card-border: #334155;
             --text-primary: #f1f5f9;
             --text-secondary: #94a3b8;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --success: #10b981;
         }
         
-        /* Apply Times New Roman to all text */
         * {
             font-family: 'Times New Roman', Times, serif !important;
         }
@@ -30,91 +34,233 @@
             font-family: 'Times New Roman', Times, serif;
             background: var(--dark-bg);
             color: var(--text-primary);
+            display: flex;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
         }
         
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 30px;
+        /* Sidebar - Same as Dashboard */
+        .sidebar {
+            width: 250px;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--card-border);
+            padding: 30px 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
         }
         
-        .back-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            color: var(--text-secondary);
-            text-decoration: none;
-            padding: 10px 20px;
-            background: rgba(30, 41, 59, 0.5);
-            border-radius: 8px;
+        .logo {
+            padding: 0 25px 30px;
+            border-bottom: 1px solid var(--card-border);
             margin-bottom: 30px;
-            transition: all 0.3s;
         }
         
-        .back-btn:hover {
-            color: var(--primary);
-            background: rgba(99, 102, 241, 0.1);
-            transform: translateX(-5px);
-        }
-        
-        .page-header {
-            margin-bottom: 40px;
-        }
-        
-        .page-title {
-            font-size: 2.5rem;
-            margin-bottom: 5px;
+        .logo h2 {
+            font-size: 1.8rem;
             background: linear-gradient(135deg, var(--primary) 0%, #8b5cf6 100%);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
+            margin-bottom: 5px;
         }
         
-        .page-subtitle {
+        .logo p {
             color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin: 0;
+        }
+        
+        .nav-item {
+            margin-bottom: 5px;
+        }
+        
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 12px 25px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.3s;
+            border-left: 4px solid transparent;
+        }
+        
+        .nav-link:hover, .nav-link.active {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--text-primary);
+            border-left-color: var(--primary);
+        }
+        
+        .nav-icon {
+            width: 24px;
+            margin-right: 12px;
             font-size: 1.1rem;
         }
         
-        .fraud-types-header {
+        .nav-badge {
+            margin-left: auto;
+            background: var(--danger);
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+        
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 250px;
+            padding: 0;
+        }
+        
+        /* Topbar */
+        .topbar {
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--card-border);
+            padding: 25px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .page-title h1 {
+            font-size: 2rem;
+            margin: 0;
+            font-weight: bold;
+        }
+        
+        .page-title p {
+            color: var(--text-secondary);
+            margin: 5px 0 0 0;
+            font-size: 1rem;
+        }
+        
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .search-box {
+            position: relative;
+        }
+        
+        .search-input {
+            padding: 10px 15px 10px 40px;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            width: 250px;
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+        
+        .notification-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--danger);
+            color: white;
+            font-size: 0.7rem;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Content Area */
+        .content-wrapper {
+            padding: 30px;
+        }
+        
+        /* Date Range Selector */
+        .date-range {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 30px;
-        }
-        
-        .fraud-types-title {
-            font-size: 1.8rem;
-            color: var(--text-primary);
-        }
-        
-        .fraud-types-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-        
-        .fraud-type-card {
             background: var(--card-bg);
+            border: 1px solid var(--card-border);
             border-radius: 12px;
-            padding: 25px;
-            border: 1px solid #334155;
+            padding: 20px;
+        }
+        
+        .range-selector {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .range-btn {
+            padding: 8px 16px;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            color: var(--text-secondary);
+            cursor: pointer;
             transition: all 0.3s;
         }
         
-        .fraud-type-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        .range-btn:hover, .range-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
         }
         
-        .fraud-type-header {
+        .date-display {
+            color: var(--text-secondary);
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 10px;
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+        }
+        
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 15px;
         }
         
-        .fraud-type-icon {
+        .stat-icon {
             width: 50px;
             height: 50px;
             border-radius: 12px;
@@ -124,28 +270,27 @@
             font-size: 1.5rem;
         }
         
-        .fraud-type-name {
-            font-size: 1.3rem;
-            font-weight: 600;
-            margin: 0;
+        .stat-change {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.85rem;
+            padding: 4px 10px;
+            border-radius: 20px;
         }
         
-        .fraud-type-stats {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin-bottom: 15px;
+        .change-positive {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
         }
         
-        .stat-item {
-            text-align: center;
-            padding: 10px;
-            background: rgba(15, 23, 42, 0.5);
-            border-radius: 8px;
+        .change-negative {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
         }
         
         .stat-value {
-            font-size: 1.5rem;
+            font-size: 2rem;
             font-weight: 700;
             margin-bottom: 5px;
         }
@@ -155,43 +300,19 @@
             font-size: 0.9rem;
         }
         
-        .stats-grid {
+        /* Charts Row */
+        .charts-row {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: 1fr 1fr;
             gap: 20px;
-            margin-bottom: 40px;
-        }
-        
-        .stat-card {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 25px;
-            border: 1px solid #334155;
-        }
-        
-        .stat-value-large {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
-        
-        .stat-label-large {
-            color: var(--text-secondary);
-            font-size: 0.95rem;
-        }
-        
-        .charts-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
-            gap: 30px;
-            margin-bottom: 40px;
+            margin-bottom: 30px;
         }
         
         .chart-card {
             background: var(--card-bg);
+            border: 1px solid var(--card-border);
             border-radius: 12px;
-            padding: 25px;
-            border: 1px solid #334155;
+            padding: 20px;
         }
         
         .chart-header {
@@ -202,27 +323,111 @@
         }
         
         .chart-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .chart-title i {
+            color: var(--primary);
             font-size: 1.2rem;
+        }
+        
+        .chart-title h3 {
+            margin: 0;
+            font-size: 1.1rem;
             font-weight: 600;
         }
         
         .chart-container {
+            position: relative;
             height: 300px;
             width: 100%;
         }
         
-        .tables-grid {
+        /* Fraud Types Breakdown */
+        .breakdown-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 30px;
-            margin-bottom: 40px;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
         }
         
-        .table-card {
+        .fraud-breakdown {
             background: var(--card-bg);
+            border: 1px solid var(--card-border);
             border-radius: 12px;
-            padding: 25px;
-            border: 1px solid #334155;
+            padding: 20px;
+        }
+        
+        .fraud-type-list {
+            margin-top: 15px;
+        }
+        
+        .fraud-type-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--card-border);
+        }
+        
+        .fraud-type-item:last-child {
+            border-bottom: none;
+        }
+        
+        .fraud-type-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 4px;
+            margin-right: 12px;
+        }
+        
+        .fraud-type-info {
+            flex: 1;
+        }
+        
+        .fraud-type-name {
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+        
+        .fraud-type-stats {
+            display: flex;
+            gap: 15px;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+        
+        .fraud-type-percent {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .progress-bar {
+            width: 100px;
+            height: 6px;
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-left: 15px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            border-radius: 3px;
+        }
+        
+        /* User Risk Table */
+        .risk-table-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .table-responsive {
+            overflow-x: auto;
         }
         
         table {
@@ -232,375 +437,494 @@
         
         th {
             text-align: left;
-            padding: 12px 15px;
+            padding: 15px 12px;
             color: var(--text-secondary);
             font-weight: 500;
-            border-bottom: 1px solid #334155;
+            border-bottom: 1px solid var(--card-border);
         }
         
         td {
-            padding: 12px 15px;
-            border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+            padding: 15px 12px;
+            border-bottom: 1px solid var(--card-border);
         }
         
-        tr:last-child td {
-            border-bottom: none;
+        tr:hover td {
+            background: rgba(99, 102, 241, 0.05);
         }
         
-        .fraud-badge {
-            padding: 4px 10px;
+        .risk-badge {
+            display: inline-block;
+            padding: 4px 12px;
             border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 500;
+            font-size: 0.75rem;
+            font-weight: 600;
         }
         
-        .badge-critical { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
-        .badge-high { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+        .badge-critical { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+        .badge-high { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
         .badge-medium { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
-        .badge-low { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+        .badge-low { background: rgba(16, 185, 129, 0.2); color: var(--success); }
         
-        .period-selector {
+        /* Time filters */
+        .time-filters {
             display: flex;
             gap: 10px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
         
-        .period-btn {
-            padding: 8px 20px;
-            background: rgba(30, 41, 59, 0.5);
-            border: 1px solid #334155;
-            border-radius: 8px;
+        .time-btn {
+            padding: 6px 14px;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
             color: var(--text-secondary);
+            font-size: 0.85rem;
             cursor: pointer;
-            transition: all 0.3s;
         }
         
-        .period-btn.active {
+        .time-btn.active {
             background: var(--primary);
             color: white;
             border-color: var(--primary);
         }
         
-        .period-btn:hover:not(.active) {
-            background: rgba(99, 102, 241, 0.1);
-            color: var(--primary);
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar { width: 70px; }
+            .main-content { margin-left: 70px; }
+            .nav-text, .logo h2, .logo p { display: none; }
+            .charts-row { grid-template-columns: 1fr; }
+            .breakdown-grid { grid-template-columns: 1fr; }
         }
-        
-        .export-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            padding: 12px 25px;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .export-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
-        }
-        
-        .loading {
-            text-align: center;
-            padding: 60px 20px;
-        }
-        
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 3px solid #334155;
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        .trend-indicator {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .trend-up { color: #ef4444; }
-        .trend-down { color: #10b981; }
-        .trend-stable { color: #f59e0b; }
         
         @media (max-width: 768px) {
-            .charts-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .tables-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .fraud-types-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .container {
-                padding: 20px;
-            }
-            
-            .page-title {
-                font-size: 2rem;
-            }
+            .date-range { flex-direction: column; gap: 15px; align-items: flex-start; }
+            .stats-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <a href="dashboard.html" class="back-btn">
-            <i class="fas fa-arrow-left"></i>
-            Back to Dashboard
-        </a>
-        
-        <div class="page-header">
-            <h1 class="page-title">Analytics</h1>
-            <p class="page-subtitle">Comprehensive analysis of all fraud types</p>
+    <!-- Sidebar - Same as Dashboard -->
+    <div class="sidebar">
+        <div class="logo">
+            <h2>LogSense</h2>
+            <p>Fraud Detection</p>
         </div>
         
-        <div class="period-selector">
-            <button class="period-btn active" onclick="setPeriod('week')">Last 7 Days</button>
-            <button class="period-btn" onclick="setPeriod('month')">Last 30 Days</button>
-            <button class="period-btn" onclick="setPeriod('quarter')">Last 90 Days</button>
-            <button class="period-btn" onclick="setPeriod('year')">Last Year</button>
-        </div>
-        
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-value-large" id="totalDetected">--</div>
-                <div class="stat-label-large">Total Fraud Cases Detected</div>
+        <nav class="sidebar-menu">
+            <div class="nav-item">
+                <a href="dashboard.html" class="nav-link">
+                    <i class="fas fa-tachometer-alt nav-icon"></i>
+                    <span class="nav-text">Dashboard</span>
+                </a>
             </div>
             
-            <div class="stat-card">
-                <div class="stat-value-large" id="detectionRate">--</div>
-                <div class="stat-label-large">Overall Detection Rate</div>
+            <div class="nav-item">
+                <a href="analyze.html" class="nav-link">
+                    <i class="fas fa-search nav-icon"></i>
+                    <span class="nav-text">Analyze</span>
+                </a>
             </div>
             
-            <div class="stat-card">
-                <div class="stat-value-large" id="avgAmount">--</div>
-                <div class="stat-label-large">Average Fraud Amount (KES)</div>
+            <div class="nav-item">
+                <a href="analytics.html" class="nav-link active">
+                    <i class="fas fa-chart-bar nav-icon"></i>
+                    <span class="nav-text">Analytics</span>
+                </a>
             </div>
             
-            <div class="stat-card">
-                <div class="stat-value-large" id="savings">--</div>
-                <div class="stat-label-large">Total Amount Saved (KES)</div>
+            <div class="nav-item">
+                <a href="alerts.html" class="nav-link">
+                    <i class="fas fa-bell nav-icon"></i>
+                    <span class="nav-text">Alerts</span>
+                    <span class="nav-badge" id="alertBadge">3</span>
+                </a>
             </div>
-        </div>
-        
-        <div class="fraud-types-header">
-            <h2 class="fraud-types-title">Fraud Type Analysis</h2>
-            <div style="color: var(--text-secondary); font-size: 0.9rem;">
-                <i class="fas fa-info-circle"></i> Analyzing all 8 fraud types
+            
+            <div class="nav-item">
+                <a href="settings.html" class="nav-link">
+                    <i class="fas fa-cog nav-icon"></i>
+                    <span class="nav-text">Settings</span>
+                </a>
             </div>
-        </div>
-        
-        <div class="fraud-types-grid" id="fraudTypesGrid">
-            <!-- Fraud type cards will be populated here -->
-            <div class="loading">
-                <div class="spinner"></div>
-                <p>Loading fraud type analysis...</p>
+            
+            <div class="nav-item" style="margin-top: 50px;">
+                <a href="login.html" class="nav-link">
+                    <i class="fas fa-sign-out-alt nav-icon"></i>
+                    <span class="nav-text">Logout</span>
+                </a>
             </div>
-        </div>
-        
-        <div class="charts-grid">
-            <div class="chart-card">
-                <div class="chart-header">
-                    <h3 class="chart-title">Fraud Cases by Type</h3>
+        </nav>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Topbar -->
+        <div class="topbar">
+            <div class="page-title">
+                <h1>Analytics</h1>
+                <p>Fraud trends and insights â€¢ February 2026</p>
+            </div>
+            
+            <div class="topbar-actions">
+                <div class="search-box">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" class="search-input" placeholder="Search analytics...">
                 </div>
-                <div class="chart-container">
-                    <canvas id="fraudDistributionChart"></canvas>
-                </div>
-            </div>
-            
-            <div class="chart-card">
-                <div class="chart-header">
-                    <h3 class="chart-title">Fraud Trend Analysis</h3>
-                    <select id="trendType" style="background: #0f172a; color: white; border: 1px solid #334155; padding: 8px 12px; border-radius: 6px;">
-                        <option value="cases">Number of Cases</option>
-                        <option value="amount">Amount Involved</option>
-                    </select>
-                </div>
-                <div class="chart-container">
-                    <canvas id="fraudTrendChart"></canvas>
-                </div>
+                
+                <button class="notification-btn" onclick="window.location.href='alerts.html'">
+                    <i class="fas fa-bell"></i>
+                    <span class="notification-badge" id="notificationBadge">3</span>
+                </button>
             </div>
         </div>
         
-        <div class="tables-grid">
-            <div class="table-card">
-                <h3 class="chart-title" style="margin-bottom: 20px;">Fraud Type Comparison</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Fraud Type</th>
-                            <th>Cases</th>
-                            <th>Avg Amount</th>
-                            <th>Detection Rate</th>
-                            <th>Trend</th>
-                        </tr>
-                    </thead>
-                    <tbody id="fraudComparisonTable">
-                        <tr>
-                            <td colspan="5" style="text-align: center; padding: 40px; color: #64748b;">
-                                <i class="fas fa-chart-bar fa-2x mb-3"></i>
-                                <p>Loading comparison data...</p>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+        <!-- Analytics Content -->
+        <div class="content-wrapper">
+            <!-- Date Range Selector -->
+            <div class="date-range">
+                <div class="range-selector">
+                    <button class="range-btn active" onclick="setTimeRange('week')">This Week</button>
+                    <button class="range-btn" onclick="setTimeRange('month')">This Month</button>
+                    <button class="range-btn" onclick="setTimeRange('quarter')">This Quarter</button>
+                    <button class="range-btn" onclick="setTimeRange('year')">This Year</button>
+                </div>
+                <div class="date-display">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span id="dateRangeText">Feb 1 - Feb 28, 2026</span>
+                </div>
             </div>
             
-            <div class="table-card">
-                <h3 class="chart-title" style="margin-bottom: 20px;">Top Fraud Patterns</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Pattern</th>
-                            <th>Frequency</th>
-                            <th>Risk Level</th>
-                            <th>Common Type</th>
-                        </tr>
-                    </thead>
-                    <tbody id="fraudPatternsTable">
-                        <tr>
-                            <td colspan="4" style="text-align: center; padding: 40px; color: #64748b;">
-                                <i class="fas fa-search fa-2x mb-3"></i>
-                                <p>Loading pattern data...</p>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+            <!-- Key Statistics -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon" style="background: rgba(99, 102, 241, 0.2); color: var(--primary);">
+                            <i class="fas fa-exchange-alt"></i>
+                        </div>
+                        <span class="stat-change change-positive">
+                            <i class="fas fa-arrow-up"></i> 12.5%
+                        </span>
+                    </div>
+                    <div class="stat-value" id="totalTransactions">356</div>
+                    <div class="stat-label">Total Transactions</div>
+                    <div style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 10px;">
+                        <i class="fas fa-users"></i> 52 active users
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon" style="background: rgba(239, 68, 68, 0.2); color: var(--danger);">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <span class="stat-change change-negative">
+                            <i class="fas fa-arrow-down"></i> 4.2%
+                        </span>
+                    </div>
+                    <div class="stat-value" id="fraudCases">22</div>
+                    <div class="stat-label">Fraud Cases</div>
+                    <div style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 10px;">
+                        <i class="fas fa-chart-line"></i> 6.2% fraud rate
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon" style="background: rgba(16, 185, 129, 0.2); color: var(--success);">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <span class="stat-change change-positive">
+                            <i class="fas fa-arrow-up"></i> 15.7%
+                        </span>
+                    </div>
+                    <div class="stat-value" id="amountSaved">KES 1.25M</div>
+                    <div class="stat-label">Amount Saved</div>
+                    <div style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 10px;">
+                        <i class="fas fa-check-circle"></i> 94% detection rate
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon" style="background: rgba(245, 158, 11, 0.2); color: var(--warning);">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <span class="stat-change change-positive">
+                            <i class="fas fa-arrow-up"></i> 32%
+                        </span>
+                    </div>
+                    <div class="stat-value" id="avgResponse">2.4m</div>
+                    <div class="stat-label">Avg Response Time</div>
+                    <div style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 10px;">
+                        <i class="fas fa-bolt"></i> 45s faster
+                    </div>
+                </div>
             </div>
-        </div>
-        
-        <div style="text-align: center; margin-top: 40px;">
-            <button class="export-btn" onclick="exportAnalysis()">
-                <i class="fas fa-file-export"></i>
-                Export Full Analysis Report
-            </button>
+            
+            <!-- Charts Row -->
+            <div class="charts-row">
+                <!-- Fraud Trend Chart -->
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div class="chart-title">
+                            <i class="fas fa-chart-line"></i>
+                            <h3>Fraud Trend (Last 30 Days)</h3>
+                        </div>
+                        <div class="time-filters">
+                            <button class="time-btn active" onclick="updateChart('daily')">Daily</button>
+                            <button class="time-btn" onclick="updateChart('weekly')">Weekly</button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="fraudTrendChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Fraud by Type Chart -->
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div class="chart-title">
+                            <i class="fas fa-pie-chart"></i>
+                            <h3>Fraud by Type</h3>
+                        </div>
+                        <span style="color: var(--text-secondary); font-size: 0.85rem;">22 total cases</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="fraudTypeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Fraud Types Breakdown -->
+            <div class="breakdown-grid">
+                <!-- Enhanced Fraud Types -->
+                <div class="fraud-breakdown">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin: 0; font-size: 1.1rem;">
+                            <i class="fas fa-shield-alt" style="color: var(--primary); margin-right: 8px;"></i>
+                            Enhanced Detection
+                        </h3>
+                        <span style="color: var(--text-secondary); font-size: 0.85rem;">Autoencoder + Rules</span>
+                    </div>
+                    <div class="fraud-type-list" id="enhancedFraudList">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <!-- Basic Fraud Types -->
+                <div class="fraud-breakdown">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin: 0; font-size: 1.1rem;">
+                            <i class="fas fa-database" style="color: var(--text-secondary); margin-right: 8px;"></i>
+                            Basic Detection
+                        </h3>
+                        <span style="color: var(--text-secondary); font-size: 0.85rem;">Rule-based</span>
+                    </div>
+                    <div class="fraud-type-list" id="basicFraudList">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- High Risk Users Table -->
+            <div class="risk-table-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3 style="margin: 0; font-size: 1.1rem;">
+                        <i class="fas fa-users" style="color: var(--danger); margin-right: 8px;"></i>
+                        High Risk Users
+                    </h3>
+                    <button class="range-btn" onclick="exportReport()">
+                        <i class="fas fa-download"></i> Export Report
+                    </button>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>User ID</th>
+                                <th>Risk Score</th>
+                                <th>Risk Level</th>
+                                <th>Fraud Type</th>
+                                <th>Transactions</th>
+                                <th>Last Active</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="highRiskUsersTable">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Fraud Hotspots -->
+            <div class="charts-row">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div class="chart-title">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <h3>Fraud Hotspots</h3>
+                        </div>
+                        <span style="color: var(--text-secondary); font-size: 0.85rem;">Top 5 locations</span>
+                    </div>
+                    <div class="fraud-type-list" id="locationList">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div class="chart-title">
+                            <i class="fas fa-mobile-alt"></i>
+                            <h3>Device Risk Analysis</h3>
+                        </div>
+                        <span style="color: var(--text-secondary); font-size: 0.85rem;">By device type</span>
+                    </div>
+                    <div class="fraud-type-list" id="deviceRiskList">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
+        // API Configuration
         const API_URL = 'https://fraud-detection-api-b6dk.onrender.com';
-        let fraudDistributionChart, fraudTrendChart;
-        let currentPeriod = 'week';
+        const USER_EMAIL = 'rebeccabosibori589@gmail.com';
         
-        // Define all 8 fraud types with their details
-        const fraudTypes = [
-            {
-                id: 'sim_swap',
-                name: 'SIM Swap',
-                icon: 'fa-sim-card',
-                color: '#ef4444',
-                description: 'Unauthorized SIM card replacement to hijack mobile numbers',
-                severity: 'CRITICAL'
-            },
-            {
-                id: 'identity_theft',
-                name: 'Identity Theft',
-                icon: 'fa-id-card',
-                color: '#f59e0b',
-                description: 'Using someone else\'s identity for fraudulent transactions',
-                severity: 'CRITICAL'
-            },
-            {
-                id: 'mobile_money_fraud',
-                name: 'Mobile Money Fraud',
-                icon: 'fa-mobile-alt',
-                color: '#3b82f6',
-                description: 'Fraudulent mobile money transfers and transactions',
-                severity: 'HIGH'
-            },
-            {
-                id: 'agent_collusion',
-                name: 'Agent Collusion',
-                icon: 'fa-handshake',
-                color: '#8b5cf6',
-                description: 'Agents working with fraudsters to bypass security',
-                severity: 'HIGH'
-            },
-            {
-                id: 'social_engineering',
-                name: 'Social Engineering',
-                icon: 'fa-user-friends',
-                color: '#10b981',
-                description: 'Manipulating people to reveal confidential information',
-                severity: 'MEDIUM'
-            },
-            {
-                id: 'repayment_fraud',
-                name: 'Repayment Fraud',
-                icon: 'fa-credit-card',
-                color: '#f97316',
-                description: 'False repayment claims and chargeback fraud',
-                severity: 'MEDIUM'
-            },
-            {
-                id: 'device_cloning',
-                name: 'Device Cloning',
-                icon: 'fa-clone',
-                color: '#ec4899',
-                description: 'Cloning devices to bypass authentication',
-                severity: 'CRITICAL'
-            },
-            {
-                id: 'synthetic_identity',
-                name: 'Synthetic Identity',
-                icon: 'fa-user-secret',
-                color: '#06b6d4',
-                description: 'Creating fake identities using real and fake information',
-                severity: 'HIGH'
-            }
-        ];
+        // Chart instances
+        let fraudTrendChart = null;
+        let fraudTypeChart = null;
         
-        // Initialize analytics
-        document.addEventListener('DOMContentLoaded', function() {
-            loadAnalyticsData();
-            initCharts();
+        // Demo data for February 2026
+        const demoData = {
+            totalTransactions: 356,
+            fraudCases: 22,
+            amountSaved: 1248500,
+            fraudRate: 6.2,
+            detectionRate: 94,
+            avgResponseTime: 2.4,
             
-            // Load data every 2 minutes
-            setInterval(loadAnalyticsData, 120000);
+            fraudTypes: [
+                { name: 'SIM Swap', count: 7, percent: 32, severity: 'CRITICAL', color: '#ef4444', enhanced: true },
+                { name: 'Identity Theft', count: 5, percent: 23, severity: 'CRITICAL', color: '#ef4444', enhanced: true },
+                { name: 'Device Cloning', count: 4, percent: 18, severity: 'CRITICAL', color: '#ef4444', enhanced: true },
+                { name: 'Mobile Money Fraud', count: 3, percent: 14, severity: 'HIGH', color: '#f59e0b', enhanced: true },
+                { name: 'Agent Collusion', count: 1, percent: 4.5, severity: 'HIGH', color: '#f59e0b', enhanced: false },
+                { name: 'Social Engineering', count: 1, percent: 4.5, severity: 'MEDIUM', color: '#3b82f6', enhanced: false },
+                { name: 'Synthetic Identity', count: 1, percent: 4.5, severity: 'MEDIUM', color: '#3b82f6', enhanced: false },
+                { name: 'Repayment Fraud', count: 0, percent: 0, severity: 'LOW', color: '#10b981', enhanced: false }
+            ],
+            
+            dailyFraud: [1, 0, 2, 1, 3, 2, 1, 0, 2, 1, 2, 3, 1, 0, 2, 1, 3, 2, 1, 0, 2, 1, 2, 3, 1, 0, 2, 1],
+            
+            highRiskUsers: [
+                { id: 'U78901', score: 98, level: 'CRITICAL', type: 'SIM Swap', transactions: 12, lastActive: '2 min ago' },
+                { id: 'U45678', score: 87, level: 'CRITICAL', type: 'Identity Theft', transactions: 8, lastActive: '15 min ago' },
+                { id: 'U34567', score: 82, level: 'HIGH', type: 'Device Cloning', transactions: 15, lastActive: '32 min ago' },
+                { id: 'U23456', score: 79, level: 'HIGH', type: 'Mobile Fraud', transactions: 23, lastActive: '47 min ago' },
+                { id: 'U12345', score: 71, level: 'HIGH', type: 'Agent Collusion', transactions: 7, lastActive: '1 hour ago' }
+            ],
+            
+            locations: [
+                { city: 'Nairobi', count: 12, risk: 'HIGH' },
+                { city: 'Mombasa', count: 5, risk: 'MEDIUM' },
+                { city: 'Kisumu', count: 3, risk: 'MEDIUM' },
+                { city: 'Nakuru', count: 2, risk: 'LOW' },
+                { city: 'Eldoret', count: 1, risk: 'LOW' }
+            ],
+            
+            devices: [
+                { type: 'Android (Rooted)', count: 8, risk: 'CRITICAL' },
+                { type: 'Android (Stock)', count: 7, risk: 'MEDIUM' },
+                { type: 'iOS', count: 4, risk: 'LOW' },
+                { type: 'Web Browser', count: 3, risk: 'LOW' }
+            ]
+        };
+        
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAnalytics();
+            initCharts();
+            populateFraudLists();
+            populateHighRiskUsers();
+            populateLocations();
+            populateDevices();
+            loadNotificationBadge();
         });
         
-        // Set time period
-        function setPeriod(period) {
-            currentPeriod = period;
-            
-            // Update button states
-            document.querySelectorAll('.period-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            event.target.classList.add('active');
-            
-            // Reload data
-            loadAnalyticsData();
+        // Load analytics data
+        async function loadAnalytics() {
+            try {
+                const response = await fetch(`${API_URL}/stats`);
+                const data = await response.json();
+                
+                // Update stats with real data if available
+                document.getElementById('totalTransactions').textContent = data.total_transactions || demoData.totalTransactions;
+                document.getElementById('fraudCases').textContent = data.high_risk_transactions || demoData.fraudCases;
+                document.getElementById('amountSaved').textContent = `KES ${(data.fraud_amount || demoData.amountSaved).toLocaleString()}`;
+                
+            } catch (error) {
+                console.log('Using demo analytics data');
+            }
         }
         
         // Initialize charts
         function initCharts() {
-            // Fraud Distribution Chart
-            const distributionCtx = document.getElementById('fraudDistributionChart').getContext('2d');
-            fraudDistributionChart = new Chart(distributionCtx, {
-                type: 'bar',
+            // Fraud Trend Chart
+            const trendCtx = document.getElementById('fraudTrendChart').getContext('2d');
+            fraudTrendChart = new Chart(trendCtx, {
+                type: 'line',
                 data: {
-                    labels: fraudTypes.map(f => f.name),
+                    labels: Array.from({length: 28}, (_, i) => `Feb ${i+1}`),
                     datasets: [{
-                        label: 'Number of Cases',
-                        data: [29, 15, 12, 10, 4, 7, 7, 0],
-                        backgroundColor: fraudTypes.map(f => f.color),
-                        borderColor: fraudTypes.map(f => f.color + 'CC'),
+                        label: 'Fraud Cases',
+                        data: demoData.dailyFraud,
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        pointBackgroundColor: '#6366f1',
+                        pointBorderColor: '#fff',
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { backgroundColor: '#1e293b' }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(148, 163, 184, 0.1)' },
+                            ticks: { color: '#94a3b8' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#94a3b8', maxRotation: 45 }
+                        }
+                    }
+                }
+            });
+            
+            // Fraud Type Chart
+            const typeCtx = document.getElementById('fraudTypeChart').getContext('2d');
+            const enhancedTypes = demoData.fraudTypes.filter(t => t.count > 0);
+            
+            fraudTypeChart = new Chart(typeCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: enhancedTypes.map(t => t.name),
+                    datasets: [{
+                        data: enhancedTypes.map(t => t.count),
+                        backgroundColor: enhancedTypes.map(t => `${t.color}80`),
+                        borderColor: enhancedTypes.map(t => t.color),
                         borderWidth: 1
                     }]
                 },
@@ -609,353 +933,206 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            display: false
+                            position: 'bottom',
+                            labels: { color: '#94a3b8', font: { size: 11 } }
                         }
                     },
-                    scales: {
-                        x: {
-                            grid: { color: 'rgba(148, 163, 184, 0.1)' },
-                            ticks: { 
-                                color: '#94a3b8',
-                                maxRotation: 45
-                            }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            grid: { color: 'rgba(148, 163, 184, 0.1)' },
-                            ticks: { color: '#94a3b8' }
-                        }
-                    }
-                }
-            });
-            
-            // Fraud Trend Chart
-            const trendCtx = document.getElementById('fraudTrendChart').getContext('2d');
-            fraudTrendChart = new Chart(trendCtx, {
-                type: 'line',
-                data: {
-                    labels: ['Jan 15', 'Jan 16', 'Jan 17', 'Jan 18', 'Jan 19', 'Jan 20', 'Jan 21'],
-                    datasets: [
-                        {
-                            label: 'SIM Swap',
-                            data: [3, 2, 3, 4, 3, 2, 5],
-                            borderColor: '#ef4444',
-                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                            borderWidth: 2,
-                            tension: 0.4
-                        },
-                        {
-                            label: 'Identity Theft',
-                            data: [2, 1, 2, 1, 3, 2, 2],
-                            borderColor: '#f59e0b',
-                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                            borderWidth: 2,
-                            tension: 0.4
-                        },
-                        {
-                            label: 'Mobile Money Fraud',
-                            data: [1, 2, 1, 3, 2, 1, 3],
-                            borderColor: '#3b82f6',
-                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                            borderWidth: 2,
-                            tension: 0.4
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            labels: { color: '#94a3b8' }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            grid: { color: 'rgba(148, 163, 184, 0.1)' },
-                            ticks: { color: '#94a3b8' }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            grid: { color: 'rgba(148, 163, 184, 0.1)' },
-                            ticks: { color: '#94a3b8' }
-                        }
-                    }
+                    cutout: '60%'
                 }
             });
         }
         
-        // Load analytics data
-        async function loadAnalyticsData() {
-            try {
-                // Load stats from backend
-                const statsResponse = await fetch(`${API_URL}/stats`);
-                if (statsResponse.ok) {
-                    const statsData = await statsResponse.json();
-                    updateStats(statsData);
-                    updateFraudTypesAnalysis(statsData);
-                    updateComparisonTable(statsData);
-                    updatePatternsTable(statsData);
-                }
-                
-                // Load recent transactions for trend analysis
-                const transactionsResponse = await fetch(`${API_URL}/transactions?limit=100`);
-                if (transactionsResponse.ok) {
-                    const transactionsData = await transactionsResponse.json();
-                    updateChartsWithRealData(transactionsData);
-                }
-                
-            } catch (error) {
-                console.error('Error loading analytics data:', error);
-                // Use demo data if API fails
-                useDemoData();
-            }
-        }
-        
-        // Update stats with real data
-        function updateStats(data) {
-            // Calculate totals from fraud type distribution
-            let totalCases = 0;
-            let totalAmount = 0;
+        // Populate fraud type lists
+        function populateFraudLists() {
+            const enhancedList = document.getElementById('enhancedFraudList');
+            const basicList = document.getElementById('basicFraudList');
             
-            if (data.fraud_type_distribution) {
-                Object.values(data.fraud_type_distribution).forEach(count => {
-                    totalCases += count;
-                });
+            enhancedList.innerHTML = '';
+            basicList.innerHTML = '';
+            
+            demoData.fraudTypes.forEach(fraud => {
+                const item = document.createElement('div');
+                item.className = 'fraud-type-item';
                 
-                // Estimate average amount per case (in a real system, this would come from backend)
-                const avgAmountPerCase = 25000; // KES
-                totalAmount = totalCases * avgAmountPerCase;
-            }
-            
-            // Update stats cards
-            document.getElementById('totalDetected').textContent = data.high_risk + data.medium_risk || totalCases;
-            document.getElementById('detectionRate').textContent = data.fraud_rate ? data.fraud_rate + '%' : '92.5%';
-            document.getElementById('avgAmount').textContent = 'KES ' + Math.round(totalAmount / (totalCases || 1)).toLocaleString();
-            document.getElementById('savings').textContent = 'KES ' + Math.round(totalAmount * 0.8).toLocaleString();
-        }
-        
-        // Update fraud types analysis
-        function updateFraudTypesAnalysis(data) {
-            const container = document.getElementById('fraudTypesGrid');
-            
-            // Get fraud type distribution from data or use defaults
-            const distribution = data.fraud_type_distribution || {
-                sim_swap: 29,
-                identity_theft: 15,
-                mobile_money_fraud: 12,
-                agent_collusion: 10,
-                social_engineering: 4,
-                repayment_fraud: 7,
-                device_cloning: 7,
-                synthetic_identity: 0
-            };
-            
-            // Calculate trends (in a real system, this would compare with previous period)
-            const trends = {
-                sim_swap: 'up',
-                identity_theft: 'stable',
-                mobile_money_fraud: 'down',
-                agent_collusion: 'up',
-                social_engineering: 'stable',
-                repayment_fraud: 'down',
-                device_cloning: 'up',
-                synthetic_identity: 'stable'
-            };
-            
-            container.innerHTML = fraudTypes.map(fraudType => {
-                const count = distribution[fraudType.id] || 0;
-                const trend = trends[fraudType.id] || 'stable';
-                const avgAmount = Math.round(Math.random() * 50000) + 10000; // Demo data
-                const detectionRate = Math.round(Math.random() * 30) + 70; // Demo data
+                const percent = ((fraud.count / demoData.fraudCases) * 100).toFixed(1);
                 
-                const trendIcon = trend === 'up' ? 'fa-arrow-up' : 
-                                 trend === 'down' ? 'fa-arrow-down' : 'fa-minus';
-                const trendClass = trend === 'up' ? 'trend-up' : 
-                                  trend === 'down' ? 'trend-down' : 'trend-stable';
-                
-                return `
-                    <div class="fraud-type-card">
-                        <div class="fraud-type-header">
-                            <div class="fraud-type-icon" style="background: ${fraudType.color}20; color: ${fraudType.color};">
-                                <i class="fas ${fraudType.icon}"></i>
-                            </div>
-                            <div>
-                                <h3 class="fraud-type-name">${fraudType.name}</h3>
-                                <span class="fraud-badge badge-${fraudType.severity.toLowerCase()}">${fraudType.severity}</span>
-                            </div>
-                        </div>
-                        
-                        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 15px;">
-                            ${fraudType.description}
-                        </p>
-                        
+                item.innerHTML = `
+                    <div class="fraud-type-color" style="background: ${fraud.color};"></div>
+                    <div class="fraud-type-info">
+                        <div class="fraud-type-name">${fraud.name}</div>
                         <div class="fraud-type-stats">
-                            <div class="stat-item">
-                                <div class="stat-value">${count}</div>
-                                <div class="stat-label">Cases</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-value">KES ${avgAmount.toLocaleString()}</div>
-                                <div class="stat-label">Avg Amount</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-value">${detectionRate}%</div>
-                                <div class="stat-label">Detected</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-value">
-                                    <span class="trend-indicator ${trendClass}">
-                                        <i class="fas ${trendIcon}"></i>
-                                        ${trend}
-                                    </span>
-                                </div>
-                                <div class="stat-label">Trend</div>
-                            </div>
+                            <span>${fraud.count} cases</span>
+                            <span>â€¢</span>
+                            <span class="fraud-type-percent">${percent}%</span>
                         </div>
                     </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${percent}%; background: ${fraud.color};"></div>
+                    </div>
+                    <span style="margin-left: 15px; font-size: 0.75rem; color: ${fraud.color};">
+                        ${fraud.severity}
+                    </span>
                 `;
-            }).join('');
-        }
-        
-        // Update comparison table
-        function updateComparisonTable(data) {
-            const tableBody = document.getElementById('fraudComparisonTable');
-            const distribution = data.fraud_type_distribution || {};
-            
-            tableBody.innerHTML = fraudTypes.map(fraudType => {
-                const count = distribution[fraudType.id] || 0;
-                const avgAmount = Math.round(Math.random() * 50000) + 10000;
-                const detectionRate = Math.round(Math.random() * 30) + 70;
-                const trend = ['up', 'down', 'stable'][Math.floor(Math.random() * 3)];
-                const trendIcon = trend === 'up' ? 'fa-arrow-up' : 
-                                 trend === 'down' ? 'fa-arrow-down' : 'fa-minus';
-                const trendClass = trend === 'up' ? 'trend-up' : 
-                                  trend === 'down' ? 'trend-down' : 'trend-stable';
                 
-                return `
-                    <tr>
-                        <td style="font-weight: 600;">${fraudType.name}</td>
-                        <td>${count}</td>
-                        <td>KES ${avgAmount.toLocaleString()}</td>
-                        <td>${detectionRate}%</td>
-                        <td>
-                            <span class="trend-indicator ${trendClass}">
-                                <i class="fas ${trendIcon}"></i>
-                                ${trend}
-                            </span>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
-        
-        // Update patterns table
-        function updatePatternsTable(data) {
-            const tableBody = document.getElementById('fraudPatternsTable');
-            
-            const patterns = [
-                { pattern: 'Multiple small transactions â†’ Large withdrawal', frequency: 'High', risk: 'CRITICAL', type: 'SIM Swap' },
-                { pattern: 'New device + location change', frequency: 'Medium', risk: 'HIGH', type: 'Identity Theft' },
-                { pattern: 'Agent-assisted rapid transfers', frequency: 'Low', risk: 'HIGH', type: 'Agent Collusion' },
-                { pattern: 'Weekend night transactions', frequency: 'High', risk: 'MEDIUM', type: 'Mobile Money Fraud' },
-                { pattern: 'Password reset requests', frequency: 'Medium', risk: 'MEDIUM', type: 'Social Engineering' },
-                { pattern: 'Chargeback after delivery', frequency: 'Low', risk: 'MEDIUM', type: 'Repayment Fraud' },
-                { pattern: 'IMEI cloning patterns', frequency: 'Rare', risk: 'CRITICAL', type: 'Device Cloning' }
-            ];
-            
-            tableBody.innerHTML = patterns.map(pattern => {
-                const riskClass = pattern.risk === 'CRITICAL' ? 'badge-critical' : 
-                                 pattern.risk === 'HIGH' ? 'badge-high' : 'badge-medium';
-                
-                return `
-                    <tr>
-                        <td>${pattern.pattern}</td>
-                        <td>${pattern.frequency}</td>
-                        <td><span class="fraud-badge ${riskClass}">${pattern.risk}</span></td>
-                        <td>${pattern.type}</td>
-                    </tr>
-                `;
-            }).join('');
-        }
-        
-        // Update charts with real transaction data
-        function updateChartsWithRealData(transactionsData) {
-            if (transactionsData.transactions && transactionsData.transactions.length > 0) {
-                // Group transactions by fraud type
-                const fraudTypeCounts = {};
-                fraudTypes.forEach(fraud => {
-                    fraudTypeCounts[fraud.id] = 0;
-                });
-                
-                transactionsData.transactions.forEach(transaction => {
-                    if (fraudTypeCounts.hasOwnProperty(transaction.fraud_type)) {
-                        fraudTypeCounts[transaction.fraud_type]++;
-                    }
-                });
-                
-                // Update distribution chart
-                fraudDistributionChart.data.datasets[0].data = fraudTypes.map(f => fraudTypeCounts[f.id]);
-                fraudDistributionChart.update();
-            }
-        }
-        
-        // Use demo data if API fails
-        function useDemoData() {
-            const demoStats = {
-                high_risk: 42,
-                medium_risk: 28,
-                fraud_rate: 92.5,
-                fraud_type_distribution: {
-                    sim_swap: 29,
-                    identity_theft: 15,
-                    mobile_money_fraud: 12,
-                    agent_collusion: 10,
-                    social_engineering: 4,
-                    repayment_fraud: 7,
-                    device_cloning: 7,
-                    synthetic_identity: 0
+                if (fraud.enhanced) {
+                    enhancedList.appendChild(item);
+                } else {
+                    basicList.appendChild(item);
                 }
-            };
-            
-            updateStats(demoStats);
-            updateFraudTypesAnalysis(demoStats);
-            updateComparisonTable(demoStats);
-            updatePatternsTable(demoStats);
-            
-            console.log('Using demo data for analytics');
+            });
         }
         
-        // Export analysis
-        function exportAnalysis() {
-            alert('Full analysis report exported successfully!\n\nA comprehensive PDF report has been generated with analysis of all 8 fraud types.');
+        // Populate high risk users table
+        function populateHighRiskUsers() {
+            const tableBody = document.getElementById('highRiskUsersTable');
+            tableBody.innerHTML = '';
             
-            // Simulate report generation
-            setTimeout(() => {
-                alert('Report sent to: rebeccabosibori589@gmail.com\n\nYou can also download it from the link in your email.');
-            }, 1000);
+            demoData.highRiskUsers.forEach(user => {
+                const row = document.createElement('tr');
+                row.onclick = () => window.location.href = `analyze.html?user=${user.id}`;
+                row.style.cursor = 'pointer';
+                
+                const badgeClass = `badge-${user.level.toLowerCase()}`;
+                
+                row.innerHTML = `
+                    <td><strong>${user.id}</strong></td>
+                    <td>${user.score}%</td>
+                    <td><span class="risk-badge ${badgeClass}">${user.level}</span></td>
+                    <td>${user.type}</td>
+                    <td>${user.transactions}</td>
+                    <td>${user.lastActive}</td>
+                    <td><i class="fas fa-chevron-right" style="color: var(--text-secondary);"></i></td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
         }
         
-        // Handle trend type change
-        document.getElementById('trendType').addEventListener('change', function() {
-            // Update chart based on selection
-            if (this.value === 'amount') {
-                fraudTrendChart.data.datasets.forEach((dataset, index) => {
-                    // Convert case counts to amount estimates
-                    dataset.data = dataset.data.map(count => count * (25000 + Math.random() * 15000));
-                });
-                fraudTrendChart.options.scales.y.title = { display: true, text: 'Amount (KES)' };
-            } else {
-                fraudTrendChart.data.datasets.forEach((dataset, index) => {
-                    // Reset to case counts
-                    dataset.data = [3, 2, 3, 4, 3, 2, 5].map(() => 
-                        Math.floor(Math.random() * 5) + 1
-                    );
-                });
-                fraudTrendChart.options.scales.y.title = { display: true, text: 'Number of Cases' };
+        // Populate locations
+        function populateLocations() {
+            const locationList = document.getElementById('locationList');
+            locationList.innerHTML = '';
+            
+            demoData.locations.forEach(location => {
+                const item = document.createElement('div');
+                item.className = 'fraud-type-item';
+                
+                let color = location.risk === 'HIGH' ? '#ef4444' : 
+                          location.risk === 'MEDIUM' ? '#f59e0b' : '#10b981';
+                
+                item.innerHTML = `
+                    <div class="fraud-type-color" style="background: ${color};"></div>
+                    <div class="fraud-type-info">
+                        <div class="fraud-type-name">${location.city}</div>
+                        <div class="fraud-type-stats">
+                            <span>${location.count} fraud cases</span>
+                        </div>
+                    </div>
+                    <span style="margin-left: auto; font-size: 0.8rem; color: ${color};">
+                        ${location.risk} RISK
+                    </span>
+                `;
+                
+                locationList.appendChild(item);
+            });
+        }
+        
+        // Populate device risk
+        function populateDevices() {
+            const deviceList = document.getElementById('deviceRiskList');
+            deviceList.innerHTML = '';
+            
+            demoData.devices.forEach(device => {
+                const item = document.createElement('div');
+                item.className = 'fraud-type-item';
+                
+                let color = device.risk === 'CRITICAL' ? '#ef4444' : 
+                          device.risk === 'HIGH' ? '#f59e0b' : 
+                          device.risk === 'MEDIUM' ? '#3b82f6' : '#10b981';
+                
+                item.innerHTML = `
+                    <div class="fraud-type-color" style="background: ${color};"></div>
+                    <div class="fraud-type-info">
+                        <div class="fraud-type-name">${device.type}</div>
+                        <div class="fraud-type-stats">
+                            <span>${device.count} devices</span>
+                        </div>
+                    </div>
+                    <span style="margin-left: auto; font-size: 0.8rem; color: ${color};">
+                        ${device.risk}
+                    </span>
+                `;
+                
+                deviceList.appendChild(item);
+            });
+        }
+        
+        // Set time range
+        function setTimeRange(range) {
+            document.querySelectorAll('.range-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            const dateText = document.getElementById('dateRangeText');
+            
+            switch(range) {
+                case 'week':
+                    dateText.textContent = 'Feb 22 - Feb 28, 2026';
+                    break;
+                case 'month':
+                    dateText.textContent = 'Feb 1 - Feb 28, 2026';
+                    break;
+                case 'quarter':
+                    dateText.textContent = 'Dec 1 - Feb 28, 2026';
+                    break;
+                case 'year':
+                    dateText.textContent = 'Mar 1, 2025 - Feb 28, 2026';
+                    break;
             }
+        }
+        
+        // Update chart
+        function updateChart(period) {
+            document.querySelectorAll('.time-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Update chart data based on period
+            if (period === 'weekly') {
+                // Aggregate weekly data
+                const weeklyData = [5, 7, 6, 8];
+                fraudTrendChart.data.labels = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+                fraudTrendChart.data.datasets[0].data = weeklyData;
+            } else {
+                fraudTrendChart.data.labels = Array.from({length: 28}, (_, i) => `Feb ${i+1}`);
+                fraudTrendChart.data.datasets[0].data = demoData.dailyFraud;
+            }
+            
             fraudTrendChart.update();
-        });
+        }
+        
+        // Export report
+        function exportReport() {
+            alert(`í³Š Analytics report exported!\n\nPeriod: February 2026\nTotal Transactions: ${demoData.totalTransactions}\nFraud Cases: ${demoData.fraudCases}\nAmount Saved: KES ${demoData.amountSaved.toLocaleString()}\n\nReport sent to ${USER_EMAIL}`);
+        }
+        
+        // Load notification badge
+        async function loadNotificationBadge() {
+            try {
+                const response = await fetch(`${API_URL}/api/v2/alerts/recent?limit=10`);
+                const alerts = await response.json();
+                const critical = alerts.filter(a => a.risk_level === 'CRITICAL').length;
+                const high = alerts.filter(a => a.risk_level === 'HIGH').length;
+                const total = critical + high;
+                
+                document.getElementById('alertBadge').textContent = total;
+                document.getElementById('notificationBadge').textContent = total;
+            } catch (error) {
+                console.log('Using demo badge count');
+            }
+        }
     </script>
 </body>
 </html>
