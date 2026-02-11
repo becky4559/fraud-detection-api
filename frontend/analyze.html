@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyze Message | LogSense</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Times+New+Roman&display=swap');
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --dark-bg: #0f172a;
+            --card-bg: #1e293b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --success: #10b981;
+        }
+        
+        * { font-family: 'Times New Roman', Times, serif !important; }
+        
+        body {
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 10px 20px;
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .page-header { margin-bottom: 30px; }
+        
+        .page-title {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            color: var(--primary);
+        }
+        
+        .analyze-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        @media (max-width: 900px) {
+            .analyze-grid { grid-template-columns: 1fr; }
+        }
+        
+        .input-section, .results-section {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 25px;
+            border: 1px solid #334155;
+        }
+        
+        .section-title {
+            font-size: 1.3rem;
+            margin: 0 0 20px 0;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .form-group { margin-bottom: 20px; }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+            font-weight: bold;
+        }
+        
+        textarea {
+            width: 100%;
+            padding: 12px;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid #334155;
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            min-height: 150px;
+            resize: vertical;
+        }
+        
+        .sms-examples {
+            background: rgba(99, 102, 241, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .sms-example {
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+        
+        .sms-example:hover {
+            background: rgba(99, 102, 241, 0.15);
+            border-color: var(--primary);
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+        }
+        
+        .analyze-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .alert-email {
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: 6px;
+            padding: 12px;
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .results-placeholder {
+            text-align: center;
+            padding: 50px 20px;
+            color: var(--text-secondary);
+        }
+        
+        .fraud-score-card {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        
+        .fraud-score-value {
+            font-size: 3rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .fraud-score-low { color: var(--success); }
+        .fraud-score-medium { color: var(--warning); }
+        .fraud-score-high { color: var(--danger); }
+        
+        .fraud-type-item {
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid transparent;
+        }
+        
+        .fraud-type-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .fraud-type-probability {
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .probability-high { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+        .probability-medium { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+        .probability-low { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+        
+        .context-badge {
+            display: inline-block;
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin: 2px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 30px;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #334155;
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .recommendation {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="dashboard.html" class="back-btn">
+            <i class="fas fa-arrow-left"></i>
+            Back to Dashboard
+        </a>
+        
+        <div class="page-header">
+            <h1 class="page-title">Analyze Message</h1>
+        </div>
+        
+        <div class="analyze-grid">
+            <div class="input-section">
+                <h2 class="section-title">
+                    <i class="fas fa-envelope"></i>
+                    Enter Message
+                </h2>
+                
+                <div class="form-group">
+                    <label for="smsInput">Message Content</label>
+                    <textarea id="smsInput" rows="6">FROM MANAGEMENT,Dear tenant,all home payment is due in a few days.We have exchanged our payment method to CO-OP BANK: PAYBILL:400200 ACC NO:25410261352101</textarea>
+                </div>
+                
+                <div class="sms-examples">
+                    <div style="color: var(--primary); margin-bottom: 10px; font-size: 0.9rem;">
+                        <i class="fas fa-lightbulb"></i> Example Messages:
+                    </div>
+                    <div class="sms-example" onclick="loadExample(1)">
+                        FROM MANAGEMENT,Dear tenant,all home payment is due...
+                    </div>
+                    <div class="sms-example" onclick="loadExample(2)">
+                        Dear customer, our bank account has changed...
+                    </div>
+                    <div class="sms-example" onclick="loadExample(3)">
+                        URGENT: Final notice. Pay KES 5,000...
+                    </div>
+                </div>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="sendAlert" checked>
+                    <label style="margin: 0; font-weight: normal;">Send email alert if fraud detected</label>
+                </div>
+                
+                <div class="alert-email">
+                    <i class="fas fa-envelope"></i>
+                    Alerts to: <strong>rebeccabosibori589@gmail.com</strong>
+                </div>
+                
+                <button class="analyze-btn" onclick="analyzeMessage()">
+                    <i class="fas fa-search"></i>
+                    Analyze Message
+                </button>
+            </div>
+            
+            <div class="results-section">
+                <h2 class="section-title">
+                    <i class="fas fa-chart-bar"></i>
+                    Analysis Results
+                </h2>
+                
+                <div id="resultsPlaceholder" class="results-placeholder">
+                    <i class="fas fa-search"></i>
+                    <h3>Analysis Results Will Appear Here</h3>
+                    <p>Enter a message and click "Analyze Message"</p>
+                </div>
+                
+                <div id="resultsContent" style="display: none;">
+                    <div class="fraud-score-card" id="fraudScoreCard">
+                        <div style="font-size: 0.9rem;">FRAUD PROBABILITY SCORE</div>
+                        <div class="fraud-score-value" id="fraudScore">0%</div>
+                        <div id="fraudDescription">Analysis in progress...</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="font-size: 1.1rem; margin-bottom: 10px;">
+                            <i class="fas fa-exclamation-triangle"></i> Contextual Analysis
+                        </h3>
+                        <div id="contextualAnalysis"></div>
+                    </div>
+                    
+                    <div id="fraudTypesList"></div>
+                    
+                    <div style="background: rgba(15, 23, 42, 0.5); border-radius: 8px; padding: 20px; margin-top: 20px;">
+                        <h3 style="font-size: 1.1rem; margin-bottom: 15px;">
+                            <i class="fas fa-lightbulb"></i> Recommended Actions
+                        </h3>
+                        <div id="recommendationsList"></div>
+                    </div>
+                </div>
+                
+                <div id="loadingIndicator" class="loading" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Analyzing against 8 fraud types...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // SIMPLE EXAMPLES
+        const examples = [
+            "FROM MANAGEMENT,Dear tenant,all home payment is due in a few days.We have exchanged our payment method to CO-OP BANK: PAYBILL:400200 ACC NO:25410261352101",
+            "Dear customer, our Equity Bank account has changed. New details: 1234567890. Use for all payments.",
+            "URGENT: Final notice. Your rent of KES 15,000 is due tomorrow. Pay to 0711223344."
+        ];
+        
+        function loadExample(index) {
+            if (index >= 1 && index <= examples.length) {
+                document.getElementById('smsInput').value = examples[index - 1];
+                analyzeMessage();
+            }
+        }
+        
+        // CONTEXTUAL ANALYSIS RULES
+        function checkContextualRules(text) {
+            const lower = text.toLowerCase();
+            let score = 0;
+            const contexts = [];
+            
+            // RULE 1: Payment Change + Urgency (YOUR MESSAGE PATTERN)
+            if ((lower.includes('changed') || lower.includes('exchanged') || lower.includes('new')) && 
+                (lower.includes('due') || lower.includes('urgent') || lower.includes('few days'))) {
+                score += 70;
+                contexts.push("Payment Change + Urgency");
+            }
+            
+            // RULE 2: Business Spoofing
+            if ((lower.includes('from management') || lower.includes('dear tenant') || lower.includes('dear customer')) && 
+                text.includes('pay')) {
+                score += 50;
+                contexts.push("Business Spoofing");
+            }
+            
+            // RULE 3: Unknown Payment Details
+            if (text.includes('PAYBILL') || text.includes('ACC NO') || text.match(/\d{10,}/)) {
+                score += 40;
+                contexts.push("Suspicious Payment Details");
+            }
+            
+            return {
+                score: Math.min(score, 100),
+                contexts: contexts
+            };
+        }
+        
+        // 8 FRAUD TYPES
+        const fraudTypes = [
+            { id: 'social', name: "Social Engineering", patterns: ["urgent", "due", "final", "few days"] },
+            { id: 'mobile', name: "Mobile Money Fraud", patterns: ["pay", "account", "bank", "paybill"] },
+            { id: 'repayment', name: "Repayment Fraud", patterns: ["payment", "due", "pay", "rent"] },
+            { id: 'agent', name: "Agent Collusion", patterns: ["management", "tenant", "home", "exchange"] },
+            { id: 'identity', name: "Identity Theft", patterns: ["dear", "customer", "tenant"] },
+            { id: 'sim', name: "SIM Swap", patterns: ["change", "exchange", "method"] },
+            { id: 'device', name: "Device Cloning", patterns: ["new", "method", "change"] },
+            { id: 'synthetic', name: "Synthetic Identity", patterns: ["management", "dear"] }
+        ];
+        
+        function analyzeMessage() {
+            const message = document.getElementById('smsInput').value.trim();
+            const sendAlert = document.getElementById('sendAlert').checked;
+            
+            if (!message) {
+                alert('Please enter a message to analyze.');
+                return;
+            }
+            
+            // Show loading
+            document.getElementById('loadingIndicator').style.display = 'block';
+            document.getElementById('resultsPlaceholder').style.display = 'none';
+            document.getElementById('resultsContent').style.display = 'none';
+            
+            // Analyze
+            setTimeout(() => {
+                const results = performAnalysis(message);
+                displayResults(results);
+                
+                // Send email alert
+                if (sendAlert && results.overallScore >= 40) {
+                    sendEmailAlert(results, message);
+                }
+                
+                // Show results
+                document.getElementById('loadingIndicator').style.display = 'none';
+                document.getElementById('resultsContent').style.display = 'block';
+            }, 1500);
+        }
+        
+        function performAnalysis(message) {
+            const lower = message.toLowerCase();
+            
+            // Contextual analysis
+            const contextual = checkContextualRules(message);
+            let overallScore = contextual.score;
+            
+            // Fraud type analysis
+            const fraudResults = [];
+            fraudTypes.forEach(fraud => {
+                let score = 0;
+                fraud.patterns.forEach(pattern => {
+                    if (lower.includes(pattern)) {
+                        score += 15;
+                    }
+                });
+                score = Math.min(score, 100);
+                fraudResults.push({
+                    name: fraud.name,
+                    score: score
+                });
+                overallScore += score * 0.1;
+            });
+            
+            overallScore = Math.min(Math.round(overallScore), 100);
+            
+            // Risk level
+            let riskLevel = 'low';
+            let description = 'This message appears legitimate';
+            
+            if (overallScore >= 70) {
+                riskLevel = 'high';
+                description = 'HIGH RISK: Likely fraudulent';
+            } else if (overallScore >= 40) {
+                riskLevel = 'medium';
+                description = 'MODERATE RISK: Suspicious';
+            }
+            
+            return {
+                overallScore: overallScore,
+                riskLevel: riskLevel,
+                description: description,
+                fraudResults: fraudResults,
+                contextual: contextual
+            };
+        }
+        
+        function displayResults(results) {
+            // Score
+            document.getElementById('fraudScore').textContent = results.overallScore + '%';
+            document.getElementById('fraudScore').className = 'fraud-score-value fraud-score-' + results.riskLevel;
+            document.getElementById('fraudDescription').textContent = results.description;
+            
+            // Contextual
+            const contextDiv = document.getElementById('contextualAnalysis');
+            contextDiv.innerHTML = '';
+            if (results.contextual.contexts.length > 0) {
+                results.contextual.contexts.forEach(context => {
+                    const badge = document.createElement('span');
+                    badge.className = 'context-badge';
+                    badge.textContent = context;
+                    contextDiv.appendChild(badge);
+                });
+            }
+            
+            // Fraud types
+            const fraudList = document.getElementById('fraudTypesList');
+            fraudList.innerHTML = '<h3 style="font-size: 1.1rem; margin-bottom: 15px;"><i class="fas fa-shield-alt"></i> Fraud Type Analysis:</h3>';
+            
+            results.fraudResults.forEach(fraud => {
+                if (fraud.score > 20) {
+                    const probClass = fraud.score >= 50 ? 'probability-high' : 
+                                     fraud.score >= 30 ? 'probability-medium' : 'probability-low';
+                    
+                    const item = document.createElement('div');
+                    item.className = 'fraud-type-item';
+                    item.innerHTML = `
+                        <div class="fraud-type-header">
+                            <div><strong>${fraud.name}</strong></div>
+                            <div class="fraud-type-probability ${probClass}">
+                                ${fraud.score}% match
+                            </div>
+                        </div>
+                    `;
+                    fraudList.appendChild(item);
+                }
+            });
+            
+            // Recommendations
+            const recList = document.getElementById('recommendationsList');
+            recList.innerHTML = '';
+            
+            let recommendations = [];
+            if (results.overallScore >= 70) {
+                recommendations = [
+                    "DO NOT make any payments to new accounts",
+                    "Contact management directly using known numbers",
+                    "Verify through official channels",
+                    "Report to authorities",
+                    "Check your accounts"
+                ];
+            } else if (results.overallScore >= 40) {
+                recommendations = [
+                    "Verify the message sender",
+                    "Do not click links or call numbers",
+                    "Check official contacts",
+                    "Look for errors",
+                    "Monitor accounts"
+                ];
+            } else {
+                recommendations = [
+                    "Message appears legitimate",
+                    "Verify unexpected changes",
+                    "Keep contacts updated",
+                    "Stay vigilant",
+                    "Report suspicious messages"
+                ];
+            }
+            
+            recommendations.forEach(rec => {
+                const div = document.createElement('div');
+                div.className = 'recommendation';
+                div.innerHTML = `
+                    <i class="fas fa-check-circle"></i>
+                    <div>${rec}</div>
+                `;
+                recList.appendChild(div);
+            });
+        }
+        
+        function sendEmailAlert(results, message) {
+            // Simulate email alert
+            console.log('Email to: rebeccabosibori589@gmail.com');
+            console.log('Score:', results.overallScore + '%');
+            console.log('Message:', message.substring(0, 100));
+            
+            // Show alert
+            setTimeout(() => {
+                if (results.overallScore >= 70) {
+                    alert('íº¨ HIGH RISK ALERT!\n\nScore: ' + results.overallScore + '%\nEmail sent to: rebeccabosibori589@gmail.com\n\nDO NOT MAKE PAYMENTS!');
+                } else {
+                    alert('âœ… Alert sent to: rebeccabosibori589@gmail.com\n\nScore: ' + results.overallScore + '%\nCheck your email.');
+                }
+            }, 500);
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadExample(1);
+        });
+    </script>
+</body>
+</html>

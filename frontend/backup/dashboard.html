@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | LogSense</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Bootstrap Dark + Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-dark-5@1.1.3/dist/css/bootstrap-night.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --dark-bg: #0f172a;
+            --sidebar-bg: #1e293b;
+            --card-bg: #1e293b;
+            --card-border: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+        }
+        
+        /* Add all previous styles here (keeping them for brevity) */
+        /* ... previous CSS styles ... */
+        
+        /* Fraud Card Clickable */
+        .fraud-type-card {
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .fraud-type-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            border-color: var(--primary);
+        }
+        
+        /* Alert Configuration */
+        .alert-config {
+            background: rgba(30, 41, 59, 0.9);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            border: 1px solid var(--card-border);
+        }
+        
+        .email-display {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .email-display i {
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <!-- Include Fraud Modal -->
+    <div id="fraudModalContainer"></div>
+    
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <a href="#" class="logo">
+                <i class="fas fa-shield-alt logo-icon"></i>
+                <span class="logo-text">LogSense</span>
+            </a>
+        </div>
+        
+        <div class="sidebar-menu">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link active" href="#" onclick="showSection('dashboard')">
+                        <i class="fas fa-tachometer-alt nav-icon"></i>
+                        <span class="nav-text">Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="analyze.html">
+                        <i class="fas fa-search nav-icon"></i>
+                        <span class="nav-text">Fraud Detection</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" onclick="showSection('analytics')">
+                        <i class="fas fa-chart-bar nav-icon"></i>
+                        <span class="nav-text">Analytics</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" onclick="showSection('alerts')">
+                        <i class="fas fa-bell nav-icon"></i>
+                        <span class="nav-text">Alerts</span>
+                        <span class="nav-badge" id="alertCount">3</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" onclick="showSection('settings')">
+                        <i class="fas fa-cog nav-icon"></i>
+                        <span class="nav-text">Settings</span>
+                    </a>
+                </li>
+                <li class="nav-item mt-4">
+                    <a class="nav-link" href="login.html">
+                        <i class="fas fa-sign-out-alt nav-icon"></i>
+                        <span class="nav-text">Logout</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="main-content" id="mainContent">
+        <!-- Topbar -->
+        <div class="topbar">
+            <div class="page-title">
+                <h1>Fraud Detection Dashboard</h1>
+                <p>Monitor and analyze fraudulent activities in real-time</p>
+            </div>
+            
+            <div class="topbar-actions">
+                <div class="search-box">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" class="search-input" placeholder="Search transactions..." id="searchInput">
+                </div>
+                
+                <div class="user-menu">
+                    <button class="notification-btn" onclick="showNotifications()">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge" id="notificationCount">3</span>
+                    </button>
+                    
+                    <div class="user-avatar" onclick="showUserMenu()">
+                        <span>RB</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Dashboard Content -->
+        <div class="content-wrapper" id="dashboardContent">
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon users">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-trend trend-up">
+                            <i class="fas fa-arrow-up"></i>
+                            <span id="userTrend">12.5%</span>
+                        </div>
+                    </div>
+                    <div class="stat-value" id="totalUsers">2,841</div>
+                    <div class="stat-label">Total Users</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon transactions">
+                            <i class="fas fa-exchange-alt"></i>
+                        </div>
+                        <div class="stat-trend trend-up">
+                            <i class="fas fa-arrow-up"></i>
+                            <span id="transactionTrend">8.3%</span>
+                        </div>
+                    </div>
+                    <div class="stat-value" id="totalTransactions">25,410</div>
+                    <div class="stat-label">Total Transactions</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon fraud">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="stat-trend trend-down">
+                            <i class="fas fa-arrow-down"></i>
+                            <span id="fraudTrend">4.2%</span>
+                        </div>
+                    </div>
+                    <div class="stat-value" id="fraudCases">187</div>
+                    <div class="stat-label">Fraud Cases Detected</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon revenue">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <div class="stat-trend trend-up">
+                            <i class="fas fa-arrow-up"></i>
+                            <span id="savingsTrend">15.7%</span>
+                        </div>
+                    </div>
+                    <div class="stat-value" id="savedAmount">$302,560</div>
+                    <div class="stat-label">Amount Saved from Fraud</div>
+                </div>
+            </div>
+            
+            <!-- Charts Grid -->
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3 class="chart-title">Fraud Detection Rate</h3>
+                        <select class="form-select form-select-sm" id="timeRange" style="width: auto;">
+                            <option value="7">Last 7 days</option>
+                            <option value="30" selected>Last 30 days</option>
+                            <option value="90">Last 90 days</option>
+                        </select>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="fraudChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3 class="chart-title">Transaction Volume vs Fraud</h3>
+                        <select class="form-select form-select-sm" id="chartType" style="width: auto;">
+                            <option value="volume">Transaction Volume</option>
+                            <option value="value">Transaction Value</option>
+                            <option value="fraud_rate">Fraud Rate</option>
+                        </select>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="transactionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Fraud Types -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="chart-title mb-0">Fraud Types Detected</h3>
+                <button class="btn btn-sm btn-primary" onclick="refreshFraudTypes()">
+                    <i class="fas fa-sync-alt me-1"></i> Refresh
+                </button>
+            </div>
+            <div class="fraud-types-grid" id="fraudTypesContainer">
+                <!-- Loaded dynamically -->
+            </div>
+            
+            <!-- Recent Activity & Alert Config -->
+            <div class="row mt-4">
+                <div class="col-lg-8">
+                    <div class="activity-card">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h3 class="chart-title mb-0">Recent Fraud Alerts</h3>
+                            <a href="#" class="text-primary small" onclick="loadAllAlerts()">View All</a>
+                        </div>
+                        <ul class="activity-list" id="recentAlerts">
+                            <!-- Loaded dynamically -->
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4">
+                    <div class="activity-card">
+                        <h3 class="chart-title mb-4">Alert Configuration</h3>
+                        <div class="alert-config">
+                            <p class="small text-muted mb-2">Alerts will be sent to:</p>
+                            <div class="email-display">
+                                <span>
+                                    <i class="fas fa-envelope me-2"></i>
+                                    rebeccabosibori589@gmail.com
+                                </span>
+                                <button class="btn btn-sm btn-outline-primary" onclick="updateEmail()">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="form-check form-switch mt-3">
+                                <input class="form-check-input" type="checkbox" id="emailAlerts" checked>
+                                <label class="form-check-label" for="emailAlerts">
+                                    Email Alerts
+                                </label>
+                            </div>
+                            
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="smsAlerts">
+                                <label class="form-check-label" for="smsAlerts">
+                                    SMS Alerts
+                                </label>
+                            </div>
+                            
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="pushAlerts" checked>
+                                <label class="form-check-label" for="pushAlerts">
+                                    Push Notifications
+                                </label>
+                            </div>
+                            
+                            <button class="btn btn-primary w-100 mt-3" onclick="testAlert()">
+                                <i class="fas fa-bell me-2"></i>Test Alert
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Other sections (Analytics, Alerts, Settings) would go here -->
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        // API Configuration
+        const API_URL = 'https://fraud-detection-api-b6dk.onrender.com';
+        const USER_EMAIL = 'rebeccabosibori589@gmail.com';
+        
+        // Charts
+        let fraudChart, transactionChart;
+        
+        // DOM Ready
+        document.addEventListener('DOMContentLoaded', function() {
+            loadFraudModal();
+            initCharts();
+            loadDashboardData();
+            loadFraudTypes();
+            loadRecentAlerts();
+            updateStats();
+            
+            // Auto-refresh every 30 seconds
+            setInterval(loadDashboardData, 30000);
+        });
+        
+        // Load Fraud Modal HTML
+        function loadFraudModal() {
+            fetch('fraud-modal.html')
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('fraudModalContainer').innerHTML = html;
+                })
+                .catch(error => {
+                    console.error('Error loading fraud modal:', error);
+                });
+        }
+        
+        // Initialize Charts
+        function initCharts() {
+            // Fraud Detection Chart
+            const fraudCtx = document.getElementById('fraudChart').getContext('2d');
+            fraudChart = new Chart(fraudCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                    datasets: [{
+                        label: 'Fraud Cases',
+                        data: [45, 52, 38, 61],
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#94a3b8' }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(148, 163, 184, 0.1)' },
+                            ticks: { color: '#94a3b8' }
+                        },
+                        y: {
+                            grid: { color: 'rgba(148, 163, 184, 0.1)' },
+                            ticks: { color: '#94a3b8' }
+                        }
+                    }
+                }
+            });
+            
+            // Transaction Chart
+            const transactionCtx = document.getElementById('transactionChart').getContext('2d');
+            transactionChart = new Chart(transactionCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [
+                        {
+                            label: 'Legitimate',
+                            data: [4200, 3900, 4500, 5200, 4800, 3500, 4400],
+                            backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                            borderColor: '#10b981'
+                        },
+                        {
+                            label: 'Fraudulent',
+                            data: [42, 39, 45, 52, 48, 35, 44],
+                            backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                            borderColor: '#ef4444'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#94a3b8' }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(148, 163, 184, 0.1)' },
+                            ticks: { color: '#94a3b8' }
+                        },
+                        y: {
+                            grid: { color: 'rgba(148, 163, 184, 0.1)' },
+                            ticks: { color: '#94a3b8' }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Load Dashboard Data
+        async function loadDashboardData() {
+            try {
+                const [statsRes, healthRes] = await Promise.all([
+                    fetch(`${API_URL}/stats`),
+                    fetch(`${API_URL}/health`)
+                ]);
+                
+                if (statsRes.ok) {
+                    const stats = await statsRes.json();
+                    updateStats(stats);
+                }
+                
+                if (healthRes.ok) {
+                    console.log('API Health: OK');
+                }
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+        
+        // Update Stats
+        function updateStats(stats = null) {
+            // If no stats provided, use simulated data
+            if (!stats) {
+                stats = {
+                    total_transactions: 25410 + Math.floor(Math.random() * 100),
+                    high_risk: 187 + Math.floor(Math.random() * 5),
+                    medium_risk: 42 + Math.floor(Math.random() * 3),
+                    low_risk: 12 + Math.floor(Math.random() * 2)
+                };
+            }
+            
+            // Update UI
+            document.getElementById('totalTransactions').textContent = 
+                stats.total_transactions.toLocaleString();
+            document.getElementById('fraudCases').textContent = stats.high_risk || 187;
+            
+            // Update trends (simulated)
+            const trends = ['12.5%', '8.3%', '4.2%', '15.7%'];
+            document.getElementById('userTrend').textContent = trends[0];
+            document.getElementById('transactionTrend').textContent = trends[1];
+            document.getElementById('fraudTrend').textContent = trends[2];
+            document.getElementById('savingsTrend').textContent = trends[3];
+            
+            // Update saved amount
+            const saved = 302560 + Math.floor(Math.random() * 10000);
+            document.getElementById('savedAmount').textContent = 
+                '$' + saved.toLocaleString();
+        }
+        
+        // Load Fraud Types
+        async function loadFraudTypes() {
+            try {
+                const response = await fetch(`${API_URL}/fraud-types`);
+                if (!response.ok) throw new Error('API error');
+                
+                const data = await response.json();
+                const container = document.getElementById('fraudTypesContainer');
+                container.innerHTML = '';
+                
+                data.types.forEach(fraud => {
+                    const severityClass = `severity-${fraud.severity.toLowerCase()}`;
+                    const icon = getFraudIcon(fraud.name);
+                    
+                    const card = document.createElement('div');
+                    card.className = 'fraud-type-card';
+                    card.onclick = () => showFraudDetails(fraud);
+                    card.innerHTML = `
+                        <div class="fraud-type-header">
+                            <div class="fraud-type-icon ${severityClass}">
+                                <i class="fas ${icon}"></i>
+                            </div>
+                            <div>
+                                <h4 class="fraud-type-title">${fraud.name.replace(/_/g, ' ').toUpperCase()}</h4>
+                                <span class="fraud-type-severity ${severityClass}">
+                                    ${fraud.severity} RISK
+                                </span>
+                            </div>
+                        </div>
+                        <p class="fraud-type-desc">
+                            Click to view details and prevention tips...
+                        </p>
+                        <div class="text-end">
+                            <small class="text-muted">
+                                <i class="fas fa-chevron-right"></i> View Details
+                            </small>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+                
+            } catch (error) {
+                console.error('Error loading fraud types:', error);
+                showError('fraudTypesContainer', 'Failed to load fraud types');
+            }
+        }
+        
+        // Get Fraud Icon
+        function getFraudIcon(fraudName) {
+            const icons = {
+                'sim_swap': 'fa-sim-card',
+                'agent_collusion': 'fa-user-secret',
+                'social_engineering': 'fa-comment-dots',
+                'identity_theft': 'fa-id-card',
+                'mobile_money_fraud': 'fa-mobile-alt',
+                'repayment_fraud': 'fa-money-check-alt',
+                'synthetic_identity': 'fa-user-plus',
+                'device_cloning': 'fa-clone'
+            };
+            return icons[fraudName] || 'fa-exclamation-triangle';
+        }
+        
+        // Load Recent Alerts
+        async function loadRecentAlerts() {
+            try {
+                const response = await fetch(`${API_URL}/transactions?limit=5`);
+                const data = await response.json();
+                const container = document.getElementById('recentAlerts');
+                container.innerHTML = '';
+                
+                if (data.transactions && data.transactions.length > 0) {
+                    data.transactions.forEach(transaction => {
+                        const riskClass = transaction.risk_level === 'HIGH' ? 'amount-negative' : 
+                                         transaction.risk_level === 'MEDIUM' ? 'amount-warning' : 'amount-positive';
+                        const riskIcon = transaction.risk_level === 'HIGH' ? 'fa-exclamation-triangle' : 
+                                        transaction.risk_level === 'MEDIUM' ? 'fa-exclamation-circle' : 'fa-check-circle';
+                        const iconColor = transaction.risk_level === 'HIGH' ? '#ef4444' : 
+                                         transaction.risk_level === 'MEDIUM' ? '#f59e0b' : '#10b981';
+                        
+                        const item = document.createElement('li');
+                        item.className = 'activity-item';
+                        item.innerHTML = `
+                            <div class="activity-icon" style="background: rgba(${hexToRgb(iconColor)}, 0.2); color: ${iconColor}">
+                                <i class="fas ${riskIcon}"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-title">${transaction.user_id}</div>
+                                <div class="activity-desc">$${transaction.amount.toLocaleString()} • ${(transaction.fraud_probability * 100).toFixed(1)}% risk</div>
+                                <div class="activity-time">${formatTime(transaction.timestamp)}</div>
+                            </div>
+                            <div class="activity-amount ${riskClass}">
+                                ${transaction.risk_level}
+                            </div>
+                        `;
+                        container.appendChild(item);
+                    });
+                } else {
+                    container.innerHTML = `
+                        <li class="activity-item">
+                            <div class="activity-content text-center py-4">
+                                <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
+                                <div class="activity-title">No recent alerts</div>
+                                <div class="activity-desc">All transactions are clean</div>
+                            </div>
+                        </li>
+                    `;
+                }
+                
+                // Update notification count
+                const highRiskCount = data.transactions ? 
+                    data.transactions.filter(t => t.risk_level === 'HIGH').length : 0;
+                updateNotificationCount(highRiskCount);
+                
+            } catch (error) {
+                console.error('Error loading alerts:', error);
+                showError('recentAlerts', 'Failed to load alerts');
+            }
+        }
+        
+        // Helper Functions
+        function hexToRgb(hex) {
+            hex = hex.replace('#', '');
+            const r = parseInt(hex.substring(0, 2), 16);
+            const g = parseInt(hex.substring(2, 4), 16);
+            const b = parseInt(hex.substring(4, 6), 16);
+            return `${r}, ${g}, ${b}`;
+        }
+        
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        }
+        
+        function updateNotificationCount(count) {
+            const badge = document.getElementById('notificationCount');
+            const alertBadge = document.getElementById('alertCount');
+            
+            if (count > 0) {
+                badge.textContent = count;
+                alertBadge.textContent = count;
+                badge.style.display = 'flex';
+                alertBadge.style.display = 'inline-flex';
+            } else {
+                badge.style.display = 'none';
+                alertBadge.style.display = 'none';
+            }
+        }
+        
+        function showError(containerId, message) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `
+                <div class="col-12">
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        ${message}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // UI Actions
+        function refreshFraudTypes() {
+            loadFraudTypes();
+            showToast('Fraud types refreshed');
+        }
+        
+        function showNotifications() {
+            alert(`You have ${document.getElementById('notificationCount').textContent} unread alerts\n\nCheck your email: ${USER_EMAIL}`);
+        }
+        
+        function showUserMenu() {
+            const menu = `
+                <div class="dropdown-menu show" style="position: absolute; inset: 0px auto auto 0px; margin: 0px; transform: translate(-120px, 40px); background: #1e293b; border: 1px solid #334155;">
+                    <div class="px-3 py-2">
+                        <div class="fw-bold">Rebecca Bosibori</div>
+                        <div class="text-muted small">${USER_EMAIL}</div>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Profile</a>
+                    <a class="dropdown-item" href="#" onclick="showSection('settings')"><i class="fas fa-cog me-2"></i>Settings</a>
+                    <a class="dropdown-item" href="login.html"><i class="fas fa-sign-out-alt me-2"></i>Logout</a>
+                </div>
+            `;
+            // In a real app, this would show a dropdown menu
+            console.log('User menu clicked');
+        }
+        
+        function updateEmail() {
+            const newEmail = prompt('Enter new email for alerts:', USER_EMAIL);
+            if (newEmail) {
+                alert(`Alert email updated to: ${newEmail}\n\nA verification email has been sent.`);
+            }
+        }
+        
+        function testAlert() {
+            alert(`Test alert sent to: ${USER_EMAIL}\n\nCheck your inbox for a test notification.`);
+        }
+        
+        function showToast(message) {
+            // Simple toast notification
+            const toast = document.createElement('div');
+            toast.className = 'toast-notification';
+            toast.innerHTML = `
+                <div style="position: fixed; bottom: 20px; right: 20px; background: #10b981; color: white; padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 9999;">
+                    <i class="fas fa-check-circle me-2"></i>${message}
+                </div>
+            `;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+        
+        function showSection(section) {
+            // Simple section switching
+            const sections = ['dashboard', 'analytics', 'alerts', 'settings'];
+            sections.forEach(sec => {
+                const element = document.getElementById(sec + 'Content');
+                if (element) element.style.display = sec === section ? 'block' : 'none';
+            });
+            
+            // Update active nav
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>

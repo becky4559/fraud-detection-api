@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alerts | LogSense</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .back-btn {
+            display: inline-block;
+            padding: 10px 15px;
+            background: #4a5568;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #2d3748;
+        }
+        .alert-item {
+            padding: 15px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+        .alert-item.unread {
+            background: #ebf8ff;
+            border-left: 4px solid #3182ce;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="dashboard.html" class="back-btn">← Back to Dashboard</a>
+        <h1>Alerts</h1>
+        <p>This is the alerts page. Working on adding more features...</p>
+        
+        <div class="alert-item unread">
+            <strong>Test Alert 1</strong>
+            <p>This is an unread alert</p>
+            <button onclick="markAsRead(this)">Mark as Read</button>
+        </div>
+        
+        <div class="alert-item">
+            <strong>Test Alert 2</strong>
+            <p>This alert has been read</p>
+        </div>
+    </div>
+
+    <script>
+        function markAsRead(button) {
+            const alertItem = button.parentElement;
+            alertItem.classList.remove('unread');
+            button.remove();
+            alert('Alert marked as read!');
+        }
+    </script>
+</body>
+</html>

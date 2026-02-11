@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fraud Detection Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding-top: 20px;
+        }
+        .dashboard-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            padding: 25px;
+            transition: transform 0.3s;
+        }
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+        }
+        .stat-card {
+            text-align: center;
+            padding: 20px;
+        }
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .risk-high { color: #dc3545; }
+        .risk-medium { color: #ffc107; }
+        .risk-low { color: #28a745; }
+        .fraud-type-badge {
+            margin: 2px;
+            font-size: 0.8rem;
+        }
+        .transaction-row {
+            border-bottom: 1px solid #eee;
+            padding: 10px 0;
+        }
+        .api-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- API Status Badge -->
+        <div class="api-status">
+            <span id="apiStatus" class="badge bg-secondary">API: Checking...</span>
+        </div>
+
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="dashboard-card">
+                    <h1><i class="fas fa-shield-alt"></i> Fraud Detection Dashboard</h1>
+                    <p class="text-muted">Real-time fraud monitoring and detection system</p>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="input-group">
+                                <input type="number" id="amountInput" class="form-control" placeholder="Transaction Amount" min="0" step="0.01">
+                                <button class="btn btn-primary" onclick="checkFraud()">
+                                    <i class="fas fa-search"></i> Check Fraud
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <input type="text" id="userIdInput" class="form-control" placeholder="User ID (optional)" value="user_001">
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-success w-100" onclick="refreshDashboard()">
+                                <i class="fas fa-sync-alt"></i> Refresh Dashboard
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Row -->
+        <div class="row" id="statsRow">
+            <!-- Stats will be loaded here -->
+        </div>
+
+        <!-- Fraud Types -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="dashboard-card">
+                    <h3><i class="fas fa-bug"></i> Fraud Types Detected</h3>
+                    <div id="fraudTypes"></div>
+                </div>
+            </div>
+            
+            <!-- Prediction Result -->
+            <div class="col-md-6">
+                <div class="dashboard-card">
+                    <h3><i class="fas fa-chart-line"></i> Latest Prediction</h3>
+                    <div id="predictionResult" class="text-center">
+                        <p class="text-muted">Make a prediction to see results here</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="row">
+            <div class="col-12">
+                <div class="dashboard-card">
+                    <h3><i class="fas fa-history"></i> Recent Transactions</h3>
+                    <div id="recentTransactions"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="row mt-4">
+            <div class="col-12 text-center text-white">
+                <p>Fraud Detection API v2.0 | Connected to: <span id="apiUrl">https://fraud-detection-api-gzhw.onrender.com</span></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        // Configuration
+        const API_URL = 'https://fraud-detection-api-b6dk.onrender.com';
+        
+        // DOM Elements
+        const apiStatus = document.getElementById('apiStatus');
+        const apiUrl = document.getElementById('apiUrl');
+        const statsRow = document.getElementById('statsRow');
+        const fraudTypes = document.getElementById('fraudTypes');
+        const predictionResult = document.getElementById('predictionResult');
+        const recentTransactions = document.getElementById('recentTransactions');
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            apiUrl.textContent = API_URL;
+            checkApiStatus();
+            loadDashboard();
+        });
+
+        // Check API status
+        async function checkApiStatus() {
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                if (response.ok) {
+                    apiStatus.innerHTML = '<i class="fas fa-check-circle"></i> API: Online';
+                    apiStatus.className = 'badge bg-success';
+                } else {
+                    throw new Error('API not healthy');
+                }
+            } catch (error) {
+                apiStatus.innerHTML = '<i class="fas fa-times-circle"></i> API: Offline';
+                apiStatus.className = 'badge bg-danger';
+            }
+        }
+
+        // Load all dashboard data
+        async function loadDashboard() {
+            await Promise.all([
+                loadStats(),
+                loadFraudTypes(),
+                loadRecentTransactions()
+            ]);
+        }
+
+        // Load statistics
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_URL}/stats`);
+                const data = await response.json();
+                
+                statsRow.innerHTML = `
+                    <div class="col-md-3">
+                        <div class="dashboard-card stat-card">
+                            <div class="stat-number">${data.database_summary.total_transactions}</div>
+                            <div class="stat-label">Total Transactions</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="dashboard-card stat-card">
+                            <div class="stat-number risk-high">${data.database_summary.transactions_by_risk.high_risk}</div>
+                            <div class="stat-label">High Risk</div>
+                            <small>${data.database_summary.risk_percentages.high_risk}%</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="dashboard-card stat-card">
+                            <div class="stat-number risk-medium">${data.database_summary.transactions_by_risk.medium_risk}</div>
+                            <div class="stat-label">Medium Risk</div>
+                            <small>${data.database_summary.risk_percentages.medium_risk}%</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="dashboard-card stat-card">
+                            <div class="stat-number">${data.database_summary.fraud_types_configured}</div>
+                            <div class="stat-label">Fraud Types</div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                statsRow.innerHTML = '<div class="col-12"><div class="alert alert-danger">Failed to load statistics</div></div>';
+            }
+        }
+
+        // Load fraud types
+        async function loadFraudTypes() {
+            try {
+                const response = await fetch(`${API_URL}/fraud-types`);
+                const data = await response.json();
+                
+                let html = '<div class="row">';
+                data.types.forEach(type => {
+                    let badgeClass = 'bg-secondary';
+                    if (type.severity === 'CRITICAL') badgeClass = 'bg-danger';
+                    else if (type.severity === 'HIGH') badgeClass = 'bg-warning';
+                    else if (type.severity === 'MEDIUM') badgeClass = 'bg-info';
+                    
+                    html += `
+                        <div class="col-6 mb-2">
+                            <span class="badge ${badgeClass} fraud-type-badge">${type.severity}</span>
+                            <strong>${type.name}</strong>
+                            <p class="small text-muted mb-0">${type.description}</p>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                fraudTypes.innerHTML = html;
+            } catch (error) {
+                fraudTypes.innerHTML = '<div class="alert alert-danger">Failed to load fraud types</div>';
+            }
+        }
+
+        // Check fraud for a transaction
+        async function checkFraud() {
+            const amount = document.getElementById('amountInput').value;
+            const userId = document.getElementById('userIdInput').value;
+            
+            if (!amount || amount <= 0) {
+                alert('Please enter a valid amount');
+                return;
+            }
+            
+            try {
+                predictionResult.innerHTML = '<div class="text-center"><div class="spinner-border text-primary"></div><p>Analyzing transaction...</p></div>';
+                
+                const response = await fetch(`${API_URL}/predict?amount=${amount}&user_id=${userId}`);
+                const data = await response.json();
+                
+                let riskClass = 'risk-low';
+                let riskIcon = 'fa-check-circle';
+                if (data.risk_level === 'HIGH') {
+                    riskClass = 'risk-high';
+                    riskIcon = 'fa-exclamation-triangle';
+                } else if (data.risk_level === 'MEDIUM') {
+                    riskClass = 'risk-medium';
+                    riskIcon = 'fa-exclamation-circle';
+                }
+                
+                predictionResult.innerHTML = `
+                    <div class="alert ${riskClass === 'risk-high' ? 'alert-danger' : riskClass === 'risk-medium' ? 'alert-warning' : 'alert-success'}">
+                        <h4><i class="fas ${riskIcon}"></i> ${data.risk_level} Risk</h4>
+                        <p>Fraud Probability: <strong>${(data.fraud_probability * 100).toFixed(1)}%</strong></p>
+                        <p>Amount: $${parseFloat(data.amount).toLocaleString()}</p>
+                        <p>User: ${data.user_id}</p>
+                        <p>Time: ${new Date(data.timestamp).toLocaleTimeString()}</p>
+                        ${data.alert_required ? '<p class="alert alert-danger mt-2"><i class="fas fa-bell"></i> Alert Required!</p>' : ''}
+                    </div>
+                `;
+                
+                // Refresh dashboard to show new transaction
+                setTimeout(loadDashboard, 1000);
+            } catch (error) {
+                predictionResult.innerHTML = '<div class="alert alert-danger">Failed to analyze transaction</div>';
+            }
+        }
+
+        // Load recent transactions
+        async function loadRecentTransactions() {
+            try {
+                const response = await fetch(`${API_URL}/transactions?limit=5`);
+                const data = await response.json();
+                
+                if (data.count === 0) {
+                    recentTransactions.innerHTML = '<p class="text-muted">No transactions yet</p>';
+                    return;
+                }
+                
+                let html = '<div class="table-responsive"><table class="table table-hover"><thead><tr><th>Time</th><th>User</th><th>Amount</th><th>Risk</th><th>Fraud %</th></tr></thead><tbody>';
+                
+                data.transactions.forEach(tx => {
+                    let riskClass = 'risk-low';
+                    if (tx.risk_level === 'HIGH') riskClass = 'risk-high';
+                    else if (tx.risk_level === 'MEDIUM') riskClass = 'risk-medium';
+                    
+                    html += `
+                        <tr class="${riskClass}">
+                            <td>${new Date(tx.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+                            <td>${tx.user_id}</td>
+                            <td>$${parseFloat(tx.amount).toLocaleString()}</td>
+                            <td><span class="badge ${riskClass === 'risk-high' ? 'bg-danger' : riskClass === 'risk-medium' ? 'bg-warning' : 'bg-success'}">${tx.risk_level}</span></td>
+                            <td>${(tx.fraud_probability * 100).toFixed(1)}%</td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table></div>';
+                recentTransactions.innerHTML = html;
+            } catch (error) {
+                recentTransactions.innerHTML = '<div class="alert alert-danger">Failed to load transactions</div>';
+            }
+        }
+
+        // Refresh entire dashboard
+        function refreshDashboard() {
+            loadDashboard();
+            predictionResult.innerHTML = '<p class="text-muted">Make a prediction to see results here</p>';
+        }
+
+        // Auto-refresh dashboard every 30 seconds
+        setInterval(loadDashboard, 30000);
+    </script>
+</body>
+</html>

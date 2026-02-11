@@ -1,0 +1,187 @@
+<!-- Fraud Details Modal -->
+<div class="modal fade" id="fraudModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: #1e293b; border: 1px solid #334155;">
+            <div class="modal-header border-bottom" style="border-color: #334155 !important;">
+                <h5 class="modal-title" id="fraudModalTitle">Fraud Type Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1);"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex align-items-center mb-4">
+                    <div class="me-3" id="fraudModalIcon"></div>
+                    <div>
+                        <span class="badge" id="fraudModalSeverity">CRITICAL</span>
+                        <h4 class="mt-2 mb-1" id="fraudModalName">SIM Swap</h4>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <h6 class="text-muted mb-2">Description</h6>
+                    <p id="fraudModalDescription">Loading description...</p>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-muted mb-2">Detection Rate</h6>
+                        <div class="d-flex align-items-center">
+                            <div class="progress flex-grow-1 me-2" style="height: 8px; background: #334155;">
+                                <div class="progress-bar" id="fraudModalRate" style="width: 85%; background: #6366f1;"></div>
+                            </div>
+                            <span id="fraudModalRateText">85%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <h6 class="text-muted mb-2">Average Impact</h6>
+                        <h4 id="fraudModalImpact">$15,000</h4>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <h6 class="text-muted mb-2">Prevention Tips</h6>
+                    <ul class="list-unstyled" id="fraudModalPrevention">
+                        <li><i class="fas fa-check-circle text-success me-2"></i> Enable multi-factor authentication</li>
+                        <li><i class="fas fa-check-circle text-success me-2"></i> Monitor account activity regularly</li>
+                        <li><i class="fas fa-check-circle text-success me-2"></i> Use strong, unique passwords</li>
+                    </ul>
+                </div>
+                
+                <div class="alert alert-warning" style="background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3); color: #fbbf24;">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <span id="fraudModalAlert">High alert level - Immediate action required</span>
+                </div>
+            </div>
+            <div class="modal-footer border-top" style="border-color: #334155 !important;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="configureAlerts()">
+                    <i class="fas fa-bell me-2"></i>Configure Alerts
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showFraudDetails(fraud) {
+    const modal = new bootstrap.Modal(document.getElementById('fraudModal'));
+    const severityColors = {
+        'CRITICAL': '#ef4444',
+        'HIGH': '#f59e0b', 
+        'MEDIUM': '#3b82f6',
+        'LOW': '#10b981'
+    };
+    
+    const severityTexts = {
+        'CRITICAL': 'Immediate action required',
+        'HIGH': 'High priority investigation',
+        'MEDIUM': 'Monitor and review',
+        'LOW': 'Low risk - routine check'
+    };
+    
+    // Set modal content
+    document.getElementById('fraudModalTitle').textContent = fraud.name.replace(/_/g, ' ').toUpperCase();
+    document.getElementById('fraudModalName').textContent = fraud.name.replace(/_/g, ' ').toUpperCase();
+    document.getElementById('fraudModalSeverity').textContent = fraud.severity;
+    document.getElementById('fraudModalSeverity').className = `badge bg-${fraud.severity.toLowerCase()}`;
+    document.getElementById('fraudModalDescription').textContent = fraud.description;
+    
+    // Set icon based on fraud type
+    const iconContainer = document.getElementById('fraudModalIcon');
+    const icon = getFraudIcon(fraud.name);
+    iconContainer.innerHTML = `<div class="fraud-icon-large" style="width: 60px; height: 60px; border-radius: 12px; background: ${severityColors[fraud.severity]}20; display: flex; align-items: center; justify-content: center; color: ${severityColors[fraud.severity]}; font-size: 1.8rem;">
+        <i class="fas ${icon}"></i>
+    </div>`;
+    
+    // Set detection rate (simulated)
+    const detectionRate = Math.floor(Math.random() * 30) + 70;
+    document.getElementById('fraudModalRate').style.width = `${detectionRate}%`;
+    document.getElementById('fraudModalRateText').textContent = `${detectionRate}%`;
+    
+    // Set average impact
+    const impacts = {
+        'sim_swap': '$25,000',
+        'agent_collusion': '$50,000', 
+        'identity_theft': '$35,000',
+        'device_cloning': '$40,000',
+        'mobile_money_fraud': '$15,000',
+        'social_engineering': '$10,000',
+        'synthetic_identity': '$30,000',
+        'repayment_fraud': '$8,000'
+    };
+    document.getElementById('fraudModalImpact').textContent = impacts[fraud.name] || '$20,000';
+    
+    // Set prevention tips
+    const preventionTips = {
+        'sim_swap': [
+            'Use PIN protection for SIM cards',
+            'Enable port-out protection with carrier',
+            'Monitor for unexpected loss of service',
+            'Use app-based 2FA instead of SMS'
+        ],
+        'identity_theft': [
+            'Regularly monitor credit reports',
+            'Freeze credit when not needed',
+            'Use identity theft protection services',
+            'Shred sensitive documents'
+        ],
+        'mobile_money_fraud': [
+            'Never share PIN or verification codes',
+            'Enable transaction notifications',
+            'Use biometric authentication',
+            'Verify recipient details carefully'
+        ]
+    };
+    
+    const tips = preventionTips[fraud.name] || [
+        'Enable multi-factor authentication',
+        'Monitor account activity regularly',
+        'Use strong, unique passwords',
+        'Keep software and apps updated'
+    ];
+    
+    const preventionList = document.getElementById('fraudModalPrevention');
+    preventionList.innerHTML = tips.map(tip => 
+        `<li><i class="fas fa-check-circle text-success me-2"></i>${tip}</li>`
+    ).join('');
+    
+    // Set alert message
+    document.getElementById('fraudModalAlert').textContent = severityTexts[fraud.severity];
+    
+    // Show modal
+    modal.show();
+}
+
+function getFraudIcon(fraudName) {
+    const icons = {
+        'sim_swap': 'fa-sim-card',
+        'agent_collusion': 'fa-user-secret',
+        'social_engineering': 'fa-comment-dots',
+        'identity_theft': 'fa-id-card',
+        'mobile_money_fraud': 'fa-mobile-alt',
+        'repayment_fraud': 'fa-money-check-alt',
+        'synthetic_identity': 'fa-user-plus',
+        'device_cloning': 'fa-clone'
+    };
+    return icons[fraudName] || 'fa-exclamation-triangle';
+}
+
+function configureAlerts() {
+    const fraudName = document.getElementById('fraudModalName').textContent;
+    const email = 'rebeccabosibori589@gmail.com';
+    
+    alert(`Alert configuration sent to ${email}\nYou will receive notifications for ${fraudName} fraud detection.`);
+    
+    // In a real app, this would call your backend
+    fetch(`${API_URL}/configure-alerts`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            email: email,
+            fraud_type: fraudName,
+            enabled: true
+        })
+    }).then(response => {
+        console.log('Alert configuration saved');
+    });
+}
+</script>
