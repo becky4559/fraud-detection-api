@@ -1,5 +1,5 @@
 """
-Email Alert Service - Clean Version
+Email Alert Service - Clean ASCII Version
 Simulates sending fraud alerts to configured email
 """
 
@@ -19,7 +19,7 @@ class EmailService:
         self.alerts_enabled = True
 
     def send_alert(self, fraud_data: Dict) -> Dict:
-        logger.info(f"í³§ Alert sent to {self.recipient_email}")
+        logger.info(f"[EMAIL] Alert sent to {self.recipient_email}")
         return {
             "success": True,
             "recipient": self.recipient_email,
