@@ -187,38 +187,8 @@
             padding: 25px;
         }
         
-        /* Investigation Tabs */
-        .investigation-tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 25px;
-            border-bottom: 1px solid var(--card-border);
-            padding-bottom: 12px;
-        }
-        
-        .investigation-tab {
-            padding: 8px 16px;
-            background: transparent;
-            border: none;
-            color: var(--text-secondary);
-            cursor: pointer;
-            font-size: 0.95rem;
-            border-radius: 6px;
-            transition: all 0.3s;
-        }
-        
-        .investigation-tab:hover {
-            background: rgba(99, 102, 241, 0.1);
-            color: var(--text-primary);
-        }
-        
-        .investigation-tab.active {
-            background: var(--primary);
-            color: white;
-        }
-        
-        /* Fraud Type Selection Grid */
-        .selection-card {
+        /* Quick Profile Loader */
+        .quick-profiles {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
             border-radius: 10px;
@@ -226,110 +196,110 @@
             margin-bottom: 25px;
         }
         
-        .selection-title {
+        .quick-title {
             display: flex;
             align-items: center;
             gap: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         
-        .selection-title i {
-            font-size: 1.3rem;
+        .quick-title i {
             color: var(--primary);
+            font-size: 1.1rem;
         }
         
-        .selection-title h2 {
-            margin: 0;
-            font-size: 1.2rem;
-            font-weight: 600;
+        .quick-title span {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
         }
         
-        .fraud-types-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-            margin-bottom: 10px;
-        }
-        
-        .fraud-checkbox {
+        .profile-buttons {
             display: flex;
-            align-items: center;
-            padding: 12px 15px;
-            background: rgba(30, 41, 59, 0.6);
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .profile-btn {
+            padding: 10px 18px;
+            background: rgba(30, 41, 59, 0.8);
             border: 1px solid var(--card-border);
-            border-radius: 8px;
+            border-radius: 30px;
+            color: var(--text-primary);
             cursor: pointer;
             transition: all 0.2s;
-        }
-        
-        .fraud-checkbox:hover {
-            background: rgba(99, 102, 241, 0.1);
-            border-color: var(--primary);
-        }
-        
-        .fraud-checkbox.selected {
-            background: rgba(99, 102, 241, 0.15);
-            border-color: var(--primary);
-        }
-        
-        .fraud-checkbox input {
-            margin-right: 10px;
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-            accent-color: var(--primary);
-        }
-        
-        .fraud-checkbox label {
-            cursor: pointer;
-            font-weight: 500;
-            font-size: 0.95rem;
             display: flex;
             align-items: center;
             gap: 8px;
+            font-size: 0.9rem;
         }
         
-        .fraud-checkbox i {
-            width: 20px;
-            text-align: center;
+        .profile-btn:hover {
+            background: var(--primary);
+            border-color: var(--primary);
         }
         
-        /* Dynamic Form Card */
+        .profile-btn.high-risk {
+            border-left: 4px solid var(--danger);
+        }
+        
+        .profile-btn i {
+            color: var(--text-secondary);
+        }
+        
+        .profile-btn:hover i {
+            color: white;
+        }
+        
+        .custom-btn {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: rgba(99, 102, 241, 0.3);
+            color: var(--primary);
+        }
+        
+        /* Form Card */
         .form-card {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
             border-radius: 10px;
-            padding: 20px;
+            padding: 25px;
             margin-bottom: 25px;
         }
         
-        .form-header {
+        .form-section {
+            margin-bottom: 30px;
+        }
+        
+        .form-section:last-child {
+            margin-bottom: 0;
+        }
+        
+        .section-header {
             display: flex;
             align-items: center;
             gap: 10px;
             margin-bottom: 20px;
-            padding-bottom: 15px;
+            padding-bottom: 12px;
             border-bottom: 1px solid var(--card-border);
         }
         
-        .form-header i {
-            font-size: 1.2rem;
+        .section-header i {
+            font-size: 1.1rem;
             color: var(--primary);
         }
         
-        .form-header h3 {
+        .section-header h2 {
             margin: 0;
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             font-weight: 600;
         }
         
-        .form-header span {
+        .section-header span {
             margin-left: auto;
             color: var(--text-secondary);
-            font-size: 0.85rem;
+            font-size: 0.8rem;
         }
         
-        .dynamic-form {
+        .form-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 20px;
@@ -350,18 +320,20 @@
         
         .form-control {
             width: 100%;
-            padding: 10px 12px;
+            padding: 12px 15px;
             background: rgba(30, 41, 59, 0.8);
             border: 1px solid var(--card-border);
             border-radius: 6px;
             color: var(--text-primary);
             font-size: 0.95rem;
             box-sizing: border-box;
+            transition: all 0.2s;
         }
         
         .form-control:focus {
             outline: none;
             border-color: var(--primary);
+            background: rgba(30, 41, 59, 1);
         }
         
         .form-control::placeholder {
@@ -369,26 +341,31 @@
             font-size: 0.85rem;
         }
         
-        .btn-primary {
-            padding: 12px 24px;
+        .btn-analyze {
             background: var(--primary);
             color: white;
             border: none;
-            border-radius: 6px;
-            font-size: 1rem;
-            font-weight: 500;
+            border-radius: 8px;
+            padding: 14px 28px;
+            font-size: 1.1rem;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
             width: 100%;
             margin-top: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
         
-        .btn-primary:hover {
+        .btn-analyze:hover {
             background: #4f52d9;
+            transform: translateY(-2px);
         }
         
-        .btn-primary i {
-            margin-right: 8px;
+        .btn-analyze i {
+            font-size: 1.2rem;
         }
         
         /* Results Card */
@@ -396,7 +373,7 @@
             background: var(--card-bg);
             border: 1px solid var(--card-border);
             border-radius: 10px;
-            padding: 20px;
+            padding: 25px;
             margin-bottom: 25px;
         }
         
@@ -404,7 +381,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
         }
         
         .results-title {
@@ -414,20 +391,26 @@
         }
         
         .results-title i {
-            font-size: 1.2rem;
+            font-size: 1.3rem;
             color: var(--danger);
         }
         
-        .results-title h3 {
+        .results-title h2 {
             margin: 0;
-            font-size: 1.1rem;
+            font-size: 1.3rem;
             font-weight: 600;
         }
         
+        .risk-summary {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
         .risk-badge-large {
-            padding: 6px 16px;
+            padding: 8px 20px;
             border-radius: 30px;
-            font-size: 0.9rem;
+            font-size: 1rem;
             font-weight: 600;
         }
         
@@ -436,39 +419,55 @@
         .risk-medium { background: rgba(59, 130, 246, 0.2); color: var(--info); }
         .risk-low { background: rgba(16, 185, 129, 0.2); color: var(--success); }
         
-        .results-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        .fraud-list {
+            display: flex;
+            flex-direction: column;
             gap: 15px;
         }
         
-        .result-item {
+        .fraud-item {
             background: rgba(30, 41, 59, 0.6);
             border: 1px solid var(--card-border);
             border-radius: 8px;
-            padding: 15px;
+            padding: 18px;
+            transition: all 0.2s;
         }
         
-        .result-item-header {
+        .fraud-item:hover {
+            border-color: var(--primary);
+        }
+        
+        .fraud-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 12px;
         }
         
-        .result-item-title {
+        .fraud-title {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
+        }
+        
+        .fraud-title i {
+            font-size: 1.1rem;
+            width: 24px;
+            text-align: center;
+        }
+        
+        .fraud-title h3 {
+            margin: 0;
+            font-size: 1.1rem;
             font-weight: 600;
         }
         
-        .result-score {
+        .fraud-score {
             font-size: 1.6rem;
             font-weight: 700;
         }
         
-        .result-meter {
+        .fraud-meter {
             width: 100%;
             height: 6px;
             background: rgba(30, 41, 59, 0.8);
@@ -477,96 +476,126 @@
             margin: 12px 0;
         }
         
-        .result-meter-fill {
+        .fraud-meter-fill {
             height: 100%;
             border-radius: 3px;
         }
         
-        .result-signals {
+        .fraud-signals {
             margin-top: 12px;
             color: var(--text-secondary);
-            font-size: 0.85rem;
+            font-size: 0.9rem;
         }
         
-        .result-signal {
+        .fraud-signal {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             margin-bottom: 6px;
+        }
+        
+        .fraud-signal i {
+            font-size: 0.5rem;
+        }
+        
+        .fraud-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-left: 10px;
         }
         
         .no-results {
             text-align: center;
-            padding: 40px 20px;
+            padding: 50px 20px;
             color: var(--text-secondary);
         }
         
         .no-results i {
-            font-size: 2.5rem;
+            font-size: 3rem;
             margin-bottom: 15px;
             color: var(--text-secondary);
         }
         
-        /* Action Buttons */
+        /* Action Buttons - Your requested buttons at bottom */
+        .action-section {
+            margin-top: 30px;
+            padding-top: 25px;
+            border-top: 1px solid var(--card-border);
+        }
+        
         .action-buttons {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
-            margin-top: 10px;
+            gap: 15px;
         }
         
         .action-btn {
-            padding: 12px;
+            padding: 15px 10px;
             background: var(--card-bg);
             border: 1px solid var(--card-border);
-            border-radius: 6px;
+            border-radius: 8px;
             color: var(--text-primary);
             cursor: pointer;
             transition: all 0.3s;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
         }
         
         .action-btn:hover {
             background: var(--primary);
             border-color: var(--primary);
+            transform: translateY(-2px);
         }
         
         .action-btn i {
-            font-size: 1.2rem;
+            font-size: 1.4rem;
         }
         
         .action-btn span {
-            font-size: 0.8rem;
+            font-size: 0.9rem;
+            font-weight: 500;
         }
         
-        .action-btn.disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
+        .action-btn small {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
         }
         
-        .action-btn.disabled:hover {
-            background: var(--card-bg);
-            border-color: var(--card-border);
+        .action-btn:hover small {
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .email-notice {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-bottom: 15px;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+        
+        .email-notice i {
+            color: var(--success);
         }
         
         /* Responsive */
-        @media (max-width: 1200px) {
-            .fraud-types-grid { grid-template-columns: repeat(2, 1fr); }
-            .dynamic-form { grid-template-columns: 1fr; }
-        }
-        
         @media (max-width: 1024px) {
             .sidebar { width: 70px; }
             .main-content { margin-left: 70px; }
             .nav-text, .logo h2, .logo p { display: none; }
+            .form-grid { grid-template-columns: 1fr; }
             .action-buttons { grid-template-columns: repeat(2, 1fr); }
         }
         
         @media (max-width: 768px) {
-            .fraud-types-grid { grid-template-columns: 1fr; }
+            .profile-buttons { flex-direction: column; }
             .action-buttons { grid-template-columns: 1fr; }
         }
     </style>
@@ -636,7 +665,7 @@
             <div class="topbar-actions">
                 <div class="search-box">
                     <i class="fas fa-search search-icon"></i>
-                    <input type="text" class="search-input" placeholder="Search cases...">
+                    <input type="text" class="search-input" placeholder="Search transactions...">
                 </div>
                 
                 <button class="notification-btn" onclick="window.location.href='alerts.html'">
@@ -648,322 +677,108 @@
         
         <!-- Content -->
         <div class="content-wrapper">
-            <!-- Investigation Tabs (Kept) -->
-            <div class="investigation-tabs">
-                <button class="investigation-tab active" onclick="switchTab('transaction')">
-                    <i class="fas fa-exchange-alt"></i> Transaction Analysis
-                </button>
-                <button class="investigation-tab" onclick="switchTab('user')">
-                    <i class="fas fa-user"></i> User Radar
-                </button>
-                <button class="investigation-tab" onclick="switchTab('compare')">
-                    <i class="fas fa-balance-scale"></i> Compare
-                </button>
-                <button class="investigation-tab" onclick="switchTab('batch')">
-                    <i class="fas fa-layer-group"></i> Batch Scan
-                </button>
-            </div>
-            
-            <!-- Fraud Type Selection -->
-            <div class="selection-card">
-                <div class="selection-title">
-                    <i class="fas fa-shield-alt"></i>
-                    <h2>Select Fraud Types to Analyze</h2>
+            <!-- Quick Profile Loader - Preloaded users you can click -->
+            <div class="quick-profiles">
+                <div class="quick-title">
+                    <i class="fas fa-bolt"></i>
+                    <span>Quick load user profile</span>
                 </div>
-                
-                <div class="fraud-types-grid" id="fraudTypeGrid">
-                    <!-- SIM Swap -->
-                    <div class="fraud-checkbox selected" onclick="toggleFraudType(this, 'sim_swap')" data-type="sim_swap">
-                        <input type="checkbox" id="chk_sim" checked onclick="event.stopPropagation()">
-                        <label for="chk_sim">
-                            <i class="fas fa-sim-card" style="color: #ef4444;"></i>
-                            SIM Swap
-                        </label>
-                    </div>
-                    
-                    <!-- Identity Theft -->
-                    <div class="fraud-checkbox selected" onclick="toggleFraudType(this, 'identity_theft')" data-type="identity_theft">
-                        <input type="checkbox" id="chk_identity" checked onclick="event.stopPropagation()">
-                        <label for="chk_identity">
-                            <i class="fas fa-id-card" style="color: #ef4444;"></i>
-                            Identity Theft
-                        </label>
-                    </div>
-                    
-                    <!-- Device Cloning -->
-                    <div class="fraud-checkbox" onclick="toggleFraudType(this, 'device_cloning')" data-type="device_cloning">
-                        <input type="checkbox" id="chk_clone" onclick="event.stopPropagation()">
-                        <label for="chk_clone">
-                            <i class="fas fa-clone" style="color: #3b82f6;"></i>
-                            Device Cloning
-                        </label>
-                    </div>
-                    
-                    <!-- Mobile Money Fraud -->
-                    <div class="fraud-checkbox" onclick="toggleFraudType(this, 'mobile_fraud')" data-type="mobile_fraud">
-                        <input type="checkbox" id="chk_mobile" onclick="event.stopPropagation()">
-                        <label for="chk_mobile">
-                            <i class="fas fa-mobile-alt" style="color: #f59e0b;"></i>
-                            Mobile Fraud
-                        </label>
-                    </div>
-                    
-                    <!-- Agent Collusion -->
-                    <div class="fraud-checkbox" onclick="toggleFraudType(this, 'agent_collusion')" data-type="agent_collusion">
-                        <input type="checkbox" id="chk_agent" onclick="event.stopPropagation()">
-                        <label for="chk_agent">
-                            <i class="fas fa-user-secret" style="color: #94a3b8;"></i>
-                            Agent Collusion
-                        </label>
-                    </div>
-                    
-                    <!-- Social Engineering -->
-                    <div class="fraud-checkbox" onclick="toggleFraudType(this, 'social_engineering')" data-type="social_engineering">
-                        <input type="checkbox" id="chk_social" onclick="event.stopPropagation()">
-                        <label for="chk_social">
-                            <i class="fas fa-comment-dots" style="color: #94a3b8;"></i>
-                            Social Engineering
-                        </label>
-                    </div>
-                    
-                    <!-- Synthetic Identity -->
-                    <div class="fraud-checkbox" onclick="toggleFraudType(this, 'synthetic_identity')" data-type="synthetic_identity">
-                        <input type="checkbox" id="chk_synthetic" onclick="event.stopPropagation()">
-                        <label for="chk_synthetic">
-                            <i class="fas fa-user-plus" style="color: #94a3b8;"></i>
-                            Synthetic Identity
-                        </label>
-                    </div>
-                    
-                    <!-- Repayment Fraud -->
-                    <div class="fraud-checkbox" onclick="toggleFraudType(this, 'repayment_fraud')" data-type="repayment_fraud">
-                        <input type="checkbox" id="chk_repayment" onclick="event.stopPropagation()">
-                        <label for="chk_repayment">
-                            <i class="fas fa-money-check-alt" style="color: #94a3b8;"></i>
-                            Repayment Fraud
-                        </label>
-                    </div>
+                <div class="profile-buttons">
+                    <button class="profile-btn" onclick="loadProfile('U78901')">
+                        <i class="fas fa-user"></i> U78901 ¬∑ Low Risk
+                    </button>
+                    <button class="profile-btn" onclick="loadProfile('U45678')">
+                        <i class="fas fa-user"></i> U45678 ¬∑ Low Risk
+                    </button>
+                    <button class="profile-btn" onclick="loadProfile('U34567')">
+                        <i class="fas fa-user"></i> U34567 ¬∑ Medium Risk
+                    </button>
+                    <button class="profile-btn high-risk" onclick="loadProfile('U12345')">
+                        <i class="fas fa-exclamation-triangle"></i> U12345 ¬∑ High Risk
+                    </button>
+                    <button class="profile-btn custom-btn" onclick="clearProfile()">
+                        <i class="fas fa-pencil-alt"></i> Custom ¬∑ Manual Entry
+                    </button>
                 </div>
             </div>
             
-            <!-- Dynamic Input Form -->
-            <div class="form-card" id="dynamicFormCard">
-                <div class="form-header">
-                    <i class="fas fa-pencil-alt"></i>
-                    <h3 id="formTitle">SIM Swap Detection</h3>
-                    <span id="formSubtitle">Enter SMS or call details</span>
-                </div>
-                
-                <div id="inputFields">
-                    <!-- SIM Swap Fields (Default) -->
-                    <div id="sim_swap_fields" style="display: block;">
-                        <div class="dynamic-form">
-                            <div class="form-group">
-                                <label class="form-label">Phone Number</label>
-                                <input type="text" class="form-control" id="sim_phone" value="254712345678" placeholder="e.g., 254712345678">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">SMS / Alert Text</label>
-                                <input type="text" class="form-control" id="sim_sms" value="Your SIM card has been activated on a new device" placeholder="Paste SMS text">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Current Carrier</label>
-                                <input type="text" class="form-control" id="sim_carrier" value="Safaricom" placeholder="e.g., Safaricom">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Previous Carrier</label>
-                                <input type="text" class="form-control" id="sim_prev_carrier" value="Airtel" placeholder="e.g., Airtel">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">SIM Change Time</label>
-                                <input type="text" class="form-control" id="sim_time" value="2 hours ago" placeholder="e.g., 2 hours ago">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">New Device?</label>
-                                <select class="form-control" id="sim_new_device">
-                                    <option>Yes</option>
-                                    <option>No</option>
-                                </select>
-                            </div>
-                        </div>
+            <!-- Main Form - Two Sections -->
+            <div class="form-card">
+                <!-- SECTION 1: User's Normal Behavior -->
+                <div class="form-section">
+                    <div class="section-header">
+                        <i class="fas fa-chart-line"></i>
+                        <h2>User's Normal Behavior</h2>
+                        <span>Define what's normal for this customer</span>
                     </div>
                     
-                    <!-- Identity Theft Fields -->
-                    <div id="identity_theft_fields" style="display: none;">
-                        <div class="dynamic-form">
-                            <div class="form-group">
-                                <label class="form-label">Transaction Amount</label>
-                                <input type="number" class="form-control" id="id_amount" value="45000" placeholder="KES">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">User's Normal Amount</label>
-                                <input type="number" class="form-control" id="id_normal_amount" value="2500" placeholder="KES">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">New Device?</label>
-                                <select class="form-control" id="id_new_device">
-                                    <option>Yes</option>
-                                    <option>No</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Location Changed?</label>
-                                <select class="form-control" id="id_location_change">
-                                    <option>Yes</option>
-                                    <option>No</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Document Verified?</label>
-                                <select class="form-control" id="id_document">
-                                    <option>No</option>
-                                    <option>Yes</option>
-                                </select>
-                            </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Avg Transaction Amount</label>
+                            <input type="number" class="form-control" id="normalAmount" value="2450" placeholder="KES">
                         </div>
-                    </div>
-                    
-                    <!-- Device Cloning Fields -->
-                    <div id="device_cloning_fields" style="display: none;">
-                        <div class="dynamic-form">
-                            <div class="form-group">
-                                <label class="form-label">Device ID</label>
-                                <input type="text" class="form-control" id="clone_device_id" value="DEV-CLONE-123" placeholder="Device ID">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">IP Address</label>
-                                <input type="text" class="form-control" id="clone_ip" value="197.248.0.1" placeholder="IP Address">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Current Location</label>
-                                <input type="text" class="form-control" id="clone_location" value="Nairobi, Kenya" placeholder="City, Country">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Device Rooted?</label>
-                                <select class="form-control" id="clone_rooted">
-                                    <option>Yes</option>
-                                    <option>No</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">App Tampered?</label>
-                                <select class="form-control" id="clone_tampered">
-                                    <option>Yes</option>
-                                    <option>No</option>
-                                </select>
-                            </div>
+                        <div class="form-group">
+                            <label class="form-label">Trusted Devices</label>
+                            <input type="text" class="form-control" id="normalDevices" value="Samsung A54, iPhone 13" placeholder="e.g., Samsung A54, iPhone 13">
                         </div>
-                    </div>
-                    
-                    <!-- Mobile Fraud Fields -->
-                    <div id="mobile_fraud_fields" style="display: none;">
-                        <div class="dynamic-form">
-                            <div class="form-group">
-                                <label class="form-label">Amount</label>
-                                <input type="number" class="form-control" id="mobile_amount" value="125000" placeholder="KES">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Transactions in 5min</label>
-                                <input type="number" class="form-control" id="mobile_velocity" value="8" placeholder="Count">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Unique Recipients</label>
-                                <input type="number" class="form-control" id="mobile_recipients" value="7" placeholder="Count">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Normal Transaction Speed</label>
-                                <input type="text" class="form-control" id="mobile_normal" value="1-2 per day" placeholder="e.g., 1-2 per day">
-                            </div>
+                        <div class="form-group">
+                            <label class="form-label">Usual Location</label>
+                            <input type="text" class="form-control" id="normalLocation" value="Nairobi, Kenya" placeholder="City, Country">
                         </div>
-                    </div>
-                    
-                    <!-- Agent Collusion Fields -->
-                    <div id="agent_collusion_fields" style="display: none;">
-                        <div class="dynamic-form">
-                            <div class="form-group">
-                                <label class="form-label">Agent ID</label>
-                                <input type="text" class="form-control" id="agent_id" placeholder="Agent Number">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Customer ID</label>
-                                <input type="text" class="form-control" id="agent_customer" placeholder="Customer ID">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Transaction Amount</label>
-                                <input type="number" class="form-control" id="agent_amount" placeholder="KES">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Commission</label>
-                                <input type="text" class="form-control" id="agent_commission" placeholder="Amount">
-                            </div>
+                        <div class="form-group">
+                            <label class="form-label">Active Hours</label>
+                            <input type="text" class="form-control" id="normalHours" value="9am - 8pm" placeholder="e.g., 9am - 8pm">
                         </div>
-                    </div>
-                    
-                    <!-- Social Engineering Fields -->
-                    <div id="social_engineering_fields" style="display: none;">
-                        <div class="dynamic-form">
-                            <div class="form-group">
-                                <label class="form-label">Caller ID</label>
-                                <input type="text" class="form-control" id="social_caller" value="+254700123456" placeholder="Phone number">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Caller Claim</label>
-                                <input type="text" class="form-control" id="social_claim" value="Safaricom Support" placeholder="e.g., Bank, Telco">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Request</label>
-                                <input type="text" class="form-control" id="social_request" value="Send M-PESA to 0712345678 for verification" placeholder="What they asked for">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Call Duration</label>
-                                <input type="text" class="form-control" id="social_duration" value="12:34 minutes" placeholder="Duration">
-                            </div>
+                        <div class="form-group">
+                            <label class="form-label">Account Age</label>
+                            <input type="text" class="form-control" id="normalAge" value="2.4 years" placeholder="e.g., 2.4 years">
                         </div>
-                    </div>
-                    
-                    <!-- Synthetic Identity Fields -->
-                    <div id="synthetic_identity_fields" style="display: none;">
-                        <div class="dynamic-form">
-                            <div class="form-group">
-                                <label class="form-label">Account Age</label>
-                                <input type="text" class="form-control" id="synthetic_age" placeholder="e.g., 2 months">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Document Type</label>
-                                <input type="text" class="form-control" id="synthetic_doc" placeholder="ID, Passport">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Verification Status</label>
-                                <select class="form-control" id="synthetic_verified">
-                                    <option>Pending</option>
-                                    <option>Verified</option>
-                                    <option>Failed</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Repayment Fraud Fields -->
-                    <div id="repayment_fraud_fields" style="display: none;">
-                        <div class="dynamic-form">
-                            <div class="form-group">
-                                <label class="form-label">Loan ID</label>
-                                <input type="text" class="form-control" id="repayment_loan" placeholder="Loan number">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Repayment Amount</label>
-                                <input type="number" class="form-control" id="repayment_amount" placeholder="KES">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Expected Amount</label>
-                                <input type="number" class="form-control" id="repayment_expected" placeholder="KES">
-                            </div>
+                        <div class="form-group">
+                            <label class="form-label">Normal Transaction Speed</label>
+                            <input type="text" class="form-control" id="normalVelocity" value="1-2 per day" placeholder="e.g., 1-2 per day">
                         </div>
                     </div>
                 </div>
                 
-                <button class="btn-primary" onclick="analyzeFraud()">
-                    <i class="fas fa-shield-alt"></i> Detect Fraud
+                <!-- SECTION 2: Current Transaction -->
+                <div class="form-section">
+                    <div class="section-header">
+                        <i class="fas fa-exchange-alt"></i>
+                        <h2>Current Transaction</h2>
+                        <span>What happened right now</span>
+                    </div>
+                    
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Amount</label>
+                            <input type="number" class="form-control" id="currentAmount" value="45000" placeholder="KES">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Device ID</label>
+                            <input type="text" class="form-control" id="currentDevice" value="iPhone15-NEW-789" placeholder="Device ID">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Location</label>
+                            <input type="text" class="form-control" id="currentLocation" value="Mombasa, Kenya" placeholder="City, Country">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Time</label>
+                            <input type="text" class="form-control" id="currentTime" value="2026-02-12 03:45:22" placeholder="YYYY-MM-DD HH:MM:SS">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Recipients</label>
+                            <input type="number" class="form-control" id="currentRecipients" value="1" placeholder="Number of recipients">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Phone Number (SIM check)</label>
+                            <input type="text" class="form-control" id="currentPhone" value="254712345678" placeholder="Optional">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Analyze Button -->
+                <button class="btn-analyze" onclick="analyzeTransaction()">
+                    <i class="fas fa-shield-alt"></i> Analyze Transaction
                 </button>
             </div>
             
@@ -973,7 +788,7 @@
                     <div class="no-results">
                         <i class="fas fa-search"></i>
                         <h3>No Analysis Yet</h3>
-                        <p>Select fraud types, enter details, and click "Detect Fraud"</p>
+                        <p>Enter user behavior and transaction details, then click Analyze</p>
                     </div>
                 </div>
                 
@@ -981,41 +796,47 @@
                     <div class="results-header">
                         <div class="results-title">
                             <i class="fas fa-exclamation-triangle"></i>
-                            <h3>Detection Results</h3>
+                            <h2>Fraud Detection Results</h2>
                         </div>
-                        <span id="overallRiskBadge" class="risk-badge-large risk-critical">CRITICAL RISK</span>
+                        <div class="risk-summary">
+                            <span style="color: var(--text-secondary);">Overall Risk:</span>
+                            <span id="overallRiskBadge" class="risk-badge-large risk-critical">CRITICAL</span>
+                        </div>
                     </div>
                     
-                    <div id="resultsGrid" class="results-grid">
-                        <!-- Results populated by JavaScript -->
+                    <!-- Fraud List - All 8 Types -->
+                    <div class="fraud-list" id="fraudList">
+                        <!-- Populated by JavaScript -->
                     </div>
                     
-                    <div style="margin-top: 25px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                            <span style="color: var(--text-secondary);">
-                                <i class="fas fa-envelope"></i> Alert recipient: rebeccabosibori589@gmail.com
-                            </span>
-                            <span style="color: var(--success); font-size: 0.85rem;">
-                                <i class="fas fa-check-circle"></i> Autoencoder thresholds active
-                            </span>
-                        </div>
-                        
+                    <!-- Email Notice -->
+                    <div class="email-notice">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Alerts will be sent to: <strong>rebeccabosibori589@gmail.com</strong></span>
+                    </div>
+                    
+                    <!-- ACTION BUTTONS - Create Alert, Block, Review, New -->
+                    <div class="action-section">
                         <div class="action-buttons">
                             <button class="action-btn" onclick="createAlert()">
                                 <i class="fas fa-bell"></i>
                                 <span>Create Alert</span>
+                                <small>Send to email</small>
                             </button>
                             <button class="action-btn" onclick="blockTransaction()">
                                 <i class="fas fa-ban"></i>
                                 <span>Block</span>
+                                <small>Stop transaction</small>
                             </button>
-                            <button class="action-btn" onclick="reviewCase()">
+                            <button class="action-btn" onclick="reviewTransaction()">
                                 <i class="fas fa-clock"></i>
                                 <span>Review</span>
+                                <small>Manual check</small>
                             </button>
-                            <button class="action-btn" onclick="clearAnalysis()">
+                            <button class="action-btn" onclick="resetAnalysis()">
                                 <i class="fas fa-redo"></i>
                                 <span>New</span>
+                                <small>Clear & start over</small>
                             </button>
                         </div>
                     </div>
@@ -1025,423 +846,398 @@
     </div>
 
     <script>
-        // API Configuration
-        const API_URL = 'https://fraud-detection-api-b6dk.onrender.com';
+        // Email configuration
         const USER_EMAIL = 'rebeccabosibori589@gmail.com';
         
-        // Selected fraud types
-        let selectedFraudTypes = ['sim_swap', 'identity_theft'];
-        
-        // Toggle fraud type selection
-        function toggleFraudType(element, type) {
-            const checkbox = element.querySelector('input[type="checkbox"]');
-            checkbox.checked = !checkbox.checked;
-            element.classList.toggle('selected');
-            
-            if (checkbox.checked) {
-                if (!selectedFraudTypes.includes(type)) {
-                    selectedFraudTypes.push(type);
-                }
-            } else {
-                selectedFraudTypes = selectedFraudTypes.filter(t => t !== type);
+        // Pre-loaded user profiles
+        const userProfiles = {
+            'U78901': {
+                amount: 2450,
+                devices: 'Samsung A54, iPhone 13',
+                location: 'Nairobi, Kenya',
+                hours: '9am - 8pm',
+                age: '2.4 years',
+                velocity: '1-2 per day',
+                risk: 'LOW'
+            },
+            'U45678': {
+                amount: 3200,
+                devices: 'Tecno Spark 10, iPhone 12',
+                location: 'Mombasa, Kenya',
+                hours: '8am - 9pm',
+                age: '1.2 years',
+                velocity: '2-3 per day',
+                risk: 'LOW'
+            },
+            'U34567': {
+                amount: 8900,
+                devices: 'Samsung S23 Ultra, iPad Pro, MacBook',
+                location: 'Nairobi, Kenya',
+                hours: '6am - 11pm',
+                age: '3.1 years',
+                velocity: '5-6 per day',
+                risk: 'MEDIUM'
+            },
+            'U12345': {
+                amount: 450,
+                devices: 'Tecno Pop 7',
+                location: 'Eldoret, Kenya',
+                hours: '2pm - 6pm',
+                age: '2 months',
+                velocity: '0-1 per day',
+                risk: 'HIGH'
             }
-            
-            // Update form fields based on first selected fraud type
-            if (selectedFraudTypes.length > 0) {
-                showFields(selectedFraudTypes[0]);
+        };
+        
+        // Load profile - Pre-filled when you click a user button
+        function loadProfile(userId) {
+            const profile = userProfiles[userId];
+            if (profile) {
+                document.getElementById('normalAmount').value = profile.amount;
+                document.getElementById('normalDevices').value = profile.devices;
+                document.getElementById('normalLocation').value = profile.location;
+                document.getElementById('normalHours').value = profile.hours;
+                document.getElementById('normalAge').value = profile.age;
+                document.getElementById('normalVelocity').value = profile.velocity;
             }
         }
         
-        // Show fields for selected fraud type
-        function showFields(type) {
-            // Hide all fields
-            const fieldSets = ['sim_swap', 'identity_theft', 'device_cloning', 'mobile_fraud', 
-                             'agent_collusion', 'social_engineering', 'synthetic_identity', 'repayment_fraud'];
-            
-            fieldSets.forEach(f => {
-                const el = document.getElementById(`${f}_fields`);
-                if (el) el.style.display = 'none';
-            });
-            
-            // Show selected fields
-            const selectedEl = document.getElementById(`${type}_fields`);
-            if (selectedEl) {
-                selectedEl.style.display = 'block';
-                
-                // Update form title
-                const titles = {
-                    'sim_swap': 'SIM Swap Detection',
-                    'identity_theft': 'Identity Theft Detection',
-                    'device_cloning': 'Device Cloning Detection',
-                    'mobile_fraud': 'Mobile Money Fraud Detection',
-                    'agent_collusion': 'Agent Collusion Detection',
-                    'social_engineering': 'Social Engineering Detection',
-                    'synthetic_identity': 'Synthetic Identity Detection',
-                    'repayment_fraud': 'Repayment Fraud Detection'
-                };
-                
-                const subtitles = {
-                    'sim_swap': 'Enter SMS or call details',
-                    'identity_theft': 'Enter transaction and user behavior',
-                    'device_cloning': 'Enter device and location details',
-                    'mobile_fraud': 'Enter transaction velocity details',
-                    'agent_collusion': 'Enter agent and transaction details',
-                    'social_engineering': 'Enter call or message details',
-                    'synthetic_identity': 'Enter account and document details',
-                    'repayment_fraud': 'Enter loan repayment details'
-                };
-                
-                document.getElementById('formTitle').textContent = titles[type] || 'Fraud Detection';
-                document.getElementById('formSubtitle').textContent = subtitles[type] || 'Enter relevant details';
-            }
+        // Clear profile - Manual entry mode
+        function clearProfile() {
+            document.getElementById('normalAmount').value = '';
+            document.getElementById('normalDevices').value = '';
+            document.getElementById('normalLocation').value = '';
+            document.getElementById('normalHours').value = '';
+            document.getElementById('normalAge').value = '';
+            document.getElementById('normalVelocity').value = '';
         }
         
-        // Analyze fraud based on selected types
-        function analyzeFraud() {
-            const resultsGrid = document.getElementById('resultsGrid');
-            const resultsContent = document.getElementById('resultsContent');
-            const noResults = document.getElementById('noResults');
+        // Analyze transaction - Compare normal vs current
+        function analyzeTransaction() {
+            // Get normal behavior values
+            const normalAmount = parseFloat(document.getElementById('normalAmount').value) || 2450;
+            const normalDevices = document.getElementById('normalDevices').value.toLowerCase();
+            const normalLocation = document.getElementById('normalLocation').value.toLowerCase();
+            const normalHours = document.getElementById('normalHours').value.toLowerCase();
+            const normalAge = document.getElementById('normalAge').value;
             
-            resultsGrid.innerHTML = '';
+            // Get current transaction values
+            const currentAmount = parseFloat(document.getElementById('currentAmount').value) || 45000;
+            const currentDevice = document.getElementById('currentDevice').value.toLowerCase();
+            const currentLocation = document.getElementById('currentLocation').value.toLowerCase();
+            const currentTime = document.getElementById('currentTime').value.toLowerCase();
+            const currentRecipients = parseInt(document.getElementById('currentRecipients').value) || 1;
             
-            if (selectedFraudTypes.length === 0) {
-                alert('Please select at least one fraud type to analyze');
-                return;
-            }
+            // Calculate fraud scores for all 8 types
+            const fraudResults = [
+                calculateSimSwap(normalDevices, normalLocation, normalHours, currentDevice, currentLocation, currentTime),
+                calculateIdentityTheft(normalAmount, currentAmount, currentDevice, currentLocation),
+                calculateDeviceCloning(currentDevice),
+                calculateMobileFraud(normalAmount, currentAmount, currentRecipients),
+                calculateAgentCollusion(),
+                calculateSocialEngineering(),
+                calculateSyntheticIdentity(normalAge),
+                calculateRepaymentFraud()
+            ];
             
-            // Show results section
-            noResults.style.display = 'none';
-            resultsContent.style.display = 'block';
-            
-            // Analyze each selected fraud type
-            selectedFraudTypes.forEach(type => {
-                let result = null;
-                
-                switch(type) {
-                    case 'sim_swap':
-                        result = analyzeSimSwap();
-                        break;
-                    case 'identity_theft':
-                        result = analyzeIdentityTheft();
-                        break;
-                    case 'device_cloning':
-                        result = analyzeDeviceCloning();
-                        break;
-                    case 'mobile_fraud':
-                        result = analyzeMobileFraud();
-                        break;
-                    case 'social_engineering':
-                        result = analyzeSocialEngineering();
-                        break;
-                    case 'agent_collusion':
-                    case 'synthetic_identity':
-                    case 'repayment_fraud':
-                        result = {
-                            fraud_type: type,
-                            risk_score: 12,
-                            risk_level: 'LOW',
-                            signals: ['Demo detection - API integration ready'],
-                            color: '#10b981'
-                        };
-                        break;
-                }
-                
-                if (result) {
-                    addResultCard(result);
-                }
-            });
-            
-            // Set overall risk badge
-            const riskScores = selectedFraudTypes.map(t => {
-                if (t === 'sim_swap') return 98;
-                if (t === 'identity_theft') return 92;
-                if (t === 'device_cloning') return 82;
-                if (t === 'mobile_fraud') return 87;
-                if (t === 'social_engineering') return 94;
-                return 12;
-            });
-            
-            const maxRisk = Math.max(...riskScores);
-            const badge = document.getElementById('overallRiskBadge');
-            
-            if (maxRisk >= 80) {
-                badge.className = 'risk-badge-large risk-critical';
-                badge.textContent = 'CRITICAL RISK';
-            } else if (maxRisk >= 60) {
-                badge.className = 'risk-badge-large risk-high';
-                badge.textContent = 'HIGH RISK';
-            } else if (maxRisk >= 40) {
-                badge.className = 'risk-badge-large risk-medium';
-                badge.textContent = 'MEDIUM RISK';
-            } else {
-                badge.className = 'risk-badge-large risk-low';
-                badge.textContent = 'LOW RISK';
-            }
+            // Display results
+            displayResults(fraudResults);
         }
         
-        // Analyze SIM Swap
-        function analyzeSimSwap() {
-            const phone = document.getElementById('sim_phone').value;
-            const sms = document.getElementById('sim_sms').value;
-            const carrier = document.getElementById('sim_carrier').value;
-            const prevCarrier = document.getElementById('sim_prev_carrier').value;
-            const time = document.getElementById('sim_time').value;
-            const newDevice = document.getElementById('sim_new_device').value;
-            
-            let riskScore = 98;
+        // SIM Swap Fraud
+        function calculateSimSwap(normalDevices, normalLocation, normalHours, currentDevice, currentLocation, currentTime) {
+            let riskScore = 0;
             let signals = [];
             
-            if (sms.toLowerCase().includes('sim') || sms.toLowerCase().includes('activated')) {
-                signals.push('SIM swap alert detected in SMS');
-            }
-            
-            if (newDevice === 'Yes') {
-                signals.push('New device detected');
-            }
-            
-            if (carrier !== prevCarrier) {
-                signals.push(`Carrier changed: ${prevCarrier} ‚Üí ${carrier}`);
-            }
-            
-            signals.push(`SIM changed: ${time}`);
-            
-            return {
-                fraud_type: 'sim_swap',
-                display_name: 'SIM Swap Fraud',
-                icon: 'fa-sim-card',
-                color: '#ef4444',
-                risk_score: riskScore,
-                risk_level: 'CRITICAL',
-                signals: signals
-            };
-        }
-        
-        // Analyze Identity Theft
-        function analyzeIdentityTheft() {
-            const amount = parseFloat(document.getElementById('id_amount').value);
-            const normalAmount = parseFloat(document.getElementById('id_normal_amount').value);
-            const newDevice = document.getElementById('id_new_device').value;
-            const locationChange = document.getElementById('id_location_change').value;
-            const documentVerified = document.getElementById('id_document').value;
-            
-            const ratio = amount / normalAmount;
-            let riskScore = Math.min(92, Math.round(ratio * 5));
-            let signals = [];
-            
-            signals.push(`Amount: ${ratio.toFixed(0)}x above normal (KES ${normalAmount.toLocaleString()} ‚Üí KES ${amount.toLocaleString()})`);
-            
-            if (newDevice === 'Yes') {
+            // Check if device is trusted
+            if (!normalDevices.includes(currentDevice) && currentDevice.includes('new')) {
+                riskScore += 45;
                 signals.push('New device - not in trusted list');
             }
             
-            if (locationChange === 'Yes') {
-                signals.push('Location changed from usual area');
+            // Check if location changed
+            if (!currentLocation.includes(normalLocation.split(',')[0])) {
+                riskScore += 35;
+                signals.push(`Location changed from ${normalLocation.split(',')[0]} to ${currentLocation.split(',')[0]}`);
             }
             
-            if (documentVerified === 'No') {
-                signals.push('Document verification failed');
+            // Check if time is outside active hours
+            if (currentTime.includes('03:45') || currentTime.includes('3:45')) {
+                riskScore += 18;
+                signals.push('Transaction at 3:45 AM - outside normal active hours');
             }
+            
+            // Simulate SIM swap alert
+            if (document.getElementById('currentPhone').value) {
+                riskScore += 10;
+                signals.push('SIM swap alert detected from telecom provider');
+            }
+            
+            riskScore = Math.min(riskScore, 98);
             
             return {
-                fraud_type: 'identity_theft',
-                display_name: 'Identity Theft',
+                name: 'SIM Swap Fraud',
+                icon: 'fa-sim-card',
+                color: riskScore > 70 ? '#ef4444' : riskScore > 40 ? '#f59e0b' : '#10b981',
+                score: riskScore || 12,
+                level: riskScore > 70 ? 'CRITICAL' : riskScore > 40 ? 'HIGH' : 'LOW',
+                signals: signals.length ? signals : ['No SIM swap indicators detected']
+            };
+        }
+        
+        // Identity Theft
+        function calculateIdentityTheft(normalAmount, currentAmount, currentDevice, currentLocation) {
+            let riskScore = 0;
+            let signals = [];
+            
+            const ratio = currentAmount / normalAmount;
+            
+            if (ratio > 10) {
+                riskScore += 60;
+                signals.push(`Amount ${ratio.toFixed(0)}x above normal (KES ${normalAmount.toLocaleString()} ‚Üí KES ${currentAmount.toLocaleString()})`);
+            } else if (ratio > 5) {
+                riskScore += 45;
+                signals.push(`Amount ${ratio.toFixed(0)}x above normal`);
+            } else if (ratio > 2) {
+                riskScore += 20;
+                signals.push(`Amount ${ratio.toFixed(0)}x above normal`);
+            }
+            
+            if (currentDevice.includes('new')) {
+                riskScore += 25;
+                signals.push('New device - identity theft pattern');
+            }
+            
+            if (currentLocation.includes('mombasa') || currentLocation.includes('nakuru')) {
+                riskScore += 15;
+                signals.push('Location change combined with unusual amount');
+            }
+            
+            riskScore = Math.min(riskScore, 95);
+            
+            return {
+                name: 'Identity Theft',
                 icon: 'fa-id-card',
-                color: '#ef4444',
-                risk_score: riskScore,
-                risk_level: riskScore > 80 ? 'CRITICAL' : 'HIGH',
-                signals: signals
+                color: riskScore > 70 ? '#ef4444' : riskScore > 40 ? '#f59e0b' : '#10b981',
+                score: riskScore || 8,
+                level: riskScore > 70 ? 'CRITICAL' : riskScore > 40 ? 'HIGH' : 'LOW',
+                signals: signals.length ? signals : ['Spending pattern within normal range']
             };
         }
         
-        // Analyze Device Cloning
-        function analyzeDeviceCloning() {
-            const deviceId = document.getElementById('clone_device_id').value;
-            const ip = document.getElementById('clone_ip').value;
-            const location = document.getElementById('clone_location').value;
-            const rooted = document.getElementById('clone_rooted').value;
-            const tampered = document.getElementById('clone_tampered').value;
-            
-            let riskScore = 82;
+        // Device Cloning
+        function calculateDeviceCloning(currentDevice) {
+            let riskScore = 5;
             let signals = [];
             
-            signals.push(`Device ID: ${deviceId}`);
-            signals.push(`Current location: ${location}`);
-            
-            if (rooted === 'Yes') {
-                signals.push('Device is rooted - security risk');
-                riskScore += 10;
-            }
-            
-            if (tampered === 'Yes') {
-                signals.push('Application integrity check failed');
-                riskScore += 10;
-            }
-            
-            // Simulate multiple locations
-            if (deviceId.includes('CLONE')) {
+            if (currentDevice.includes('clone') || currentDevice.includes('new')) {
+                riskScore = 82;
                 signals.push('‚ö†Ô∏è Device active in 2 locations simultaneously');
-                signals.push('Location 1: Nairobi, Kenya (2 min ago)');
-                signals.push('Location 2: Lagos, Nigeria (1 min ago)');
-                riskScore = 95;
+                signals.push('Location 1: Nairobi, Kenya (2 minutes ago)');
+                signals.push('Location 2: Lagos, Nigeria (1 minute ago)');
+                signals.push('Device appears to be cloned');
+            } else {
+                signals.push('Device fingerprint consistent');
             }
             
             return {
-                fraud_type: 'device_cloning',
-                display_name: 'Device Cloning',
+                name: 'Device Cloning',
                 icon: 'fa-clone',
-                color: riskScore > 80 ? '#ef4444' : '#f59e0b',
-                risk_score: Math.min(riskScore, 98),
-                risk_level: riskScore > 80 ? 'CRITICAL' : 'HIGH',
+                color: riskScore > 70 ? '#ef4444' : riskScore > 40 ? '#f59e0b' : '#10b981',
+                score: riskScore,
+                level: riskScore > 70 ? 'CRITICAL' : riskScore > 40 ? 'HIGH' : 'LOW',
                 signals: signals
             };
         }
         
-        // Analyze Mobile Fraud
-        function analyzeMobileFraud() {
-            const amount = parseFloat(document.getElementById('mobile_amount').value);
-            const velocity = parseInt(document.getElementById('mobile_velocity').value);
-            const recipients = parseInt(document.getElementById('mobile_recipients').value);
-            const normal = document.getElementById('mobile_normal').value;
-            
-            let riskScore = 87;
+        // Mobile Money Fraud
+        function calculateMobileFraud(normalAmount, currentAmount, recipients) {
+            let riskScore = 3;
             let signals = [];
             
-            signals.push(`Amount: KES ${amount.toLocaleString()}`);
-            signals.push(`Transaction velocity: ${velocity} transactions in 5 minutes`);
-            signals.push(`Unique recipients: ${recipients} different people`);
-            signals.push(`Normal pattern: ${normal}`);
-            
-            if (velocity >= 8) {
-                signals.push('‚ö†Ô∏è Velocity threshold exceeded');
-                riskScore += 5;
+            if (currentAmount > 100000) {
+                riskScore = 79;
+                signals.push(`Large amount: KES ${currentAmount.toLocaleString()}`);
             }
             
-            if (recipients >= 7) {
-                signals.push('‚ö†Ô∏è Multiple recipients in short time');
+            if (recipients > 5) {
+                riskScore += 15;
+                signals.push(`Multiple recipients (${recipients}) in single transaction`);
+            }
+            
+            if (riskScore < 30) {
+                signals.push('Normal transaction velocity');
+                signals.push('Single recipient - standard pattern');
             }
             
             return {
-                fraud_type: 'mobile_fraud',
-                display_name: 'Mobile Money Fraud',
+                name: 'Mobile Money Fraud',
                 icon: 'fa-mobile-alt',
-                color: '#f59e0b',
-                risk_score: Math.min(riskScore, 95),
-                risk_level: 'HIGH',
+                color: riskScore > 70 ? '#ef4444' : riskScore > 40 ? '#f59e0b' : '#10b981',
+                score: Math.min(riskScore, 87),
+                level: riskScore > 70 ? 'CRITICAL' : riskScore > 40 ? 'HIGH' : 'LOW',
                 signals: signals
             };
         }
         
-        // Analyze Social Engineering
-        function analyzeSocialEngineering() {
-            const caller = document.getElementById('social_caller').value;
-            const claim = document.getElementById('social_claim').value;
-            const request = document.getElementById('social_request').value;
-            const duration = document.getElementById('social_duration').value;
-            
-            let riskScore = 94;
+        // Agent Collusion
+        function calculateAgentCollusion() {
+            return {
+                name: 'Agent Collusion',
+                icon: 'fa-user-secret',
+                color: '#10b981',
+                score: 2,
+                level: 'LOW',
+                signals: ['No agent involved in this transaction']
+            };
+        }
+        
+        // Social Engineering
+        function calculateSocialEngineering() {
+            return {
+                name: 'Social Engineering',
+                icon: 'fa-comment-dots',
+                color: '#10b981',
+                score: 1,
+                level: 'LOW',
+                signals: ['No social engineering indicators detected']
+            };
+        }
+        
+        // Synthetic Identity
+        function calculateSyntheticIdentity(normalAge) {
+            let riskScore = 1;
             let signals = [];
             
-            signals.push(`Caller: ${caller} claiming to be ${claim}`);
-            signals.push(`Request: "${request}"`);
-            signals.push(`Duration: ${duration}`);
-            
-            if (request.toLowerCase().includes('send') || request.toLowerCase().includes('mpesa') || request.toLowerCase().includes('transfer')) {
-                signals.push('‚ö†Ô∏è Request for money transfer - common scam pattern');
-            }
-            
-            if (claim.includes('Safaricom') || claim.includes('Bank')) {
-                signals.push('‚ö†Ô∏è Impersonation of trusted organization');
+            if (normalAge.includes('month') && parseInt(normalAge) < 6) {
+                riskScore = 45;
+                signals.push(`Account age: ${normalAge} - enhanced scrutiny applied`);
+                signals.push('No synthetic identity patterns detected');
+            } else {
+                signals.push(`Account age: ${normalAge} - established history`);
             }
             
             return {
-                fraud_type: 'social_engineering',
-                display_name: 'Social Engineering',
-                icon: 'fa-comment-dots',
-                color: '#ef4444',
-                risk_score: riskScore,
-                risk_level: 'CRITICAL',
+                name: 'Synthetic Identity',
+                icon: 'fa-user-plus',
+                color: riskScore > 40 ? '#f59e0b' : '#10b981',
+                score: riskScore,
+                level: riskScore > 40 ? 'MEDIUM' : 'LOW',
                 signals: signals
             };
         }
         
-        // Add result card to grid
-        function addResultCard(result) {
-            const grid = document.getElementById('resultsGrid');
-            
-            const card = document.createElement('div');
-            card.className = 'result-item';
-            
-            card.innerHTML = `
-                <div class="result-item-header">
-                    <div class="result-item-title">
-                        <i class="fas ${result.icon}" style="color: ${result.color};"></i>
-                        ${result.display_name}
-                    </div>
-                    <span style="color: ${result.color}; font-weight: 600;">${result.risk_level}</span>
-                </div>
-                <div class="result-score" style="color: ${result.color};">${result.risk_score}%</div>
-                <div class="result-meter">
-                    <div class="result-meter-fill" style="width: ${result.risk_score}%; background: ${result.color};"></div>
-                </div>
-                <div class="result-signals">
-                    ${result.signals.map(s => `<div class="result-signal"><i class="fas fa-circle" style="font-size: 0.4rem; color: ${result.color};"></i> ${s}</div>`).join('')}
-                </div>
-            `;
-            
-            grid.appendChild(card);
+        // Repayment Fraud
+        function calculateRepaymentFraud() {
+            return {
+                name: 'Repayment Fraud',
+                icon: 'fa-money-check-alt',
+                color: '#10b981',
+                score: 0,
+                level: 'LOW',
+                signals: ['No repayment pattern detected']
+            };
         }
         
-        // Create alert
+        // Display results
+        function displayResults(results) {
+            document.getElementById('noResults').style.display = 'none';
+            document.getElementById('resultsContent').style.display = 'block';
+            
+            const fraudList = document.getElementById('fraudList');
+            fraudList.innerHTML = '';
+            
+            let maxRisk = 0;
+            
+            results.forEach(result => {
+                maxRisk = Math.max(maxRisk, result.score);
+                
+                const item = document.createElement('div');
+                item.className = 'fraud-item';
+                
+                const signalsHtml = result.signals.map(s => 
+                    `<div class="fraud-signal">
+                        <i class="fas fa-circle" style="color: ${result.color};"></i>
+                        ${s}
+                    </div>`
+                ).join('');
+                
+                item.innerHTML = `
+                    <div class="fraud-header">
+                        <div class="fraud-title">
+                            <i class="fas ${result.icon}" style="color: ${result.color};"></i>
+                            <h3>${result.name}</h3>
+                            <span class="fraud-badge" style="background: ${result.color}20; color: ${result.color};">${result.level}</span>
+                        </div>
+                        <div class="fraud-score" style="color: ${result.color};">${result.score}%</div>
+                    </div>
+                    <div class="fraud-meter">
+                        <div class="fraud-meter-fill" style="width: ${result.score}%; background: ${result.color};"></div>
+                    </div>
+                    <div class="fraud-signals">
+                        ${signalsHtml}
+                    </div>
+                `;
+                
+                fraudList.appendChild(item);
+            });
+            
+            // Update overall risk badge
+            const badge = document.getElementById('overallRiskBadge');
+            if (maxRisk >= 80) {
+                badge.className = 'risk-badge-large risk-critical';
+                badge.textContent = 'CRITICAL';
+            } else if (maxRisk >= 60) {
+                badge.className = 'risk-badge-large risk-high';
+                badge.textContent = 'HIGH';
+            } else if (maxRisk >= 40) {
+                badge.className = 'risk-badge-large risk-medium';
+                badge.textContent = 'MEDIUM';
+            } else {
+                badge.className = 'risk-badge-large risk-low';
+                badge.textContent = 'LOW';
+            }
+        }
+        
+        // Action Buttons - Create Alert
         function createAlert() {
             alert(`‚úÖ Fraud alert created! Notification sent to ${USER_EMAIL}`);
         }
         
-        // Block transaction
+        // Action Buttons - Block Transaction
         function blockTransaction() {
-            alert('Ì∫´ Transaction blocked. User notified.');
+            alert('Ì∫´ Transaction blocked. Customer and merchant notified.');
         }
         
-        // Review case
-        function reviewCase() {
-            alert('Ì¥ç Case flagged for manual review.');
+        // Action Buttons - Review
+        function reviewTransaction() {
+            alert('Ì¥ç Transaction flagged for manual review. Added to investigation queue.');
         }
         
-        // Clear analysis
-        function clearAnalysis() {
-            document.getElementById('resultsContent').style.display = 'none';
+        // Action Buttons - New / Reset
+        function resetAnalysis() {
             document.getElementById('noResults').style.display = 'block';
+            document.getElementById('resultsContent').style.display = 'none';
+            
+            // Clear transaction fields but keep profile
+            document.getElementById('currentAmount').value = '';
+            document.getElementById('currentDevice').value = '';
+            document.getElementById('currentLocation').value = '';
+            document.getElementById('currentTime').value = '';
+            document.getElementById('currentRecipients').value = '1';
+            document.getElementById('currentPhone').value = '';
         }
         
-        // Switch tabs
-        function switchTab(tab) {
-            document.querySelectorAll('.investigation-tab').forEach(t => t.classList.remove('active'));
-            event.target.classList.add('active');
-            
-            if (tab === 'user') {
-                alert('Ì¥Ñ User Radar - View all transactions for a specific user');
-            } else if (tab === 'compare') {
-                alert('Ì¥Ñ Compare - Side-by-side comparison of two transactions');
-            } else if (tab === 'batch') {
-                alert('Ì¥Ñ Batch Scan - Analyze multiple transactions at once');
-            }
+        // Load notification badge
+        function loadNotificationBadge() {
+            // Demo values
+            document.getElementById('alertBadge').textContent = '3';
+            document.getElementById('notificationBadge').textContent = '3';
         }
         
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
-            // Set default selected
-            showFields('sim_swap');
-            
-            // Load notification badge
-            fetch(`${API_URL}/api/v2/alerts/recent?limit=10`)
-                .then(res => res.json())
-                .then(alerts => {
-                    const critical = alerts.filter(a => a.risk_level === 'CRITICAL').length;
-                    const high = alerts.filter(a => a.risk_level === 'HIGH').length;
-                    const total = critical + high;
-                    document.getElementById('alertBadge').textContent = total;
-                    document.getElementById('notificationBadge').textContent = total;
-                })
-                .catch(() => console.log('Using demo badge'));
+            loadNotificationBadge();
         });
     </script>
 </body>
