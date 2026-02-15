@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Device Cloning Analysis | LogSense</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Times+New+Roman&display=swap');
+        * { font-family: 'Times New Roman', Times, serif !important; }
+        :root {
+            --primary: #6366f1; --dark-bg: #0f172a; --sidebar-bg: #1e293b;
+            --card-bg: #1e293b; --card-border: #334155; --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8; --danger: #ef4444; --warning: #f59e0b;
+            --success: #10b981; --info: #3b82f6;
+        }
+        body { font-family: 'Times New Roman', Times, serif; background: var(--dark-bg); color: var(--text-primary); display: flex; min-height: 100vh; margin: 0; padding: 0; }
+        .sidebar { width: 250px; background: var(--sidebar-bg); border-right: 1px solid var(--card-border); padding: 30px 0; position: fixed; height: 100vh; overflow-y: auto; }
+        .logo { padding: 0 25px 30px; border-bottom: 1px solid var(--card-border); margin-bottom: 30px; }
+        .logo h2 { font-size: 1.8rem; background: linear-gradient(135deg, var(--primary) 0%, #8b5cf6 100%); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 5px; }
+        .logo p { color: var(--text-secondary); font-size: 0.9rem; margin: 0; }
+        .nav-item { margin-bottom: 5px; }
+        .nav-link { display: flex; align-items: center; padding: 12px 25px; color: var(--text-secondary); text-decoration: none; transition: all 0.3s; border-left: 4px solid transparent; }
+        .nav-link:hover, .nav-link.active { background: rgba(99, 102, 241, 0.1); color: var(--text-primary); border-left-color: var(--primary); }
+        .nav-icon { width: 24px; margin-right: 12px; font-size: 1.1rem; }
+        .nav-badge { margin-left: auto; background: var(--danger); color: white; font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; }
+        .main-content { flex: 1; margin-left: 250px; padding: 0; }
+        .topbar { background: var(--card-bg); border-bottom: 1px solid var(--card-border); padding: 20px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .page-title { display: flex; align-items: center; gap: 15px; }
+        .page-title h1 { font-size: 1.8rem; margin: 0; font-weight: bold; }
+        .back-btn { padding: 6px 14px; background: rgba(30, 41, 59, 0.8); border: 1px solid var(--card-border); border-radius: 6px; color: var(--text-secondary); text-decoration: none; font-size: 0.9rem; }
+        .back-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
+        .topbar-actions { display: flex; align-items: center; gap: 20px; }
+        .search-box { position: relative; }
+        .search-input { padding: 8px 15px 8px 35px; background: rgba(30, 41, 59, 0.8); border: 1px solid var(--card-border); border-radius: 6px; color: var(--text-primary); width: 220px; font-size: 0.9rem; }
+        .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 0.9rem; }
+        .notification-btn { background: none; border: none; color: var(--text-secondary); font-size: 1.1rem; cursor: pointer; position: relative; }
+        .notification-badge { position: absolute; top: -5px; right: -5px; background: var(--danger); color: white; font-size: 0.65rem; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .content-wrapper { padding: 25px; }
+        .quick-profiles { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px; padding: 15px 20px; margin-bottom: 25px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+        .quick-title { display: flex; align-items: center; gap: 8px; color: var(--text-secondary); font-size: 0.85rem; }
+        .quick-title i { color: var(--primary); }
+        .profile-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+        .profile-btn { padding: 6px 14px; background: rgba(30, 41, 59, 0.8); border: 1px solid var(--card-border); border-radius: 20px; color: var(--text-primary); cursor: pointer; font-size: 0.85rem; }
+        .profile-btn:hover { background: var(--primary); border-color: var(--primary); }
+        .form-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px; padding: 25px; margin-bottom: 25px; }
+        .section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--card-border); }
+        .section-header i { font-size: 1.2rem; color: var(--danger); }
+        .section-header h2 { margin: 0; font-size: 1.2rem; font-weight: 600; }
+        .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+        .form-group { margin-bottom: 15px; }
+        .form-label { display: block; color: var(--text-secondary); margin-bottom: 6px; font-size: 0.8rem; font-weight: 500; text-transform: uppercase; }
+        .form-control { width: 100%; padding: 12px 15px; background: rgba(30, 41, 59, 0.8); border: 1px solid var(--card-border); border-radius: 6px; color: var(--text-primary); font-size: 0.95rem; box-sizing: border-box; }
+        .form-control:focus { outline: none; border-color: var(--primary); }
+        select.form-control { cursor: pointer; }
+        .btn-analyze { background: var(--primary); color: white; border: none; border-radius: 8px; padding: 14px 28px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: all 0.3s; width: 100%; margin-top: 20px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn-analyze:hover { background: #4f52d9; transform: translateY(-2px); }
+        .results-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px; padding: 25px; margin-bottom: 25px; }
+        .results-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .results-title { display: flex; align-items: center; gap: 10px; }
+        .results-title i { font-size: 1.3rem; color: var(--danger); }
+        .results-title h2 { margin: 0; font-size: 1.3rem; font-weight: 600; }
+        .risk-badge { padding: 8px 20px; border-radius: 30px; font-size: 1rem; font-weight: 600; }
+        .risk-critical { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+        .risk-high { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+        .risk-medium { background: rgba(59, 130, 246, 0.2); color: var(--info); }
+        .result-item { background: rgba(30, 41, 59, 0.6); border: 1px solid var(--card-border); border-radius: 8px; padding: 20px; margin-bottom: 15px; }
+        .result-score-large { font-size: 2.5rem; font-weight: 700; margin: 10px 0; }
+        .result-meter { width: 100%; height: 8px; background: rgba(30, 41, 59, 0.8); border-radius: 4px; overflow: hidden; margin: 15px 0; }
+        .result-meter-fill { height: 100%; border-radius: 4px; }
+        .signals-list { margin: 15px 0; }
+        .signal-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--card-border); color: var(--text-secondary); }
+        .signal-item i { font-size: 0.5rem; }
+        .threshold-info { display: flex; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--card-border); color: var(--text-secondary); font-size: 0.85rem; }
+        .action-buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-top: 20px; }
+        .action-btn { padding: 15px 10px; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; color: var(--text-primary); cursor: pointer; transition: all 0.3s; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .action-btn:hover { background: var(--primary); border-color: var(--primary); transform: translateY(-2px); }
+        .action-btn i { font-size: 1.3rem; }
+        .action-btn span { font-size: 0.9rem; }
+        .email-notice { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 15px; color: var(--text-secondary); font-size: 0.85rem; }
+        .email-notice i { color: var(--success); }
+        @media (max-width: 1024px) { .sidebar { width: 70px; } .main-content { margin-left: 70px; } .nav-text, .logo h2, .logo p { display: none; } .form-grid { grid-template-columns: 1fr; } .action-buttons { grid-template-columns: repeat(2, 1fr); } }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo"><h2>LogSense</h2><p>Fraud Detection</p></div>
+        <nav class="sidebar-menu">
+            <div class="nav-item"><a href="dashboard.html" class="nav-link"><i class="fas fa-tachometer-alt nav-icon"></i><span class="nav-text">Dashboard</span></a></div>
+            <div class="nav-item"><a href="analyze.html" class="nav-link active"><i class="fas fa-search nav-icon"></i><span class="nav-text">Analyze</span></a></div>
+            <div class="nav-item"><a href="analytics.html" class="nav-link"><i class="fas fa-chart-bar nav-icon"></i><span class="nav-text">Analytics</span></a></div>
+            <div class="nav-item"><a href="alerts.html" class="nav-link"><i class="fas fa-bell nav-icon"></i><span class="nav-text">Alerts</span><span class="nav-badge" id="alertBadge">3</span></a></div>
+            <div class="nav-item"><a href="settings.html" class="nav-link"><i class="fas fa-cog nav-icon"></i><span class="nav-text">Settings</span></a></div>
+            <div class="nav-item" style="margin-top: 50px;"><a href="login.html" class="nav-link"><i class="fas fa-sign-out-alt nav-icon"></i><span class="nav-text">Logout</span></a></div>
+        </nav>
+    </div>
+    <div class="main-content">
+        <div class="topbar">
+            <div class="page-title"><a href="analyze.html" class="back-btn"><i class="fas fa-arrow-left"></i> Back</a><h1>Device Cloning Analysis</h1></div>
+            <div class="topbar-actions">
+                <div class="search-box"><i class="fas fa-search search-icon"></i><input type="text" class="search-input" placeholder="Search..."></div>
+                <button class="notification-btn" onclick="window.location.href='alerts.html'"><i class="fas fa-bell"></i><span class="notification-badge" id="notificationBadge">3</span></button>
+            </div>
+        </div>
+        <div class="content-wrapper">
+            <div class="quick-profiles">
+                <div class="quick-title"><i class="fas fa-bolt"></i><span>Load Profile:</span></div>
+                <div class="profile-buttons">
+                    <button class="profile-btn" onclick="loadProfile('U78901')">U78901</button>
+                    <button class="profile-btn" onclick="loadProfile('U45678')">U45678</button>
+                    <button class="profile-btn" onclick="loadProfile('U34567')">U34567</button>
+                    <button class="profile-btn" onclick="loadProfile('U12345')">U12345</button>
+                    <button class="profile-btn" onclick="clearProfile()">CUSTOM</button>
+                </div>
+            </div>
+            <div class="form-card">
+                <div class="section-header"><i class="fas fa-chart-line"></i><h2>USER'S NORMAL BEHAVIOR</h2></div>
+                <div class="form-grid">
+                    <div class="form-group"><label class="form-label">Trusted Device ID</label><input type="text" class="form-control" id="normalDeviceId" value="IMEI: 123456789012345" placeholder="Device ID"></div>
+                    <div class="form-group"><label class="form-label">Normal Locations</label><input type="text" class="form-control" id="normalLocations" value="Nairobi, Kenya" placeholder="City, Country"></div>
+                    <div class="form-group"><label class="form-label">Device Model</label><input type="text" class="form-control" id="normalModel" value="Samsung A54" placeholder="Device model"></div>
+                    <div class="form-group"><label class="form-label">App Integrity</label><input type="text" class="form-control" id="normalIntegrity" value="Verified" placeholder="Verified/Tampered"></div>
+                </div>
+            </div>
+            <div class="form-card">
+                <div class="section-header"><i class="fas fa-clone"></i><h2>CURRENT DEVICE CLONING DETAILS</h2></div>
+                <div class="form-grid">
+                    <div class="form-group"><label class="form-label">Current Device ID</label><input type="text" class="form-control" id="currentDeviceId" value="IMEI: 123456789012345" placeholder="Device ID"></div>
+                    <div class="form-group"><label class="form-label">IP Address</label><input type="text" class="form-control" id="ipAddress" value="197.248.0.1" placeholder="IP Address"></div>
+                    <div class="form-group"><label class="form-label">Current Location</label><input type="text" class="form-control" id="currentLocation" value="Lagos, Nigeria" placeholder="City, Country"></div>
+                    <div class="form-group"><label class="form-label">Device Rooted?</label><select class="form-control" id="rooted"><option>Yes</option><option>No</option></select></div>
+                    <div class="form-group"><label class="form-label">App Tampered?</label><select class="form-control" id="tampered"><option>Yes</option><option>No</option></select></div>
+                    <div class="form-group"><label class="form-label">Other Active Locations</label><input type="text" class="form-control" id="otherLocations" value="Nairobi, Kenya" placeholder="Detected locations"></div>
+                </div>
+                <button class="btn-analyze" onclick="analyzeDeviceCloning()"><i class="fas fa-shield-alt"></i> ANALYZE DEVICE CLONING</button>
+            </div>
+            <div class="results-card" id="resultsCard" style="display: none;">
+                <div class="results-header"><div class="results-title"><i class="fas fa-exclamation-triangle"></i><h2>Analysis Results</h2></div><span class="risk-badge" id="riskBadge">CRITICAL</span></div>
+                <div id="resultsContent"></div>
+                <div class="action-buttons">
+                    <button class="action-btn" onclick="createAlert()"><i class="fas fa-bell"></i><span>Create Alert</span></button>
+                    <button class="action-btn" onclick="blockTransaction()"><i class="fas fa-ban"></i><span>Block</span></button>
+                    <button class="action-btn" onclick="reviewCase()"><i class="fas fa-clock"></i><span>Review</span></button>
+                    <button class="action-btn" onclick="resetAnalysis()"><i class="fas fa-redo"></i><span>New</span></button>
+                </div>
+                <div class="email-notice"><i class="fas fa-check-circle"></i><span>Alerts sent to: <strong>rebeccabosibori589@gmail.com</strong></span></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const USER_EMAIL = 'rebeccabosibori589@gmail.com';
+        function loadProfile(userId) {
+            const profiles = {
+                'U78901': { deviceId: 'IMEI: 123456789012345', locations: 'Nairobi, Kenya', model: 'Samsung A54', integrity: 'Verified' },
+                'U45678': { deviceId: 'IMEI: 234567890123456', locations: 'Mombasa, Kenya', model: 'Tecno Spark 10', integrity: 'Verified' },
+                'U34567': { deviceId: 'IMEI: 345678901234567', locations: 'Nairobi, Kenya', model: 'Samsung S23 Ultra', integrity: 'Verified' },
+                'U12345': { deviceId: 'IMEI: 456789012345678', locations: 'Eldoret, Kenya', model: 'Tecno Pop 7', integrity: 'Pending' }
+            };
+            const p = profiles[userId];
+            if (p) {
+                document.getElementById('normalDeviceId').value = p.deviceId;
+                document.getElementById('normalLocations').value = p.locations;
+                document.getElementById('normalModel').value = p.model;
+                document.getElementById('normalIntegrity').value = p.integrity;
+            }
+        }
+        function clearProfile() {
+            document.getElementById('normalDeviceId').value = '';
+            document.getElementById('normalLocations').value = '';
+            document.getElementById('normalModel').value = '';
+            document.getElementById('normalIntegrity').value = '';
+        }
+        function analyzeDeviceCloning() {
+            const normalDeviceId = document.getElementById('normalDeviceId').value;
+            const currentDeviceId = document.getElementById('currentDeviceId').value;
+            const normalLocations = document.getElementById('normalLocations').value.toLowerCase();
+            const currentLocation = document.getElementById('currentLocation').value.toLowerCase();
+            const rooted = document.getElementById('rooted').value;
+            const tampered = document.getElementById('tampered').value;
+            const otherLocations = document.getElementById('otherLocations').value;
+            
+            let riskScore = 0;
+            let signals = [];
+            
+            if (normalDeviceId !== currentDeviceId) { riskScore += 20; signals.push('Device ID mismatch'); }
+            if (!currentLocation.includes(normalLocations.split(',')[0])) { riskScore += 25; signals.push(`Location mismatch: ${normalLocations.split(',')[0]} vs ${currentLocation.split(',')[0]}`); }
+            if (rooted === 'Yes') { riskScore += 20; signals.push('Device is rooted - security risk'); }
+            if (tampered === 'Yes') { riskScore += 20; signals.push('App integrity check failed'); }
+            if (otherLocations && otherLocations.length > 0) { 
+                riskScore += 30; 
+                signals.push(`‚ö†Ô∏è Device active in multiple locations simultaneously`);
+                signals.push(`Location 1: ${normalLocations}`);
+                signals.push(`Location 2: ${otherLocations}`);
+            }
+            
+            riskScore = Math.min(riskScore, 98);
+            displayResults(riskScore, signals);
+        }
+        function displayResults(riskScore, signals) {
+            document.getElementById('resultsCard').style.display = 'block';
+            const resultsContent = document.getElementById('resultsContent');
+            const threshold = 0.82;
+            const reconstructionError = (riskScore / 100 * 0.9 + 0.1).toFixed(2);
+            let riskLevel = 'LOW', riskColor = '#10b981';
+            if (riskScore >= 80) { riskLevel = 'CRITICAL'; riskColor = '#ef4444'; }
+            else if (riskScore >= 60) { riskLevel = 'HIGH'; riskColor = '#f59e0b'; }
+            else if (riskScore >= 40) { riskLevel = 'MEDIUM'; riskColor = '#3b82f6'; }
+            
+            document.getElementById('riskBadge').textContent = riskLevel;
+            document.getElementById('riskBadge').className = `risk-badge risk-${riskLevel.toLowerCase()}`;
+            
+            const signalsHtml = signals.map(s => `<div class="signal-item"><i class="fas fa-circle"></i> ${s}</div>`).join('');
+            resultsContent.innerHTML = `
+                <div class="result-item">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="color: var(--text-secondary);">DEVICE CLONING</span>
+                        <span class="result-score-large" style="color: ${riskColor};">${riskScore}%</span>
+                    </div>
+                    <div class="result-meter"><div class="result-meter-fill" style="width: ${riskScore}%; background: ${riskColor};"></div></div>
+                    <div class="signals-list">${signalsHtml}</div>
+                    <div class="threshold-info"><span>Autoencoder Threshold: 0.82</span><span>Reconstruction Error: ${reconstructionError}</span></div>
+                </div>`;
+        }
+        function createAlert() { alert(`‚úÖ Fraud alert created! Notification sent to ${USER_EMAIL}`); }
+        function blockTransaction() { alert('Ì∫´ Transaction blocked. User notified.'); }
+        function reviewCase() { alert('Ì¥ç Case flagged for manual review.'); }
+        function resetAnalysis() { document.getElementById('resultsCard').style.display = 'none'; }
+        function loadNotificationBadge() {
+            document.getElementById('alertBadge').textContent = '3';
+            document.getElementById('notificationBadge').textContent = '3';
+        }
+        document.addEventListener('DOMContentLoaded', loadNotificationBadge);
+    </script>
+</body>
+</html>
