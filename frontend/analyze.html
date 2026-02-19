@@ -254,7 +254,7 @@
                 timestamp: '2026-02-19T14:23:45',
                 signals: [
                     'SMS contains SIM swap keywords',
-                    'Carrier changed: Airtel ‚Üí Safaricom',
+                    'Carrier changed: Airtel -> Safaricom',
                     'New device detected',
                     'Location changed from Nairobi to Mombasa',
                     'Transaction at unusual hour (3:45 AM)'
@@ -283,7 +283,7 @@
                 riskLevel: 'CRITICAL',
                 timestamp: '2026-02-19T14:08:23',
                 signals: [
-                    'Amount 18x above normal (KES 2,450 ‚Üí 45,000)',
+                    'Amount 18x above normal (KES 2,450 -> 45,000)',
                     'New device detected',
                     'Document verification failed',
                     'Location changed from Nairobi to Mombasa'
@@ -356,13 +356,13 @@
             analysisContent.style.display = 'block';
 
             const alert = demoAlerts[alertId] || demoAlerts['U78901'];
-            const isLive = false; // Since we have alertId, it's historical
+            const isLive = false;
             const timeAgo = getTimeAgo(new Date(alert.timestamp));
             const signalsHtml = alert.signals.map(s => `<li><i class="fas fa-circle"></i> ${s}</li>`).join('');
 
             analysisContent.innerHTML = `
                 <div class="analysis-header">
-                    <h2>Ì≥ã HISTORICAL FRAUD ANALYSIS - Case #${alertId}</h2>
+                    <h2> HISTORICAL FRAUD ANALYSIS - Case #${alertId}</h2>
                     <span class="historical-badge">HISTORICAL</span>
                 </div>
 
@@ -398,14 +398,14 @@
                 </div>
 
                 <div class="signals-section">
-                    <h3>Ì¥ç DETECTION SIGNALS</h3>
+                    <h3> DETECTION SIGNALS</h3>
                     <ul class="signals-list">
                         ${signalsHtml}
                     </ul>
                 </div>
 
                 <div class="autoencoder-section">
-                    <h3>Ì¥ñ AUTOENCODER ANALYSIS</h3>
+                    <h3> AUTOENCODER ANALYSIS</h3>
                     <div class="threshold-grid">
                         <div class="threshold-item">
                             <div class="threshold-value">${alert.threshold}</div>
@@ -423,7 +423,7 @@
                 </div>
 
                 <div class="system-actions">
-                    <h3>‚öôÔ∏è SYSTEM ACTIONS (Automatic)</h3>
+                    <h3> SYSTEM ACTIONS (Automatic)</h3>
                     <div class="action-item"><i class="fas fa-check-circle"></i> User <strong>BLOCKED</strong> - 3 incorrect PIN attempts</div>
                     <div class="action-item"><i class="fas fa-check-circle"></i> Case <strong>FLAGGED</strong> for manual review</div>
                     <div class="action-item"><i class="fas fa-check-circle"></i> Alert sent to <strong>rebeccabosibori589@gmail.com</strong></div>
@@ -448,12 +448,12 @@
         }
 
         function markReviewed() {
-            alert('‚úÖ Case marked as reviewed');
+            alert(' Case marked as reviewed');
             window.location.href = 'alerts.html';
         }
 
         function ignoreAlert() {
-            alert('‚è≠Ô∏è Alert ignored (false positive)');
+            alert(' Alert ignored (false positive)');
             window.location.href = 'alerts.html';
         }
 
