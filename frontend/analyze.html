@@ -436,6 +436,28 @@
             `;
         }
 
+        function markReviewed() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const userId = urlParams.get('alert');
+            
+            // Get alerts from localStorage
+            let alerts = JSON.parse(localStorage.getItem('fraudAlerts')) || [];
+            
+            // Find and update the alert
+            const alert = alerts.find(a => a.userId === userId);
+            if (alert) {
+                alert.reviewed = true;
+                localStorage.setItem('fraudAlerts', JSON.stringify(alerts));
+            }
+            
+            // Go back to alerts page with reviewed status
+            window.location.href = `alerts.html?reviewed=true&user=${userId}`;
+        }
+
+        function ignoreAlert() {
+            window.location.href = 'alerts.html';
+        }
+
         function checkForAlerts() {
             const urlParams = new URLSearchParams(window.location.search);
             const alertId = urlParams.get('alert');
@@ -447,16 +469,6 @@
             }
         }
 
-        function markReviewed() {
-            alert(' Case marked as reviewed');
-            window.location.href = 'alerts.html';
-        }
-
-        function ignoreAlert() {
-            alert(' Alert ignored (false positive)');
-            window.location.href = 'alerts.html';
-        }
-
         function getTimeAgo(date) {
             const diff = Math.floor((Date.now() - date) / 60000);
             if (diff < 1) return 'Just now';
@@ -466,8 +478,12 @@
         }
 
         function updateBadge() {
-            document.getElementById('alertBadge').textContent = '3';
-            document.getElementById('notificationBadge').textContent = '3';
+            // Get alerts from localStorage
+            const alerts = JSON.parse(localStorage.getItem('fraudAlerts')) || [];
+            const unreviewed = alerts.filter(a => !a.reviewed).length;
+            
+            document.getElementById('alertBadge').textContent = unreviewed;
+            document.getElementById('notificationBadge').textContent = unreviewed;
         }
 
         // Load on page start
