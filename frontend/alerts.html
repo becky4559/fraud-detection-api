@@ -92,6 +92,7 @@
             border-radius: 8px; padding: 15px 20px;
             display: flex; align-items: center; justify-content: space-between;
             transition: all 0.2s;
+            cursor: pointer;
         }
         .alert-item:hover { border-color: var(--primary); }
         .alert-item.critical { border-left: 4px solid var(--danger); }
@@ -99,6 +100,7 @@
         
         .alert-info {
             display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+            flex: 1;
         }
         .alert-type {
             display: flex; align-items: center; gap: 8px;
@@ -120,6 +122,8 @@
         
         .alert-review {
             display: flex; align-items: center; gap: 10px;
+            position: relative;
+            z-index: 10;
         }
         .review-checkbox {
             width: 20px; height: 20px; cursor: pointer;
@@ -269,7 +273,7 @@
                 alertDiv.className = `alert-item ${alert.riskLevel.toLowerCase()}`;
                 
                 alertDiv.innerHTML = `
-                    <div class="alert-info">
+                    <div class="alert-info" onclick="window.location.href='analyze.html?alert=${alert.userId}'">
                         <div class="alert-type">
                             <i class="fas ${alert.icon}" style="color: ${alert.color};"></i>
                             <span>${alert.type}</span>
@@ -281,16 +285,11 @@
                     <div class="alert-review">
                         <input type="checkbox" class="review-checkbox" 
                                ${alert.reviewed ? 'checked' : ''} 
-                               onchange="toggleReview(${alert.id}, this.checked)">
+                               onchange="toggleReview(${alert.id}, this.checked)"
+                               onclick="event.stopPropagation()">
                         <span class="review-label">Reviewed</span>
                     </div>
                 `;
-                
-                alertDiv.onclick = (e) => {
-                    if (e.target.type !== 'checkbox') {
-                        window.location.href = `analyze.html?alert=${alert.userId}`;
-                    }
-                };
                 
                 container.appendChild(alertDiv);
             });
@@ -303,7 +302,9 @@
             if (alert) {
                 alert.reviewed = reviewed;
                 displayAlerts();
+                updateStats();
             }
+            event.stopPropagation();
         }
 
         function filterAlerts(type) {
