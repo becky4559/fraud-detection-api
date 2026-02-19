@@ -82,48 +82,57 @@
         .alert-stats { display: flex; gap: 20px; color: var(--text-secondary); font-size: 0.85rem; }
         .alert-stats i { color: var(--danger); margin-right: 5px; }
 
-        /* Alerts Container */
-        .alerts-container { display: flex; flex-direction: column; gap: 15px; }
-        .alert-card {
+        /* Simple Alert List */
+        .alert-list {
+            display: flex; flex-direction: column; gap: 10px;
+            margin-bottom: 25px;
+        }
+        .alert-item {
             background: var(--card-bg); border: 1px solid var(--card-border);
-            border-radius: 10px; padding: 20px; transition: all 0.3s;
-            border-left: 4px solid transparent; cursor: pointer;
+            border-radius: 8px; padding: 15px 20px;
+            display: flex; align-items: center; justify-content: space-between;
+            transition: all 0.2s;
         }
-        .alert-card:hover { transform: translateX(5px); border-color: var(--primary); }
-        .alert-card.critical { border-left-color: var(--danger); }
-        .alert-card.high { border-left-color: var(--warning); }
-        .alert-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .alert-title { display: flex; align-items: center; gap: 12px; }
-        .alert-icon {
-            width: 40px; height: 40px; border-radius: 10px;
-            display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+        .alert-item:hover { border-color: var(--primary); }
+        .alert-item.critical { border-left: 4px solid var(--danger); }
+        .alert-item.high { border-left: 4px solid var(--warning); }
+        
+        .alert-info {
+            display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
         }
-        .alert-info h3 { margin: 0 0 4px 0; font-size: 1.1rem; }
-        .alert-time { color: var(--text-secondary); font-size: 0.8rem; display: flex; align-items: center; gap: 5px; }
-        .risk-badge {
-            padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 600;
+        .alert-type {
+            display: flex; align-items: center; gap: 8px;
+            min-width: 120px;
         }
-        .risk-critical { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
-        .risk-high { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
-        .alert-details {
-            margin: 15px 0; padding: 12px; background: rgba(30, 41, 59, 0.6);
-            border-radius: 8px; font-size: 0.9rem;
+        .alert-type i {
+            width: 20px; text-align: center;
         }
-        .signal-tag {
-            display: inline-block; padding: 4px 12px; background: rgba(99, 102, 241, 0.1);
-            border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 20px;
-            font-size: 0.75rem; margin-right: 8px; margin-bottom: 5px;
+        .alert-user {
+            font-weight: 600; min-width: 70px;
         }
-        .threshold-info {
-            display: flex; justify-content: space-between; margin-top: 12px;
-            padding-top: 12px; border-top: 1px solid var(--card-border);
-            color: var(--text-secondary); font-size: 0.8rem;
+        .alert-risk {
+            font-weight: 600; min-width: 100px;
         }
-        .no-alerts {
-            text-align: center; padding: 60px 20px; color: var(--text-secondary);
+        .alert-time {
+            color: var(--text-secondary); font-size: 0.9rem;
+            min-width: 100px;
         }
-        .no-alerts i { font-size: 3rem; margin-bottom: 15px; }
+        
+        .alert-review {
+            display: flex; align-items: center; gap: 10px;
+        }
+        .review-checkbox {
+            width: 20px; height: 20px; cursor: pointer;
+            accent-color: var(--success);
+        }
+        .review-label {
+            color: var(--text-secondary); font-size: 0.85rem;
+        }
 
+        .alert-count {
+            text-align: right; margin-top: 15px;
+            color: var(--text-secondary); font-size: 0.9rem;
+        }
         .email-notice {
             display: flex; align-items: center; justify-content: flex-end;
             gap: 10px; margin-top: 20px; color: var(--text-secondary); font-size: 0.85rem;
@@ -134,6 +143,11 @@
             .sidebar { width: 70px; }
             .main-content { margin-left: 70px; }
             .nav-text, .logo h2, .logo p { display: none; }
+        }
+        @media (max-width: 768px) {
+            .alert-info { flex-direction: column; align-items: flex-start; gap: 5px; }
+            .alert-item { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .alert-review { width: 100%; justify-content: flex-end; }
         }
     </style>
 </head>
@@ -153,7 +167,7 @@
         <div class="topbar">
             <div class="page-title"><h1>Alerts</h1></div>
             <div class="topbar-actions">
-                <div class="search-box"><i class="fas fa-search search-icon"></i><input type="text" class="search-input" id="searchInput" placeholder="Search alerts..."></div>
+                <div class="search-box"><i class="fas fa-search search-icon"></i><input type="text" class="search-input" id="searchInput" placeholder="Search..."></div>
                 <button class="notification-btn" onclick="window.location.href='alerts.html'"><i class="fas fa-bell"></i><span class="notification-badge" id="notificationBadge">3</span></button>
             </div>
         </div>
@@ -167,13 +181,17 @@
                     <button class="filter-tab" onclick="filterAlerts('Device Cloning')">Clone</button>
                 </div>
                 <div class="alert-stats">
-                    <span><i class="fas fa-exclamation-triangle"></i> <span id="criticalCount">2</span> Critical</span>
-                    <span><i class="fas fa-exclamation-circle"></i> <span id="highCount">1</span> High</span>
-                    <span><i class="fas fa-bell"></i> <span id="totalCount">3</span> Total</span>
+                    <span><i class="fas fa-exclamation-triangle"></i> <span id="criticalCount">2</span></span>
+                    <span><i class="fas fa-exclamation-circle"></i> <span id="highCount">1</span></span>
+                    <span><i class="fas fa-bell"></i> <span id="totalCount">3</span></span>
                 </div>
             </div>
 
-            <div id="alertsContainer" class="alerts-container"></div>
+            <div id="alertList" class="alert-list"></div>
+
+            <div class="alert-count" id="alertCount">
+                Total: 3 alerts • <span id="unreviewedCount">2</span> unreviewed
+            </div>
 
             <div class="email-notice">
                 <i class="fas fa-check-circle"></i>
@@ -183,24 +201,17 @@
     </div>
 
     <script>
-        const demoAlerts = [
+        let alerts = [
             {
                 id: 1,
                 type: 'SIM Swap',
                 userId: 'U78901',
                 riskScore: 98,
                 riskLevel: 'CRITICAL',
-                timestamp: new Date(Date.now() - 120000).toISOString(),
-                signals: [
-                    'SMS contains SIM swap keywords',
-                    'Carrier changed: Airtel → Safaricom',
-                    'New device detected',
-                    'Location changed from Nairobi to Mombasa'
-                ],
-                threshold: 0.67,
-                reconstructionError: 0.98,
+                time: '2 min ago',
                 icon: 'fa-sim-card',
-                color: '#ef4444'
+                color: '#ef4444',
+                reviewed: false
             },
             {
                 id: 2,
@@ -208,16 +219,10 @@
                 userId: 'U45678',
                 riskScore: 92,
                 riskLevel: 'CRITICAL',
-                timestamp: new Date(Date.now() - 900000).toISOString(),
-                signals: [
-                    'Amount 18x above normal',
-                    'New device detected',
-                    'Document verification failed'
-                ],
-                threshold: 0.71,
-                reconstructionError: 0.89,
+                time: '15 min ago',
                 icon: 'fa-id-card',
-                color: '#ec4899'
+                color: '#ec4899',
+                reviewed: false
             },
             {
                 id: 3,
@@ -225,86 +230,109 @@
                 userId: 'U34567',
                 riskScore: 82,
                 riskLevel: 'HIGH',
-                timestamp: new Date(Date.now() - 1920000).toISOString(),
-                signals: [
-                    'Device active in 2 locations',
-                    'Location 1: Nairobi',
-                    'Location 2: Lagos',
-                    'Device rooted: Yes'
-                ],
-                threshold: 0.82,
-                reconstructionError: 0.89,
+                time: '32 min ago',
                 icon: 'fa-clone',
-                color: '#f59e0b'
+                color: '#f59e0b',
+                reviewed: true
             }
         ];
 
-        let alerts = [...demoAlerts];
+        let currentFilter = 'all';
+        let searchTerm = '';
 
-        function displayAlerts(alertsToShow) {
-            const container = document.getElementById('alertsContainer');
+        function displayAlerts() {
+            const container = document.getElementById('alertList');
             
-            if (alertsToShow.length === 0) {
-                container.innerHTML = '<div class="no-alerts"><i class="fas fa-check-circle"></i><h3>No Alerts</h3><p>All transactions are clean</p></div>';
+            let filtered = alerts;
+            
+            // Apply filter
+            if (currentFilter !== 'all') {
+                filtered = filtered.filter(a => a.type === currentFilter);
+            }
+            
+            // Apply search
+            if (searchTerm) {
+                filtered = filtered.filter(a => 
+                    a.userId.toLowerCase().includes(searchTerm) ||
+                    a.type.toLowerCase().includes(searchTerm)
+                );
+            }
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-secondary);">No alerts found</div>';
                 return;
             }
 
             container.innerHTML = '';
-            alertsToShow.forEach(alert => {
-                const timeAgo = getTimeAgo(new Date(alert.timestamp));
-                const signalsHtml = alert.signals.slice(0, 2).map(s => `<span class="signal-tag">${s}</span>`).join('');
+            filtered.forEach(alert => {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = `alert-item ${alert.riskLevel.toLowerCase()}`;
                 
-                container.innerHTML += `
-                    <div class="alert-card ${alert.riskLevel.toLowerCase()}" onclick="window.location.href='analyze.html?alert=${alert.userId}'">
-                        <div class="alert-header">
-                            <div class="alert-title">
-                                <div class="alert-icon" style="background: ${alert.color}20; color: ${alert.color};"><i class="fas ${alert.icon}"></i></div>
-                                <div class="alert-info">
-                                    <h3>${alert.type} - ${alert.userId}</h3>
-                                    <div class="alert-time"><i class="far fa-clock"></i> ${timeAgo}</div>
-                                </div>
-                            </div>
-                            <span class="risk-badge risk-${alert.riskLevel.toLowerCase()}">${alert.riskLevel}</span>
+                alertDiv.innerHTML = `
+                    <div class="alert-info">
+                        <div class="alert-type">
+                            <i class="fas ${alert.icon}" style="color: ${alert.color};"></i>
+                            <span>${alert.type}</span>
                         </div>
-                        <div class="alert-details">
-                            <div>Risk Score: <strong style="color: ${alert.color};">${alert.riskScore}%</strong></div>
-                            <div class="threshold-info">
-                                <span>Threshold: ${alert.threshold}</span>
-                                <span>Error: ${alert.reconstructionError}</span>
-                            </div>
-                            <div style="margin-top: 10px;">${signalsHtml}</div>
-                        </div>
+                        <div class="alert-user">${alert.userId}</div>
+                        <div class="alert-risk" style="color: ${alert.color};">${alert.riskScore}% ${alert.riskLevel}</div>
+                        <div class="alert-time">${alert.time}</div>
+                    </div>
+                    <div class="alert-review">
+                        <input type="checkbox" class="review-checkbox" 
+                               ${alert.reviewed ? 'checked' : ''} 
+                               onchange="toggleReview(${alert.id}, this.checked)">
+                        <span class="review-label">Reviewed</span>
                     </div>
                 `;
+                
+                alertDiv.onclick = (e) => {
+                    if (e.target.type !== 'checkbox') {
+                        window.location.href = `analyze.html?alert=${alert.userId}`;
+                    }
+                };
+                
+                container.appendChild(alertDiv);
             });
+
+            updateStats();
+        }
+
+        function toggleReview(alertId, reviewed) {
+            const alert = alerts.find(a => a.id === alertId);
+            if (alert) {
+                alert.reviewed = reviewed;
+                displayAlerts();
+            }
         }
 
         function filterAlerts(type) {
             document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
             event.target.classList.add('active');
+            currentFilter = type;
+            displayAlerts();
+        }
+
+        function updateStats() {
+            const critical = alerts.filter(a => a.riskLevel === 'CRITICAL').length;
+            const high = alerts.filter(a => a.riskLevel === 'HIGH').length;
+            const unreviewed = alerts.filter(a => !a.reviewed).length;
             
-            if (type === 'all') displayAlerts(alerts);
-            else displayAlerts(alerts.filter(a => a.type === type));
+            document.getElementById('criticalCount').textContent = critical;
+            document.getElementById('highCount').textContent = high;
+            document.getElementById('totalCount').textContent = alerts.length;
+            document.getElementById('unreviewedCount').textContent = unreviewed;
+            document.getElementById('alertBadge').textContent = unreviewed;
+            document.getElementById('notificationBadge').textContent = unreviewed;
         }
 
         document.getElementById('searchInput').addEventListener('input', function(e) {
-            const term = e.target.value.toLowerCase();
-            if (!term) displayAlerts(alerts);
-            else displayAlerts(alerts.filter(a => 
-                a.userId.toLowerCase().includes(term) ||
-                a.type.toLowerCase().includes(term)
-            ));
+            searchTerm = e.target.value.toLowerCase();
+            displayAlerts();
         });
 
-        function getTimeAgo(date) {
-            const diff = Math.floor((Date.now() - date) / 60000);
-            if (diff < 1) return 'Just now';
-            if (diff < 60) return `${diff} min ago`;
-            if (diff < 1440) return `${Math.floor(diff/60)} hr ago`;
-            return `${Math.floor(diff/1440)} days ago`;
-        }
-
-        displayAlerts(alerts);
+        // Initial display
+        displayAlerts();
     </script>
 </body>
 </html>
