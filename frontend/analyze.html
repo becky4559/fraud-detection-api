@@ -11,7 +11,7 @@
             --primary: #6366f1; --dark-bg: #0f172a; --sidebar-bg: #1e293b;
             --card-bg: #1e293b; --card-border: #334155; --text-primary: #f1f5f9;
             --text-secondary: #94a3b8; --danger: #ef4444; --warning: #f59e0b;
-            --success: #10b981; --info: #3b82f6;
+            --success: #10b981; --info: #3b82f6; --purple: #a855f7;
         }
         body {
             font-family: 'Times New Roman', Times, serif; background: var(--dark-bg);
@@ -186,6 +186,7 @@
         <nav class="sidebar-menu">
             <div class="nav-item"><a href="dashboard.html" class="nav-link"><i class="fas fa-tachometer-alt nav-icon"></i><span class="nav-text">Dashboard</span></a></div>
             <div class="nav-item"><a href="alerts.html" class="nav-link"><i class="fas fa-bell nav-icon"></i><span class="nav-text">Alerts</span><span class="nav-badge" id="alertBadge">0</span></a></div>
+            <div class="nav-item"><a href="analyze.html" class="nav-link active"><i class="fas fa-search nav-icon"></i><span class="nav-text">Analyze</span></a></div>
             <div class="nav-item"><a href="settings.html" class="nav-link"><i class="fas fa-cog nav-icon"></i><span class="nav-text">Settings</span></a></div>
             <div class="nav-item" style="margin-top: 50px;"><a href="login.html" class="nav-link"><i class="fas fa-sign-out-alt nav-icon"></i><span class="nav-text">Logout</span></a></div>
         </nav>
@@ -211,9 +212,9 @@
     </div>
 
     <script>
-        // Demo alerts data (same as alerts.html)
+        // Demo alerts data
         const demoAlerts = {
-            'SIM Swap': {
+            'U78901': {
                 type: 'SIM Swap',
                 userId: 'U78901',
                 riskScore: 98,
@@ -243,7 +244,7 @@
                     time: '3:45 AM'
                 }
             },
-            'Identity Theft': {
+            'U45678': {
                 type: 'Identity Theft',
                 userId: 'U45678',
                 riskScore: 92,
@@ -258,7 +259,7 @@
                 threshold: 0.71,
                 reconstructionError: 0.89,
                 icon: 'fa-id-card',
-                color: '#ef4444',
+                color: '#ec4899',
                 userProfile: {
                     avgAmount: 'KES 2,450',
                     devices: 'Samsung A54, iPhone 13',
@@ -272,7 +273,7 @@
                     time: '3:45 AM'
                 }
             },
-            'Device Cloning': {
+            'U34567': {
                 type: 'Device Cloning',
                 userId: 'U34567',
                 riskScore: 82,
@@ -308,11 +309,14 @@
             const urlParams = new URLSearchParams(window.location.search);
             const alertId = urlParams.get('alert');
             
-            // Determine which alert to show (default to SIM Swap)
+            // Determine which alert to show
             let alert;
-            if (alertId === 'U45678') alert = demoAlerts['Identity Theft'];
-            else if (alertId === 'U34567') alert = demoAlerts['Device Cloning'];
-            else alert = demoAlerts['SIM Swap'];
+            if (alertId && demoAlerts[alertId]) {
+                alert = demoAlerts[alertId];
+            } else {
+                // Default to SIM Swap if no alert ID
+                alert = demoAlerts['U78901'];
+            }
 
             const isLive = !alertId; // If no ID, show live demo
             const timeAgo = getTimeAgo(new Date(alert.timestamp));
@@ -377,44 +381,19 @@
                             <div class="threshold-value" style="color: ${alert.reconstructionError > alert.threshold ? alert.color : '#10b981'};">${alert.reconstructionError > alert.threshold ? 'FRAUD CONFIRMED' : 'NORMAL'}</div>
                             <div class="threshold-label">Verdict</div>
                         </div>
-                    </ : 'NORMAL'}</div>
-                            <div class="threshold-label">Verdict</div>
-                        </div>
                     </div>
                 </div>
 
                 <div class="system-actions">
-                    <h3>⚙div>
-                </div>
-
-                <div class="system-actions">
                     <h3>⚙️ SYSTEM ACTIONS (Automatic)</h3>
-                    <div class="action-item"><i class="fas fa️ SYSTEM ACTIONS (Automatic)</h3>
-                    <div class="action-item"><i-check-circle"></i> User <strong>BLOCKED</strong> - 3 incorrect PIN attempts</div>
-                    <div class class="fas fa-check-circle"></i> User <strong>BLOCKED</strong> - 3 incorrect PIN attempts</div>
-                    <div class="action-item"><i class="fas fa-check="action-item"><i class="fas fa-check-circle"></i> Case-circle"></i> Case <strong>FLAGGED</strong> for manual review</div>
-                    <div class="action-item"><i class="fas fa-check-circle"></i> Alert sent to <strong>FLAGGED</strong> for manual review</div>
+                    <div class="action-item"><i class="fas fa-check-circle"></i> User <strong>BLOCKED</strong> - 3 incorrect PIN attempts</div>
+                    <div class="action-item"><i class="fas fa-check-circle"></i> Case <strong>FLAGGED</strong> for manual review</div>
                     <div class="action-item"><i class="fas fa-check-circle"></i> Alert sent to <strong>rebeccabosibori589@gmail.com</strong></div>
-                </div <strong>rebeccabosibori589@gmail.com</strong></div>
                 </div>
-
-                <div class="action-buttons">
-                    <button class="btn btn-primary" onclick="markReviewed()"><i class="fas fa-check-circle"></>
 
                 <div class="action-buttons">
                     <button class="btn btn-primary" onclick="markReviewed()"><i class="fas fa-check-circle"></i> MARK REVIEWED</button>
-                    <button class="btn btn-secondary" onclick="ignoreAlert()"><i class="fas fa-times-circle"></ii> MARK REVIEWED</button>
                     <button class="btn btn-secondary" onclick="ignoreAlert()"><i class="fas fa-times-circle"></i> IGNORE</button>
-                </div>
-            `;
-        }
-
-        function markReviewed() {
-            alert('✅ Case marked as reviewed');
-            window.location.href = 'alerts.html';
-        }
-
-        function ignoreAlert()> IGNORE</button>
                 </div>
             `;
         }
@@ -427,16 +406,7 @@
         function ignoreAlert() {
             alert('⏭️ Alert ignored (false positive)');
             window.location.href = 'alerts.html';
- {
-            alert('⏭️ Alert ignored (false positive)');
-            window.location.href = 'alerts.html';
         }
-
-        function getTimeAgo(date) {
-            const diff = Math.floor((Date.now() - date) / 60000);
-            if (diff < 1) return 'Just now';
-            if (diff < 60) return `${diff} min ago`;
-            if (diff < 1440) return `${        }
 
         function getTimeAgo(date) {
             const diff = Math.floor((Date.now() - date) / 60000);
@@ -448,20 +418,7 @@
 
         function updateBadge() {
             const alerts = JSON.parse(localStorage.getItem('fraudAlerts')) || [];
-           Math.floor(diff/60)} hr ago`;
-            return `${Math.floor(diff/1440)} days ago`;
-        }
-
-        function updateBadge() {
-            const alerts = JSON.parse(localStorage.getItem('fraudAlerts')) || [];
             const unread = alerts.filter(a => !a.read).length;
-            document.getElementById('alertBadge').textContent = unread;
-            document.getElementById('notificationBadge').textContent = unread;
-        }
-
-        loadAnalysis();
-        updateBadge();
-    </script const unread = alerts.filter(a => !a.read).length;
             document.getElementById('alertBadge').textContent = unread;
             document.getElementById('notificationBadge').textContent = unread;
         }

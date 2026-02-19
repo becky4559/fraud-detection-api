@@ -105,7 +105,6 @@
         }
         .risk-critical { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
         .risk-high { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
-        .risk-medium { background: rgba(59, 130, 246, 0.2); color: var(--info); }
         .alert-details {
             margin: 15px 0; padding: 12px; background: rgba(30, 41, 59, 0.6);
             border-radius: 8px; font-size: 0.9rem;
@@ -125,7 +124,6 @@
         }
         .no-alerts i { font-size: 3rem; margin-bottom: 15px; }
 
-        /* Notification sound will be created via Web Audio API */
         .email-notice {
             display: flex; align-items: center; justify-content: flex-end;
             gap: 10px; margin-top: 20px; color: var(--text-secondary); font-size: 0.85rem;
@@ -144,7 +142,8 @@
         <div class="logo"><h2>LogSense</h2><p>Fraud Detection</p></div>
         <nav class="sidebar-menu">
             <div class="nav-item"><a href="dashboard.html" class="nav-link"><i class="fas fa-tachometer-alt nav-icon"></i><span class="nav-text">Dashboard</span></a></div>
-            <div class="nav-item"><a href="alerts.html" class="nav-link active"><i class="fas fa-bell nav-icon"></i><span class="nav-text">Alerts</span><span class="nav-badge" id="alertBadge">0</span></a></div>
+            <div class="nav-item"><a href="alerts.html" class="nav-link active"><i class="fas fa-bell nav-icon"></i><span class="nav-text">Alerts</span><span class="nav-badge" id="alertBadge">3</span></a></div>
+            <div class="nav-item"><a href="analyze.html" class="nav-link"><i class="fas fa-search nav-icon"></i><span class="nav-text">Analyze</span></a></div>
             <div class="nav-item"><a href="settings.html" class="nav-link"><i class="fas fa-cog nav-icon"></i><span class="nav-text">Settings</span></a></div>
             <div class="nav-item" style="margin-top: 50px;"><a href="login.html" class="nav-link"><i class="fas fa-sign-out-alt nav-icon"></i><span class="nav-text">Logout</span></a></div>
         </nav>
@@ -155,7 +154,7 @@
             <div class="page-title"><h1>Alerts</h1></div>
             <div class="topbar-actions">
                 <div class="search-box"><i class="fas fa-search search-icon"></i><input type="text" class="search-input" id="searchInput" placeholder="Search alerts..."></div>
-                <button class="notification-btn" onclick="window.location.href='alerts.html'"><i class="fas fa-bell"></i><span class="notification-badge" id="notificationBadge">0</span></button>
+                <button class="notification-btn" onclick="window.location.href='alerts.html'"><i class="fas fa-bell"></i><span class="notification-badge" id="notificationBadge">3</span></button>
             </div>
         </div>
         
@@ -166,12 +165,11 @@
                     <button class="filter-tab" onclick="filterAlerts('SIM Swap')">SIM Swap</button>
                     <button class="filter-tab" onclick="filterAlerts('Identity Theft')">Identity</button>
                     <button class="filter-tab" onclick="filterAlerts('Device Cloning')">Clone</button>
-                    <button class="filter-tab" onclick="filterAlerts('Mobile Fraud')">Mobile</button>
                 </div>
                 <div class="alert-stats">
-                    <span><i class="fas fa-exclamation-triangle"></i> <span id="criticalCount">0</span> Critical</span>
-                    <span><i class="fas fa-exclamation-circle"></i> <span id="highCount">0</span> High</span>
-                    <span><i class="fas fa-bell"></i> <span id="totalCount">0</span> Total</span>
+                    <span><i class="fas fa-exclamation-triangle"></i> <span id="criticalCount">2</span> Critical</span>
+                    <span><i class="fas fa-exclamation-circle"></i> <span id="highCount">1</span> High</span>
+                    <span><i class="fas fa-bell"></i> <span id="totalCount">3</span> Total</span>
                 </div>
             </div>
 
@@ -185,99 +183,64 @@
     </div>
 
     <script>
-        let alerts = [];
-        let lastCheck = Date.now();
-        let audioContext = null;
-
-        // Initialize audio for notifications
-        function playNotificationSound() {
-            if (!audioContext) {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const demoAlerts = [
+            {
+                id: 1,
+                type: 'SIM Swap',
+                userId: 'U78901',
+                riskScore: 98,
+                riskLevel: 'CRITICAL',
+                timestamp: new Date(Date.now() - 120000).toISOString(),
+                signals: [
+                    'SMS contains SIM swap keywords',
+                    'Carrier changed: Airtel → Safaricom',
+                    'New device detected',
+                    'Location changed from Nairobi to Mombasa'
+                ],
+                threshold: 0.67,
+                reconstructionError: 0.98,
+                icon: 'fa-sim-card',
+                color: '#ef4444'
+            },
+            {
+                id: 2,
+                type: 'Identity Theft',
+                userId: 'U45678',
+                riskScore: 92,
+                riskLevel: 'CRITICAL',
+                timestamp: new Date(Date.now() - 900000).toISOString(),
+                signals: [
+                    'Amount 18x above normal',
+                    'New device detected',
+                    'Document verification failed'
+                ],
+                threshold: 0.71,
+                reconstructionError: 0.89,
+                icon: 'fa-id-card',
+                color: '#ec4899'
+            },
+            {
+                id: 3,
+                type: 'Device Cloning',
+                userId: 'U34567',
+                riskScore: 82,
+                riskLevel: 'HIGH',
+                timestamp: new Date(Date.now() - 1920000).toISOString(),
+                signals: [
+                    'Device active in 2 locations',
+                    'Location 1: Nairobi',
+                    'Location 2: Lagos',
+                    'Device rooted: Yes'
+                ],
+                threshold: 0.82,
+                reconstructionError: 0.89,
+                icon: 'fa-clone',
+                color: '#f59e0b'
             }
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            oscillator.frequency.value = 800;
-            gainNode.gain.value = 0.5;
-            oscillator.start();
-            oscillator.stop(audioContext.currentTime + 0.2);
-        }
+        ];
 
-        // Load alerts from localStorage (simulating API)
-        function loadAlerts() {
-            const stored = JSON.parse(localStorage.getItem('fraudAlerts')) || [];
-            
-            // Demo alerts if none exist
-            if (stored.length === 0) {
-                alerts = [
-                    {
-                        id: Date.now() - 120000,
-                        type: 'SIM Swap',
-                        riskScore: 98,
-                        riskLevel: 'CRITICAL',
-                        timestamp: new Date(Date.now() - 120000).toISOString(),
-                        userId: 'U78901',
-                        signals: [
-                            'SMS contains SIM swap keywords',
-                            'Carrier changed: Airtel → Safaricom',
-                            'New device detected',
-                            'Location changed from Nairobi to Mombasa',
-                            'Transaction at unusual hour (3:45 AM)'
-                        ],
-                        threshold: 0.67,
-                        reconstructionError: 0.98,
-                        icon: 'fa-sim-card',
-                        color: '#ef4444'
-                    },
-                    {
-                        id: Date.now() - 900000,
-                        type: 'Identity Theft',
-                        riskScore: 92,
-                        riskLevel: 'CRITICAL',
-                        timestamp: new Date(Date.now() - 900000).toISOString(),
-                        userId: 'U45678',
-                        signals: [
-                            'Amount 18x above normal (KES 2,450 → 45,000)',
-                            'New device detected',
-                            'Document verification failed',
-                            'Location changed from Nairobi to Mombasa'
-                        ],
-                        threshold: 0.71,
-                        reconstructionError: 0.89,
-                        icon: 'fa-id-card',
-                        color: '#ef4444'
-                    },
-                    {
-                        id: Date.now() - 1920000,
-                        type: 'Device Cloning',
-                        riskScore: 82,
-                        riskLevel: 'HIGH',
-                        timestamp: new Date(Date.now() - 1920000).toISOString(),
-                        userId: 'U34567',
-                        signals: [
-                            'Device active in 2 locations simultaneously',
-                            'Location 1: Nairobi, Kenya',
-                            'Location 2: Lagos, Nigeria',
-                            'Device rooted: Yes',
-                            'App integrity failed'
-                        ],
-                        threshold: 0.82,
-                        reconstructionError: 0.89,
-                        icon: 'fa-clone',
-                        color: '#f59e0b'
-                    }
-                ];
-                localStorage.setItem('fraudAlerts', JSON.stringify(alerts));
-            } else {
-                alerts = stored;
-            }
-            
-            displayAlerts(alerts);
-            updateStats();
-        }
+        let alerts = [...demoAlerts];
 
-        // Display alerts
         function displayAlerts(alertsToShow) {
             const container = document.getElementById('alertsContainer');
             
@@ -289,10 +252,10 @@
             container.innerHTML = '';
             alertsToShow.forEach(alert => {
                 const timeAgo = getTimeAgo(new Date(alert.timestamp));
-                const signalsHtml = alert.signals.map(s => `<span class="signal-tag">${s}</span>`).join('');
+                const signalsHtml = alert.signals.slice(0, 2).map(s => `<span class="signal-tag">${s}</span>`).join('');
                 
                 container.innerHTML += `
-                    <div class="alert-card ${alert.riskLevel.toLowerCase()}" onclick="window.location.href='analyze.html?alert=${alert.id}'">
+                    <div class="alert-card ${alert.riskLevel.toLowerCase()}" onclick="window.location.href='analyze.html?alert=${alert.userId}'">
                         <div class="alert-header">
                             <div class="alert-title">
                                 <div class="alert-icon" style="background: ${alert.color}20; color: ${alert.color};"><i class="fas ${alert.icon}"></i></div>
@@ -307,7 +270,7 @@
                             <div>Risk Score: <strong style="color: ${alert.color};">${alert.riskScore}%</strong></div>
                             <div class="threshold-info">
                                 <span>Threshold: ${alert.threshold}</span>
-                                <span>Reconstruction: ${alert.reconstructionError}</span>
+                                <span>Error: ${alert.reconstructionError}</span>
                             </div>
                             <div style="margin-top: 10px;">${signalsHtml}</div>
                         </div>
@@ -316,7 +279,6 @@
             });
         }
 
-        // Filter alerts
         function filterAlerts(type) {
             document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
             event.target.classList.add('active');
@@ -325,7 +287,6 @@
             else displayAlerts(alerts.filter(a => a.type === type));
         }
 
-        // Search
         document.getElementById('searchInput').addEventListener('input', function(e) {
             const term = e.target.value.toLowerCase();
             if (!term) displayAlerts(alerts);
@@ -335,19 +296,6 @@
             ));
         });
 
-        // Real-time polling (every 5 seconds)
-        setInterval(() => {
-            const stored = JSON.parse(localStorage.getItem('fraudAlerts')) || [];
-            if (stored.length > alerts.length) {
-                playNotificationSound();
-                alerts = stored;
-                displayAlerts(alerts);
-                updateStats();
-                updateBadge();
-            }
-        }, 5000);
-
-        // Helper functions
         function getTimeAgo(date) {
             const diff = Math.floor((Date.now() - date) / 60000);
             if (diff < 1) return 'Just now';
@@ -356,23 +304,7 @@
             return `${Math.floor(diff/1440)} days ago`;
         }
 
-        function updateStats() {
-            const critical = alerts.filter(a => a.riskLevel === 'CRITICAL').length;
-            const high = alerts.filter(a => a.riskLevel === 'HIGH').length;
-            document.getElementById('criticalCount').textContent = critical;
-            document.getElementById('highCount').textContent = high;
-            document.getElementById('totalCount').textContent = alerts.length;
-        }
-
-        function updateBadge() {
-            const unread = alerts.filter(a => !a.read).length;
-            document.getElementById('alertBadge').textContent = unread;
-            document.getElementById('notificationBadge').textContent = unread;
-        }
-
-        // Initialize
-        loadAlerts();
-        updateBadge();
+        displayAlerts(alerts);
     </script>
 </body>
 </html>
