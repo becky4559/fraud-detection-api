@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
 import json
@@ -135,6 +136,148 @@ def get_stats():
         "fraud_amount": 1248500,  # KES 1.25M saved
         "timestamp": datetime.utcnow().isoformat()
     }
+
+# ============================================
+# MOBILE APP ENDPOINT - FIXES 404 ERROR
+# ============================================
+
+@app.post("/api/mobile/transaction")
+async def mobile_transaction(
+    transaction: dict,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
+    """
+    Mobile app transaction endpoint - analyzes transaction and returns risk decision
+    This matches what the mobile app expects at /api/mobile/transaction
+    """
+    
+    # Extract data from mobile app
+    user_id = transaction.get("userId", transaction.get("user_id", "U78901"))
+    amount = transaction.get("amount", 0)
+    transaction_type = transaction.get("transactionType", transaction.get("type", "transfer"))
+    recipient = transaction.get("recipient", "Unknown")
+    device_id = transaction.get("deviceId", transaction.get("device_id", f"DEV-{random.randint(1000, 9999)}"))
+    location = transaction.get("location", "Nairobi")
+    is_end_month = transaction.get("isEndMonth", False)
+    
+    # Generate transaction ID
+    transaction_id = transaction.get("transactionId", f"TXN-{random.randint(10000, 99999)}")
+    
+    # Check for WRONG_PIN events first
+    if transaction.get("event") == "WRONG_PIN":
+        # Save wrong PIN attempt to database
+        alert = FraudAlert(
+            transaction_id=transaction_id,
+            user_id=user_id,
+            fraud_type="wrong_pin_attempt",
+            risk_score=0.85,
+            reconstruction_error=0.82,
+            detection_signals=json.dumps({
+                "event": "WRONG_PIN",
+                "attempt_number": transaction.get("attempt", 1),
+                "device_id": device_id[-4:],
+                "location": location,
+                "amount": amount
+            }),
+            email_sent=False
+        )
+        db.add(alert)
+        db.commit()
+        
+        return {
+            "status": "LOGGED",
+            "transactionId": transaction_id,
+            "riskScore": 0.85,
+            "riskLevel": "HIGH",
+            "message": f"Wrong PIN attempt {transaction.get('attempt', 1)} recorded"
+        }
+    
+    # For regular transactions, calculate risk based on amount and patterns
+    # John's normal patterns: 1-25,000 daily, 30,000-45,000 end of month
+    
+    risk_score = 0.2  # Default low risk
+    risk_level = "LOW"
+    status = "APPROVED"
+    
+    # Apply fraud detection rules
+    if amount > 45000:
+        # Above both normal ranges - HIGH risk
+        risk_score = 0.85
+        risk_level = "HIGH"
+        status = "PIN_REQUIRED"
+        
+    elif amount > 25000:
+        # Above daily normal, check if end of month
+        if is_end_month:
+            # End of month, within 30-45k range - MEDIUM risk
+            risk_score = 0.4
+            risk_level = "MEDIUM"
+            status = "APPROVED"
+        else:
+            # Not end of month, above daily normal - HIGH risk
+            risk_score = 0.75
+            risk_level = "HIGH"
+            status = "PIN_REQUIRED"
+    
+    # Check for unusual time (after 10 PM or before 8 AM)
+    current_hour = datetime.utcnow().hour + 3  # Approximate Nairobi time (UTC+3)
+    if current_hour < 8 or current_hour > 22:
+        if amount > 10000:  # Even moderate amounts at night are suspicious
+            risk_score = max(risk_score, 0.7)
+            risk_level = "HIGH"
+            status = "PIN_REQUIRED"
+    
+    # Check for unusual location
+    trusted_locations = ["Nairobi", "Kiambu", "Thika", "Nakuru"]
+    location_unusual = location not in trusted_locations and location != "Unknown"
+    if location_unusual:
+        risk_score = max(risk_score, 0.65)
+        risk_level = "MEDIUM" if risk_score < 0.7 else "HIGH"
+        if risk_score >= 0.65:
+            status = "PIN_REQUIRED"
+    
+    # Prepare detection signals for database
+    signals = {
+        "amount": f"KES {amount:,.0f}",
+        "type": transaction_type,
+        "location": location,
+        "time": f"{current_hour}:00",
+        "end_month": is_end_month,
+        "location_unusual": location_unusual,
+        "recipient": recipient,
+        "device_id": device_id[-8:],
+        "risk_score": risk_score
+    }
+    
+    # Calculate reconstruction error (mock for demo)
+    reconstruction_error = round(risk_score * 0.85 + 0.12, 2)
+    
+    # SAVE TO DATABASE - THIS MAKES IT APPEAR IN LOGSENSE DASHBOARD
+    alert = FraudAlert(
+        transaction_id=transaction_id,
+        user_id=user_id,
+        fraud_type="suspicious_transaction" if risk_score >= 0.65 else "normal_transaction",
+        risk_score=risk_score,
+        reconstruction_error=reconstruction_error,
+        detection_signals=json.dumps(signals),
+        email_sent=False  # Not sending email, just saving to DB for dashboard
+    )
+    db.add(alert)
+    db.commit()
+    
+    # Also log to console for debugging
+    print(f"✅ Alert saved to database for transaction {transaction_id} (risk: {risk_score})")
+    
+    return {
+        "status": status,
+        "transactionId": transaction_id,
+        "riskScore": round(risk_score, 2),
+        "riskLevel": risk_level,
+        "message": f"Transaction {status.lower()}",
+        "requiresPin": status == "PIN_REQUIRED"
+    }
+
 
 # ============================================
 # NEW FRAUD DETECTION ENDPOINTS
@@ -548,4 +691,4 @@ async def analyze_transaction(
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=1000)
