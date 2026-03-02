@@ -38,6 +38,29 @@ app.add_middleware(
 )
 
 # ============================================
+# CREATE DATABASE TABLES ON STARTUP
+# ============================================
+from sqlalchemy import MetaData, Table, Column, Integer, String, Float, Boolean, DateTime
+
+metadata = MetaData()
+fraud_alerts = Table(
+    'fraud_alerts', metadata,
+    Column('id', Integer, primary_key=True),
+    Column('transaction_id', String),
+    Column('user_id', String),
+    Column('fraud_type', String),
+    Column('risk_score', Float),
+    Column('reconstruction_error', Float),
+    Column('detection_signals', String),
+    Column('email_sent', Boolean),
+    Column('email_recipient', String),
+    Column('timestamp', DateTime),
+    Column('acknowledged', Boolean)
+)
+metadata.create_all(engine)
+print("✅ fraud_alerts table created/verified")
+
+# ============================================
 # STATIC FILE ROUTES
 # ============================================
 
@@ -304,9 +327,77 @@ def get_recent_alerts(limit: int = 10):
     
     return result
 
+@app.get("/api/v2/alerts/{alert_id}")
+def get_alert_details(alert_id: int):
+    from database import FraudAlert
+    
+    db = SessionLocal()
+    alert = db.query(FraudAlert).filter(FraudAlert.id == alert_id).first()
+    db.close()
+    
+    if not alert:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    
+    return {
+        "alert_id": alert.id,
+        "transaction_id": alert.transaction_id,
+        "user_id": alert.user_id,
+        "fraud_type": alert.fraud_type,
+        "risk_score": alert.risk_score,
+        "risk_level": "HIGH" if alert.risk_score > 0.65 else "MEDIUM" if alert.risk_score > 0.4 else "LOW",
+        "detection_signals": json.loads(alert.detection_signals) if alert.detection_signals else {},
+        "email_sent": alert.email_sent,
+        "timestamp": alert.timestamp.isoformat() if alert.timestamp else None,
+        "acknowledged": alert.acknowledged
+    }
+
+@app.post("/api/v2/alerts/{alert_id}/acknowledge")
+def acknowledge_alert(alert_id: int):
+    from database import FraudAlert
+    
+    db = SessionLocal()
+    alert = db.query(FraudAlert).filter(FraudAlert.id == alert_id).first()
+    if alert:
+        alert.acknowledged = True
+        db.commit()
+    db.close()
+    
+    return {"success": True, "alert_id": alert_id, "acknowledged": True}
+
 @app.post("/api/analyze")
 async def analyze_transaction(transaction: dict):
     return {"status": "analyzed", "risk_score": 0.45, "risk_level": "MEDIUM"}
+
+# ============================================
+# EMAIL ALERT ENDPOINTS
+# ============================================
+
+@app.get("/api/v2/alerts/email/config")
+def get_email_config():
+    return {
+        "recipient_email": email_service.recipient_email,
+        "alerts_enabled": email_service.alerts_enabled,
+        "last_updated": datetime.utcnow().isoformat()
+    }
+
+@app.post("/api/v2/alerts/email/update")
+def update_email_recipient(data: dict):
+    new_email = data.get("new_email")
+    if new_email:
+        email_service.update_recipient(new_email)
+        return {"success": True, "recipient": new_email}
+    return {"success": False, "error": "No email provided"}
+
+@app.post("/api/v2/alerts/email/toggle")
+def toggle_email_alerts(data: dict):
+    enabled = data.get("enabled", True)
+    email_service.alerts_enabled = enabled
+    return {"success": True, "alerts_enabled": enabled}
+
+@app.post("/api/v2/alerts/email/test")
+def test_email_alert():
+    result = email_service.test_alert()
+    return result
 
 if __name__ == "__main__":
     import uvicorn
