@@ -7,6 +7,7 @@ from datetime import datetime
 import json
 import random
 import os
+import traceback
 
 # Local imports
 from database import SessionLocal, engine, get_db, Transaction, FraudType, DeviceFingerprint, UserLocation, UserBehavior, FraudAlert, EmailConfig
@@ -38,6 +39,23 @@ app.add_middleware(
 )
 
 # ============================================
+# DEBUG ENDPOINT - SEE WHAT FILES EXIST
+# ============================================
+@app.get("/debug/files")
+def debug_files():
+    import os
+    result = {
+        "current_dir": os.getcwd(),
+        "files_in_root": os.listdir("."),
+        "static_dir_exists": os.path.exists("static"),
+    }
+    if os.path.exists("static"):
+        result["files_in_static"] = os.listdir("static")
+    if os.path.exists("frontend"):
+        result["files_in_frontend"] = os.listdir("frontend")
+    return result
+
+# ============================================
 # CREATE DATABASE TABLES ON STARTUP
 # ============================================
 from sqlalchemy import MetaData, Table, Column, Integer, String, Float, Boolean, DateTime
@@ -61,32 +79,44 @@ metadata.create_all(engine)
 print("✅ fraud_alerts table created/verified")
 
 # ============================================
-# STATIC FILE ROUTES
+# STATIC FILE ROUTES - SERVED DIRECTLY FROM FRONTEND
 # ============================================
 
 @app.get("/")
 async def read_root():
-    return FileResponse('static/index.html')
+    if os.path.exists("frontend/index.html"):
+        return FileResponse('frontend/index.html')
+    return {"message": "LogSense API is running"}
 
 @app.get("/alerts.html")
 async def read_alerts():
-    return FileResponse('static/alerts.html')
+    if os.path.exists("frontend/alerts.html"):
+        return FileResponse('frontend/alerts.html')
+    return {"error": "alerts.html not found"}
 
 @app.get("/dashboard.html")
 async def read_dashboard():
-    return FileResponse('static/dashboard.html')
+    if os.path.exists("frontend/dashboard.html"):
+        return FileResponse('frontend/dashboard.html')
+    return {"error": "dashboard.html not found"}
 
 @app.get("/analyze.html")
 async def read_analyze():
-    return FileResponse('static/analyze.html')
+    if os.path.exists("frontend/analyze.html"):
+        return FileResponse('frontend/analyze.html')
+    return {"error": "analyze.html not found"}
 
 @app.get("/settings.html")
 async def read_settings():
-    return FileResponse('static/settings.html')
+    if os.path.exists("frontend/settings.html"):
+        return FileResponse('frontend/settings.html')
+    return {"error": "settings.html not found"}
 
 @app.get("/login.html")
 async def read_login():
-    return FileResponse('static/login.html')
+    if os.path.exists("frontend/login.html"):
+        return FileResponse('frontend/login.html')
+    return {"error": "login.html not found"}
 
 # ============================================
 # EXISTING ENDPOINTS (PRESERVED)
@@ -303,66 +333,131 @@ async def detect_mobile_fraud_endpoint(request: dict):
 
 @app.get("/api/v2/alerts/recent")
 def get_recent_alerts(limit: int = 10):
-    from sqlalchemy import desc
-    from database import FraudAlert
-    
-    db = SessionLocal()
-    alerts = db.query(FraudAlert).order_by(desc(FraudAlert.timestamp)).limit(limit).all()
-    db.close()
-    
-    result = []
-    for alert in alerts:
-        result.append({
-            "alert_id": alert.id,
-            "transaction_id": alert.transaction_id,
-            "user_id": alert.user_id,
-            "fraud_type": alert.fraud_type,
-            "risk_score": alert.risk_score,
-            "risk_level": "HIGH" if alert.risk_score > 0.65 else "MEDIUM" if alert.risk_score > 0.4 else "LOW",
-            "detection_signals": json.loads(alert.detection_signals) if alert.detection_signals else {},
-            "email_sent": alert.email_sent,
-            "timestamp": alert.timestamp.isoformat() if alert.timestamp else None,
-            "acknowledged": alert.acknowledged
-        })
-    
-    return result
+    try:
+        from sqlalchemy import desc
+        from database import FraudAlert
+        
+        db = SessionLocal()
+        alerts = db.query(FraudAlert).order_by(desc(FraudAlert.timestamp)).limit(limit).all()
+        db.close()
+        
+        result = []
+        for alert in alerts:
+            # Handle potential None values safely
+            signals = {}
+            if alert.detection_signals:
+                try:
+                    signals = json.loads(alert.detection_signals)
+                except:
+                    signals = {"raw": alert.detection_signals}
+            
+            timestamp = None
+            if alert.timestamp:
+                try:
+                    timestamp = alert.timestamp.isoformat()
+                except:
+                    timestamp = str(alert.timestamp)
+            
+            # Calculate risk level
+            risk_score = alert.risk_score or 0
+            if risk_score > 0.65:
+                risk_level = "CRITICAL" if risk_score > 0.8 else "HIGH"
+            elif risk_score > 0.4:
+                risk_level = "MEDIUM"
+            else:
+                risk_level = "LOW"
+            
+            result.append({
+                "alert_id": alert.id,
+                "transaction_id": alert.transaction_id or "N/A",
+                "user_id": alert.user_id or "N/A",
+                "fraud_type": alert.fraud_type or "unknown",
+                "risk_score": risk_score,
+                "risk_level": risk_level,
+                "detection_signals": signals,
+                "email_sent": alert.email_sent or False,
+                "timestamp": timestamp,
+                "acknowledged": alert.acknowledged or False
+            })
+        
+        return result
+    except Exception as e:
+        print(f"❌ Error in get_recent_alerts: {str(e)}")
+        traceback.print_exc()
+        return {"error": str(e), "alerts": []}
 
 @app.get("/api/v2/alerts/{alert_id}")
 def get_alert_details(alert_id: int):
-    from database import FraudAlert
-    
-    db = SessionLocal()
-    alert = db.query(FraudAlert).filter(FraudAlert.id == alert_id).first()
-    db.close()
-    
-    if not alert:
-        raise HTTPException(status_code=404, detail="Alert not found")
-    
-    return {
-        "alert_id": alert.id,
-        "transaction_id": alert.transaction_id,
-        "user_id": alert.user_id,
-        "fraud_type": alert.fraud_type,
-        "risk_score": alert.risk_score,
-        "risk_level": "HIGH" if alert.risk_score > 0.65 else "MEDIUM" if alert.risk_score > 0.4 else "LOW",
-        "detection_signals": json.loads(alert.detection_signals) if alert.detection_signals else {},
-        "email_sent": alert.email_sent,
-        "timestamp": alert.timestamp.isoformat() if alert.timestamp else None,
-        "acknowledged": alert.acknowledged
-    }
+    try:
+        from database import FraudAlert
+
+        db = SessionLocal()
+        alert = db.query(FraudAlert).filter(FraudAlert.id == alert_id).first()
+        db.close()
+        
+        if not alert:
+            raise HTTPException(status_code=404, detail="Alert not found")
+        
+        # Handle potential None values safely
+        signals = {}
+        if alert.detection_signals:
+            try:
+                signals = json.loads(alert.detection_signals)
+            except:
+                signals = {"raw": alert.detection_signals}
+        
+        timestamp = None
+        if alert.timestamp:
+            try:
+                timestamp = alert.timestamp.isoformat()
+            except:
+                timestamp = str(alert.timestamp)
+        
+        # Calculate risk level
+        risk_score = alert.risk_score or 0
+        if risk_score > 0.65:
+            risk_level = "CRITICAL" if risk_score > 0.8 else "HIGH"
+        elif risk_score > 0.4:
+            risk_level = "MEDIUM"
+        else:
+            risk_level = "LOW"
+
+        return {
+            "alert_id": alert.id,
+            "transaction_id": alert.transaction_id or "N/A",
+            "user_id": alert.user_id or "N/A",
+            "fraud_type": alert.fraud_type or "unknown",
+            "risk_score": risk_score,
+            "risk_level": risk_level,
+            "detection_signals": signals,
+            "email_sent": alert.email_sent or False,
+            "timestamp": timestamp,
+            "acknowledged": alert.acknowledged or False
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error in get_alert_details: {str(e)}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/v2/alerts/{alert_id}/acknowledge")
 def acknowledge_alert(alert_id: int):
-    from database import FraudAlert
-    
-    db = SessionLocal()
-    alert = db.query(FraudAlert).filter(FraudAlert.id == alert_id).first()
-    if alert:
-        alert.acknowledged = True
-        db.commit()
-    db.close()
-    
-    return {"success": True, "alert_id": alert_id, "acknowledged": True}
+    try:
+        from database import FraudAlert
+
+        db = SessionLocal()
+        alert = db.query(FraudAlert).filter(FraudAlert.id == alert_id).first()
+        if alert:
+            alert.acknowledged = True
+            db.commit()
+        db.close()
+
+        return {"success": True, "alert_id": alert_id, "acknowledged": True}
+    except Exception as e:
+        print(f"❌ Error in acknowledge_alert: {str(e)}")
+        traceback.print_exc()
+        return {"success": False, "error": str(e)}
 
 @app.post("/api/analyze")
 async def analyze_transaction(transaction: dict):
