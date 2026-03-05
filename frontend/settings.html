@@ -3,193 +3,604 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings | LogSense</title>
+    <title>LogSense - Settings</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Times+New+Roman&display=swap');
-        * { font-family: 'Times New Roman', Times, serif !important; }
-        :root {
-            --primary: #6366f1; --dark-bg: #0f172a; --sidebar-bg: #1e293b;
-            --card-bg: #1e293b; --card-border: #334155; --text-primary: #f1f5f9;
-            --text-secondary: #94a3b8; --danger: #ef4444; --warning: #f59e0b;
-            --success: #10b981;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         }
+
         body {
-            font-family: 'Times New Roman', Times, serif; background: var(--dark-bg);
-            color: var(--text-primary); display: flex; min-height: 100vh; margin: 0; padding: 0;
+            background-color: #f5f5f5;
+            display: flex;
+            min-height: 100vh;
         }
+
+        /* Sidebar */
         .sidebar {
-            width: 250px; background: var(--sidebar-bg); border-right: 1px solid var(--card-border);
-            padding: 30px 0; position: fixed; height: 100vh; overflow-y: auto;
+            width: 250px;
+            background: #1a1a1a;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
         }
-        .logo { padding: 0 25px 30px; border-bottom: 1px solid var(--card-border); margin-bottom: 30px; }
-        .logo h2 { font-size: 1.8rem; background: linear-gradient(135deg, var(--primary) 0%, #8b5cf6 100%); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 5px; }
-        .logo p { color: var(--text-secondary); font-size: 0.9rem; margin: 0; }
-        .nav-item { margin-bottom: 5px; }
-        .nav-link {
-            display: flex; align-items: center; padding: 12px 25px; color: var(--text-secondary);
-            text-decoration: none; transition: all 0.3s; border-left: 4px solid transparent;
+
+        .sidebar-header {
+            padding: 24px 20px;
+            border-bottom: 1px solid #333;
         }
-        .nav-link:hover, .nav-link.active {
-            background: rgba(99, 102, 241, 0.1); color: var(--text-primary);
-            border-left-color: var(--primary);
+
+        .sidebar-header h2 {
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: white;
         }
-        .nav-icon { width: 24px; margin-right: 12px; font-size: 1.1rem; }
-        .nav-badge {
-            margin-left: auto; background: var(--danger); color: white;
-            font-size: 0.7rem; padding: 2px 8px; border-radius: 10px;
+
+        .sidebar-header p {
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
         }
-        .main-content { flex: 1; margin-left: 250px; padding: 0; }
-        .topbar {
-            background: var(--card-bg); border-bottom: 1px solid var(--card-border);
-            padding: 20px 30px; display: flex; justify-content: space-between; align-items: center;
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 20px 0;
         }
-        .page-title h1 { font-size: 1.8rem; margin: 0; font-weight: bold; }
-        .topbar-actions { display: flex; align-items: center; gap: 20px; }
-        .search-box { position: relative; }
-        .search-input {
-            padding: 8px 15px 8px 35px; background: rgba(30, 41, 59, 0.8);
-            border: 1px solid var(--card-border); border-radius: 6px;
-            color: var(--text-primary); width: 220px; font-size: 0.9rem;
+
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: #ccc;
+            text-decoration: none;
+            transition: all 0.3s;
+            font-size: 14px;
         }
-        .search-icon {
-            position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
-            color: var(--text-secondary); font-size: 0.9rem;
+
+        .sidebar-nav a:hover {
+            background: #333;
+            color: white;
         }
-        .notification-btn {
-            background: none; border: none; color: var(--text-secondary);
-            font-size: 1.1rem; cursor: pointer; position: relative;
+
+        .sidebar-nav a.active {
+            background: #333;
+            color: white;
+            border-left: 3px solid white;
         }
-        .notification-badge {
-            position: absolute; top: -5px; right: -5px; background: var(--danger);
-            color: white; font-size: 0.65rem; width: 16px; height: 16px;
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+
+        .sidebar-nav a i {
+            width: 24px;
+            font-size: 16px;
+            margin-right: 12px;
         }
-        .content-wrapper { padding: 25px; }
-        .settings-card {
-            background: var(--card-bg); border: 1px solid var(--card-border);
-            border-radius: 10px; padding: 25px; max-width: 600px; margin: 0 auto;
+
+        .sidebar-footer {
+            padding: 20px;
+            border-top: 1px solid #333;
         }
-        .settings-header {
-            margin-bottom: 25px; padding-bottom: 15px;
-            border-bottom: 1px solid var(--card-border);
+
+        .sidebar-footer a {
+            display: flex;
+            align-items: center;
+            color: #ccc;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 8px 0;
         }
-        .settings-header h2 { margin: 0; font-size: 1.3rem; }
-        .settings-group { margin-bottom: 25px; }
-        .settings-group h3 {
-            font-size: 1rem; margin-bottom: 15px; color: var(--text-secondary);
+
+        .sidebar-footer a:hover {
+            color: white;
         }
-        .settings-item {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 12px 0; border-bottom: 1px solid var(--card-border);
+
+        .sidebar-footer a i {
+            width: 24px;
+            margin-right: 12px;
         }
-        .settings-label { font-weight: 500; }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 250px;
+            padding: 30px;
+        }
+
+        .page-header {
+            margin-bottom: 30px;
+        }
+
+        .page-header h1 {
+            font-size: 24px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .page-header p {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        /* Settings Sections */
+        .settings-section {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+
+        .settings-section h2 {
+            color: #333;
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .settings-row {
+            display: flex;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .settings-row:last-child {
+            border-bottom: none;
+        }
+
+        .settings-label {
+            width: 200px;
+            color: #666;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .settings-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-right: 15px;
+        }
+
+        .settings-input:focus {
+            outline: none;
+            border-color: #1a1a1a;
+        }
+
         .settings-value {
-            color: var(--text-secondary); display: flex; align-items: center; gap: 10px;
+            flex: 1;
+            color: #333;
+            font-size: 14px;
         }
-        .settings-value i { color: var(--success); }
-        .btn-edit {
-            padding: 4px 12px; background: rgba(99, 102, 241, 0.1);
-            border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 6px;
-            color: var(--primary); cursor: pointer; font-size: 0.8rem;
+
+        .btn-save {
+            background: #1a1a1a;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
         }
-        .btn-edit:hover { background: var(--primary); color: white; }
-        @media (max-width: 1024px) {
-            .sidebar { width: 70px; }
-            .main-content { margin-left: 70px; }
-            .nav-text, .logo h2, .logo p { display: none; }
+
+        .btn-save:hover {
+            background: #333;
+        }
+
+        .btn-test {
+            background: white;
+            color: #1a1a1a;
+            padding: 10px 20px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            margin-left: 10px;
+        }
+
+        .btn-test:hover {
+            background: #f5f5f5;
+        }
+
+        /* Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+            margin-right: 15px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: #1a1a1a;
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+
+        .toggle-status {
+            color: #666;
+            font-size: 13px;
+        }
+
+        /* Demo Controls */
+        .demo-controls-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .demo-control-card {
+            background: #f9f9f9;
+            border-radius: 6px;
+            padding: 15px;
+        }
+
+        .demo-control-card h3 {
+            color: #333;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .demo-control-card p {
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 15px;
+        }
+
+        .demo-btn {
+            background: white;
+            color: #1a1a1a;
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            width: 100%;
+        }
+
+        .demo-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .demo-btn.danger {
+            background: #fee;
+            color: #c00;
+            border-color: #fcc;
+        }
+
+        .demo-btn.danger:hover {
+            background: #fdd;
+        }
+
+        /* Status Message */
+        .status-message {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 6px;
+            display: none;
+        }
+
+        .status-success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #a5d6a7;
+        }
+
+        .status-error {
+            background: #fee;
+            color: #c00;
+            border: 1px solid #fcc;
+        }
+
+        /* Info Box */
+        .info-box {
+            background: #f9f9f9;
+            border-left: 4px solid #1a1a1a;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .info-box p {
+            color: #666;
+            font-size: 13px;
+            margin: 5px 0;
         }
     </style>
 </head>
 <body>
     <div class="sidebar">
-        <div class="logo"><h2>LogSense</h2><p>Fraud Detection</p></div>
-        <nav class="sidebar-menu">
-            <div class="nav-item"><a href="dashboard.html" class="nav-link"><i class="fas fa-tachometer-alt nav-icon"></i><span class="nav-text">Dashboard</span></a></div>
-            <div class="nav-item"><a href="alerts.html" class="nav-link"><i class="fas fa-bell nav-icon"></i><span class="nav-text">Alerts</span><span class="nav-badge" id="alertBadge">3</span></a></div>
-            <div class="nav-item"><a href="analyze.html" class="nav-link"><i class="fas fa-search nav-icon"></i><span class="nav-text">Analyze</span></a></div>
-            <div class="nav-item"><a href="settings.html" class="nav-link active"><i class="fas fa-cog nav-icon"></i><span class="nav-text">Settings</span></a></div>
-            <div class="nav-item" style="margin-top: 50px;"><a href="login.html" class="nav-link"><i class="fas fa-sign-out-alt nav-icon"></i><span class="nav-text">Logout</span></a></div>
-        </nav>
+        <div class="sidebar-header">
+            <h2>LOGSENSE</h2>
+            <p>Fraud Detection</p>
+        </div>
+
+        <div class="sidebar-nav">
+            <a href="/dashboard">
+                <i>Ì≥ä</i> Dashboard
+            </a>
+            <a href="/alerts">
+                <i>Ì∫®</i> Alerts
+            </a>
+            <a href="/analyze">
+                <i>Ì¥ç</i> Analyze
+            </a>
+            <a href="/settings" class="active">
+                <i>‚öôÔ∏è</i> Settings
+            </a>
+        </div>
+
+        <div class="sidebar-footer">
+            <a href="#" onclick="logout()">
+                <i>Ì±§</i> Logout
+            </a>
+        </div>
     </div>
-    
+
     <div class="main-content">
-        <div class="topbar">
-            <div class="page-title"><h1>Settings</h1></div>
-            <div class="topbar-actions">
-                <div class="search-box"><i class="fas fa-search search-icon"></i><input type="text" class="search-input" placeholder="Search..."></div>
-                <button class="notification-btn" onclick="window.location.href='alerts.html'"><i class="fas fa-bell"></i><span class="notification-badge" id="notificationBadge">3</span></button>
+        <div class="page-header">
+            <h1>Settings</h1>
+            <p>Configure system settings and demo controls</p>
+        </div>
+
+        <!-- Email Configuration -->
+        <div class="settings-section">
+            <h2>Email Configuration</h2>
+            
+            <div class="info-box">
+                <p>Alerts will be sent to the configured email address for all CRITICAL and HIGH risk transactions.</p>
+            </div>
+
+            <div class="settings-row">
+                <div class="settings-label">Recipient Email:</div>
+                <input type="email" id="emailInput" class="settings-input" value="rebeccabosibori589@gmail.com">
+                <button class="btn-save" onclick="updateEmail()">Update</button>
+            </div>
+
+            <div class="settings-row">
+                <div class="settings-label">Enable Email Alerts:</div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="emailToggle" checked onchange="toggleEmailAlerts()">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span class="toggle-status" id="toggleStatus">Enabled</span>
+            </div>
+
+            <div class="settings-row">
+                <div class="settings-label">Test Configuration:</div>
+                <button class="btn-test" onclick="testEmail()">Send Test Email</button>
+            </div>
+
+            <div id="emailStatus" class="status-message"></div>
+        </div>
+
+        <!-- Demo Controls -->
+        <div class="settings-section">
+            <h2>Demo Controls</h2>
+            
+            <div class="info-box">
+                <p>Use these controls to reset demo data or simulate different scenarios.</p>
+            </div>
+
+            <div class="demo-controls-grid">
+                <div class="demo-control-card">
+                    <h3>Reset Balances</h3>
+                    <p>Reset all user balances to default values</p>
+                    <button class="demo-btn" onclick="resetBalances()">Reset Now</button>
+                </div>
+
+                <div class="demo-control-card">
+                    <h3>Clear History</h3>
+                    <p>Clear all transaction history</p>
+                    <button class="demo-btn" onclick="clearHistory()">Clear Now</button>
+                </div>
+
+                <div class="demo-control-card">
+                    <h3>Demo Mode</h3>
+                    <p>Toggle demo mode features</p>
+                    <button class="demo-btn" onclick="toggleDemoMode()">Toggle Demo</button>
+                </div>
+
+                <div class="demo-control-card">
+                    <h3>Reset Everything</h3>
+                    <p>Reset all data to default state</p>
+                    <button class="demo-btn danger" onclick="resetEverything()">Reset All</button>
+                </div>
             </div>
         </div>
-        
-        <div class="content-wrapper">
-            <div class="settings-card">
-                <div class="settings-header">
-                    <h2>‚öôÔ∏è System Configuration</h2>
-                </div>
-                
-                <div class="settings-group">
-                    <h3>Email Alerts</h3>
-                    <div class="settings-item">
-                        <span class="settings-label">Recipient Email</span>
-                        <div class="settings-value">
-                            <i class="fas fa-check-circle"></i> rebeccabosibori589@gmail.com
-                            <button class="btn-edit" onclick="alert('Email update would open here')">Edit</button>
-                        </div>
-                    </div>
-                    <div class="settings-item">
-                        <span class="settings-label">Status</span>
-                        <div class="settings-value">
-                            <i class="fas fa-check-circle" style="color: var(--success);"></i> Active
-                        </div>
-                    </div>
-                </div>
 
-                <div class="settings-group">
-                    <h3>Autoencoder Thresholds</h3>
-                    <div class="settings-item">
-                        <span class="settings-label">SIM Swap</span>
-                        <div class="settings-value">0.67 <button class="btn-edit" onclick="alert('Threshold adjustment would open here')">Adjust</button></div>
-                    </div>
-                    <div class="settings-item">
-                        <span class="settings-label">Identity Theft</span>
-                        <div class="settings-value">0.71 <button class="btn-edit" onclick="alert('Threshold adjustment would open here')">Adjust</button></div>
-                    </div>
-                    <div class="settings-item">
-                        <span class="settings-label">Device Cloning</span>
-                        <div class="settings-value">0.82 <button class="btn-edit" onclick="alert('Threshold adjustment would open here')">Adjust</button></div>
-                    </div>
-                    <div class="settings-item">
-                        <span class="settings-label">Mobile Fraud</span>
-                        <div class="settings-value">0.65 <button class="btn-edit" onclick="alert('Threshold adjustment would open here')">Adjust</button></div>
-                    </div>
-                </div>
+        <!-- System Information -->
+        <div class="settings-section">
+            <h2>System Information</h2>
+            
+            <div class="settings-row">
+                <div class="settings-label">Version:</div>
+                <div class="settings-value">2.0.0</div>
+            </div>
 
-                <div class="settings-group">
-                    <h3>Risk Levels</h3>
-                    <div class="settings-item">
-                        <span class="settings-label">Critical Risk (80-100%)</span>
-                        <div class="settings-value">Auto-block + Alert</div>
-                    </div>
-                    <div class="settings-item">
-                        <span class="settings-label">High Risk (60-80%)</span>
-                        <div class="settings-value">PIN Prompt + Alert</div>
-                    </div>
-                    <div class="settings-item">
-                        <span class="settings-label">Medium Risk (40-60%)</span>
-                        <div class="settings-value">PIN Prompt</div>
-                    </div>
-                    <div class="settings-item">
-                        <span class="settings-label">Low Risk (0-40%)</span>
-                        <div class="settings-value">Auto-approve</div>
-                    </div>
+            <div class="settings-row">
+                <div class="settings-label">API Status:</div>
+                <div class="settings-value">
+                    <span id="apiStatus">Checking...</span>
+                </div>
+            </div>
+
+            <div class="settings-row">
+                <div class="settings-label">Last Updated:</div>
+                <div class="settings-value" id="lastUpdated">-</div>
+            </div>
+        </div>
+
+        <!-- Fraud Types List -->
+        <div class="settings-section">
+            <h2>Detected Fraud Types</h2>
+            
+            <div class="info-box">
+                <p>All 8 fraud types are actively monitored</p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                <div style="padding: 10px; background: #f9f9f9; border-radius: 4px;">
+                    <span style="color: #666;">‚úì SIM Swap</span>
+                </div>
+                <div style="padding: 10px; background: #f9f9f9; border-radius: 4px;">
+                    <span style="color: #666;">‚úì Identity Theft</span>
+                </div>
+                <div style="padding: 10px; background: #f9f9f9; border-radius: 4px;">
+                    <span style="color: #666;">‚úì Device Cloning</span>
+                </div>
+                <div style="padding: 10px; background: #f9f9f9; border-radius: 4px;">
+                    <span style="color: #666;">‚úì Mobile Money Fraud</span>
+                </div>
+                <div style="padding: 10px; background: #f9f9f9; border-radius: 4px;">
+                    <span style="color: #666;">‚úì Agent Collusion</span>
+                </div>
+                <div style="padding: 10px; background: #f9f9f9; border-radius: 4px;">
+                    <span style="color: #666;">‚úì Social Engineering</span>
+                </div>
+                <div style="padding: 10px; background: #f9f9f9; border-radius: 4px;">
+                    <span style="color: #666;">‚úì Repayment Fraud</span>
+                </div>
+                <div style="padding: 10px; background: #f9f9f9; border-radius: 4px;">
+                    <span style="color: #666;">‚úì Synthetic Identity</span>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        document.getElementById('alertBadge').textContent = '3';
-        document.getElementById('notificationBadge').textContent = '3';
+        function logout() {
+            sessionStorage.removeItem('adminLoggedIn');
+            window.location.href = '/login';
+        }
+
+        function showMessage(elementId, message, isSuccess) {
+            const msgDiv = document.getElementById(elementId);
+            msgDiv.textContent = message;
+            msgDiv.className = 'status-message ' + (isSuccess ? 'status-success' : 'status-error');
+            msgDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                msgDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        // Email functions
+        function updateEmail() {
+            const email = document.getElementById('emailInput').value;
+            if (!email || !email.includes('@')) {
+                showMessage('emailStatus', 'Please enter a valid email address', false);
+                return;
+            }
+            showMessage('emailStatus', 'Email updated successfully (demo)', true);
+        }
+
+        function toggleEmailAlerts() {
+            const toggle = document.getElementById('emailToggle');
+            const status = document.getElementById('toggleStatus');
+            status.textContent = toggle.checked ? 'Enabled' : 'Disabled';
+            showMessage('emailStatus', `Email alerts ${toggle.checked ? 'enabled' : 'disabled'} (demo)`, true);
+        }
+
+        function testEmail() {
+            showMessage('emailStatus', 'Test email sent successfully (demo)', true);
+        }
+
+        // Demo control functions
+        function resetBalances() {
+            if (confirm('Reset all user balances to default values?')) {
+                showMessage('emailStatus', 'Balances reset successfully (demo)', true);
+            }
+        }
+
+        function clearHistory() {
+            if (confirm('Clear all transaction history?')) {
+                showMessage('emailStatus', 'Transaction history cleared (demo)', true);
+            }
+        }
+
+        function toggleDemoMode() {
+            showMessage('emailStatus', 'Demo mode toggled (demo)', true);
+        }
+
+        function resetEverything() {
+            if (confirm('WARNING: This will reset ALL data to default. Continue?')) {
+                showMessage('emailStatus', 'All data reset to default (demo)', true);
+            }
+        }
+
+        // System info
+        async function checkApiStatus() {
+            try {
+                const response = await fetch('/health');
+                if (response.ok) {
+                    document.getElementById('apiStatus').innerHTML = 'Ìø¢ Online';
+                } else {
+                    document.getElementById('apiStatus').innerHTML = 'Ì¥¥ Error';
+                }
+            } catch {
+                document.getElementById('apiStatus').innerHTML = 'Ìø° Demo Mode';
+            }
+        }
+
+        function updateLastUpdated() {
+            const now = new Date();
+            document.getElementById('lastUpdated').textContent = now.toLocaleString();
+        }
+
+        window.onload = function() {
+            if (sessionStorage.getItem('adminLoggedIn') !== 'true') {
+                window.location.href = '/login';
+                return;
+            }
+            checkApiStatus();
+            updateLastUpdated();
+            setInterval(updateLastUpdated, 1000);
+        };
     </script>
 </body>
 </html>

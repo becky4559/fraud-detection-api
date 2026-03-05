@@ -3,121 +3,436 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LogSense - Fraud Alerts</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>LogSense - Alerts</title>
     <style>
-        /* Additional styles for email truncation */
-        .email-truncate {
-            max-width: 180px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background: #1a1a1a;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+        }
+
+        .sidebar-header {
+            padding: 24px 20px;
+            border-bottom: 1px solid #333;
+        }
+
+        .sidebar-header h2 {
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: white;
+        }
+
+        .sidebar-header p {
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 20px 0;
+        }
+
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: #ccc;
+            text-decoration: none;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .sidebar-nav a:hover {
+            background: #333;
+            color: white;
+        }
+
+        .sidebar-nav a.active {
+            background: #333;
+            color: white;
+            border-left: 3px solid white;
+        }
+
+        .sidebar-nav a i {
+            width: 24px;
+            font-size: 16px;
+            margin-right: 12px;
+        }
+
+        .sidebar-footer {
+            padding: 20px;
+            border-top: 1px solid #333;
+        }
+
+        .sidebar-footer a {
+            display: flex;
+            align-items: center;
+            color: #ccc;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 8px 0;
+        }
+
+        .sidebar-footer a:hover {
+            color: white;
+        }
+
+        .sidebar-footer a i {
+            width: 24px;
+            margin-right: 12px;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 250px;
+            padding: 30px;
+        }
+
+        .page-header {
+            margin-bottom: 30px;
+        }
+
+        .page-header h1 {
+            font-size: 24px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .page-header p {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-card h3 {
+            color: #666;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+
+        .stat-number {
+            color: #1a1a1a;
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .stat-subtitle {
+            color: #999;
+            font-size: 12px;
+        }
+
+        /* Filter Section */
+        .filter-section {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            background: white;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 13px;
+        }
+
+        .filter-btn:hover {
+            background: #f5f5f5;
+        }
+
+        .filter-btn.active {
+            background: #1a1a1a;
+            color: white;
+            border-color: #1a1a1a;
+        }
+
+        /* Search Bar */
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .search-bar input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .search-bar input:focus {
+            outline: none;
+            border-color: #1a1a1a;
+        }
+
+        .search-bar button {
+            padding: 12px 24px;
+            background: #1a1a1a;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .search-bar button:hover {
+            background: #333;
+        }
+
+        /* Table */
+        .table-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            overflow: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1000px;
+        }
+
+        th {
+            background: #f8f9fa;
+            padding: 16px;
+            text-align: left;
+            font-weight: 600;
+            color: #666;
+            font-size: 13px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        td {
+            padding: 16px;
+            border-bottom: 1px solid #f0f0f0;
+            color: #333;
+            font-size: 13px;
+        }
+
+        tr:hover {
+            background: #f9f9f9;
+            cursor: pointer;
+        }
+
+        .risk-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
             display: inline-block;
         }
-        .stat-card .number.small {
-            font-size: 18px;
-            word-break: break-all;
+
+        .risk-critical {
+            background: #fee;
+            color: #c00;
+        }
+
+        .risk-high {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .risk-medium {
+            background: #fff9c4;
+            color: #fbc02d;
+        }
+
+        .risk-low {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .status-new {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+        }
+
+        .status-reviewed {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+        }
+
+        .footer {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #666;
+            font-size: 13px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #c00;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>LogSense</h1>
-            <p>Fraud Detection System - Real-time Alerts</p>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>LOGSENSE</h2>
+            <p>Fraud Detection</p>
         </div>
 
-        <div class="nav">
-            <a href="dashboard.html">Dashboard</a>
-            <a href="alerts.html" class="active">Alerts</a>
-            <a href="analyze.html">Analyze</a>
-            <a href="settings.html">Settings</a>
+        <div class="sidebar-nav">
+            <a href="/dashboard">
+                <i>Ì≥ä</i> Dashboard
+            </a>
+            <a href="/alerts" class="active">
+                <i>Ì∫®</i> Alerts
+            </a>
+            <a href="/analyze">
+                <i>Ì¥ç</i> Analyze
+            </a>
+            <a href="/settings">
+                <i>‚öôÔ∏è</i> Settings
+            </a>
         </div>
 
-        <div class="main-content">
-            <!-- Stats Cards -->
-            <div class="stats-grid" id="statsGrid">
-                <div class="stat-card">
-                    <h3>Total Alerts</h3>
-                    <div class="number" id="totalAlerts">0</div>
-                    <div class="subtitle">Last 24 hours</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Critical</h3>
-                    <div class="number" id="criticalCount">0</div>
-                    <div class="subtitle">Requires immediate attention</div>
-                </div>
-                <div class="stat-card">
-                    <h3>High Risk</h3>
-                    <div class="number" id="highCount">0</div>
-                    <div class="subtitle">Needs review</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Email Recipient</h3>
-                    <div class="number small" id="emailRecipient">
-                        <span class="email-truncate" title="rebeccabosibori589@gmail.com">rebeccabosibori589@gmail.com</span>
-                    </div>
-                    <div class="subtitle">Alert destination</div>
-                </div>
-            </div>
+        <div class="sidebar-footer">
+            <a href="#" onclick="logout()">
+                <i>Ì±§</i> Logout
+            </a>
+        </div>
+    </div>
 
-            <!-- Filter Buttons -->
-            <div class="filter-section" id="filterSection">
-                <button class="filter-btn active" data-filter="all">All</button>
-                <button class="filter-btn" data-filter="sim_swap">SIM Swap</button>
-                <button class="filter-btn" data-filter="identity_theft">Identity Theft</button>
-                <button class="filter-btn" data-filter="device_cloning">Device Clone</button>
-                <button class="filter-btn" data-filter="mobile_money_fraud">Mobile Fraud</button>
-                <button class="filter-btn" data-filter="agent_collusion">Agent Collusion</button>
-                <button class="filter-btn" data-filter="social_engineering">Social Engineering</button>
-                <button class="filter-btn" data-filter="repayment_fraud">Repayment Fraud</button>
-                <button class="filter-btn" data-filter="synthetic_identity">Synthetic Identity</button>
-            </div>
+    <div class="main-content">
+        <div class="page-header">
+            <h1>Alerts</h1>
+            <p>View and manage fraud alerts</p>
+        </div>
 
-            <!-- Search Bar -->
-            <div class="search-bar">
-                <input type="text" id="searchInput" placeholder="Search by user ID, transaction ID, or fraud type...">
-                <button onclick="searchAlerts()">Search</button>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Total Alerts</h3>
+                <div class="stat-number" id="totalAlerts">0</div>
+                <div class="stat-subtitle">All time</div>
             </div>
+            <div class="stat-card">
+                <h3>Critical</h3>
+                <div class="stat-number" id="criticalCount">0</div>
+                <div class="stat-subtitle">Immediate action</div>
+            </div>
+            <div class="stat-card">
+                <h3>High Risk</h3>
+                <div class="stat-number" id="highCount">0</div>
+                <div class="stat-subtitle">Needs review</div>
+            </div>
+            <div class="stat-card">
+                <h3>Unreviewed</h3>
+                <div class="stat-number" id="unreviewedCount">0</div>
+                <div class="stat-subtitle">Pending</div>
+            </div>
+        </div>
 
-            <!-- Alerts Table -->
-            <div class="table-container">
-                <table id="alertsTable">
-                    <thead>
-                        <tr>
-                            <th>Alert ID</th>
-                            <th>Transaction</th>
-                            <th>User ID</th>
-                            <th>Fraud Type</th>
-                            <th>Risk Score</th>
-                            <th>Risk Level</th>
-                            <th>Timestamp</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="alertsBody">
-                        <tr>
-                            <td colspan="8" class="loading">Loading alerts...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+        <div class="filter-section" id="filterSection">
+            <button class="filter-btn active" data-filter="all">All</button>
+            <button class="filter-btn" data-filter="sim_swap">SIM Swap</button>
+            <button class="filter-btn" data-filter="identity_theft">Identity Theft</button>
+            <button class="filter-btn" data-filter="device_cloning">Device Clone</button>
+            <button class="filter-btn" data-filter="mobile_money_fraud">Mobile Fraud</button>
+            <button class="filter-btn" data-filter="agent_collusion">Agent Collusion</button>
+            <button class="filter-btn" data-filter="social_engineering">Social Engineering</button>
+            <button class="filter-btn" data-filter="repayment_fraud">Repayment Fraud</button>
+            <button class="filter-btn" data-filter="synthetic_identity">Synthetic Identity</button>
+        </div>
 
-            <!-- Footer -->
-            <div class="footer">
-                <div class="total" id="footerTotal">Total: 0 alerts ‚Ä¢ 0 unreviewed</div>
-                <div class="email-info">Alerts sent to: rebeccabosibori589@gmail.com</div>
-            </div>
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="Search by user ID, transaction ID, or fraud type...">
+            <button onclick="searchAlerts()">Search</button>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Alert ID</th>
+                        <th>Transaction</th>
+                        <th>User ID</th>
+                        <th>Fraud Type</th>
+                        <th>Risk Score</th>
+                        <th>Risk Level</th>
+                        <th>Timestamp</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="alertsBody">
+                    <tr>
+                        <td colspan="8" class="loading">Loading alerts...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="footer">
+            <div id="footerTotal">Total: 0 alerts ‚Ä¢ 0 unreviewed</div>
+            <div>Alerts sent to: rebeccabosibori589@gmail.com</div>
         </div>
     </div>
 
     <script>
-        // Store all alerts globally
         let allAlerts = [];
         let currentFilter = 'all';
         let searchTerm = '';
 
-        // Fraud type mapping for display
         const fraudTypeNames = {
             'sim_swap': 'SIM Swap',
             'identity_theft': 'Identity Theft',
@@ -127,67 +442,71 @@
             'social_engineering': 'Social Engineering',
             'repayment_fraud': 'Repayment Fraud',
             'synthetic_identity': 'Synthetic Identity',
-            'suspicious_transaction': 'Suspicious Transaction',
-            'wrong_pin_attempt': 'Wrong PIN Attempt',
-            'blocked_transaction': 'Blocked Transaction'
+            'suspicious_transaction': 'Suspicious',
+            'wrong_pin_attempt': 'Wrong PIN',
+            'blocked_transaction': 'Blocked'
         };
 
-        // Fetch alerts from API - using relative URL
+        function logout() {
+            sessionStorage.removeItem('adminLoggedIn');
+            window.location.href = '/login';
+        }
+
         async function fetchAlerts() {
             try {
                 const response = await fetch('/api/v2/alerts/recent?limit=50');
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
                 const data = await response.json();
-                allAlerts = data;
-                updateDashboard();
+                
+                if (Array.isArray(data)) {
+                    allAlerts = data;
+                } else {
+                    allAlerts = [];
+                }
+                
+                updateDisplay();
             } catch (error) {
                 console.error('Error fetching alerts:', error);
                 document.getElementById('alertsBody').innerHTML = 
-                    '<tr><td colspan="8" class="error">Failed to load alerts. Please try again. (Error: ' + error.message + ')</td></tr>';
+                    '<tr><td colspan="8" class="error">Failed to load alerts</td></tr>';
             }
         }
 
-        // Update dashboard with alerts
-        function updateDashboard() {
-            // Apply filters
+        function updateDisplay() {
             let filteredAlerts = allAlerts;
             
-            // Apply type filter
             if (currentFilter !== 'all') {
-                filteredAlerts = filteredAlerts.filter(alert => alert.fraud_type === currentFilter);
+                filteredAlerts = filteredAlerts.filter(a => a.fraud_type === currentFilter);
             }
             
-            // Apply search
             if (searchTerm) {
                 const term = searchTerm.toLowerCase();
-                filteredAlerts = filteredAlerts.filter(alert => 
-                    (alert.user_id && alert.user_id.toLowerCase().includes(term)) ||
-                    (alert.transaction_id && alert.transaction_id.toLowerCase().includes(term)) ||
-                    (alert.fraud_type && fraudTypeNames[alert.fraud_type]?.toLowerCase().includes(term))
+                filteredAlerts = filteredAlerts.filter(a => 
+                    (a.user_id && a.user_id.toLowerCase().includes(term)) ||
+                    (a.transaction_id && a.transaction_id.toLowerCase().includes(term)) ||
+                    (a.fraud_type && fraudTypeNames[a.fraud_type]?.toLowerCase().includes(term))
                 );
             }
 
-            // Update stats
-            const totalAlerts = allAlerts.length;
-            const criticalCount = allAlerts.filter(a => a.risk_level === 'CRITICAL').length;
-            const highCount = allAlerts.filter(a => a.risk_level === 'HIGH').length;
-            
-            document.getElementById('totalAlerts').textContent = totalAlerts;
-            document.getElementById('criticalCount').textContent = criticalCount;
-            document.getElementById('highCount').textContent = highCount;
-
-            // Render alerts
+            updateStats(filteredAlerts);
             renderAlerts(filteredAlerts);
             
-            // Update footer
             const unreviewed = filteredAlerts.filter(a => !a.acknowledged).length;
             document.getElementById('footerTotal').textContent = 
                 `Total: ${filteredAlerts.length} alerts ‚Ä¢ ${unreviewed} unreviewed`;
         }
 
-        // Render alerts to table
+        function updateStats(alerts) {
+            const total = alerts.length;
+            const critical = alerts.filter(a => a.risk_level === 'CRITICAL').length;
+            const high = alerts.filter(a => a.risk_level === 'HIGH').length;
+            const unreviewed = alerts.filter(a => !a.acknowledged).length;
+            
+            document.getElementById('totalAlerts').textContent = total;
+            document.getElementById('criticalCount').textContent = critical;
+            document.getElementById('highCount').textContent = high;
+            document.getElementById('unreviewedCount').textContent = unreviewed;
+        }
+
         function renderAlerts(alerts) {
             const tbody = document.getElementById('alertsBody');
             
@@ -199,7 +518,7 @@
             let html = '';
             alerts.forEach(alert => {
                 const riskClass = getRiskClass(alert.risk_level);
-                const fraudType = fraudTypeNames[alert.fraud_type] || alert.fraud_type.replace(/_/g, ' ');
+                const fraudType = fraudTypeNames[alert.fraud_type] || alert.fraud_type;
                 const timestamp = new Date(alert.timestamp).toLocaleString();
                 const status = alert.acknowledged ? 
                     '<span class="status-reviewed">Reviewed</span>' : 
@@ -207,13 +526,13 @@
                 const riskPercent = Math.round(alert.risk_score * 100);
                 
                 html += `
-                    <tr onclick="viewAlert(${alert.alert_id})" style="cursor: pointer;">
+                    <tr onclick="viewAlert(${alert.alert_id})">
                         <td>#${alert.alert_id}</td>
-                        <td>${alert.transaction_id || 'N/A'}</td>
-                        <td>${alert.user_id || 'N/A'}</td>
-                        <td class="fraud-type">${fraudType}</td>
+                        <td>${alert.transaction_id}</td>
+                        <td>${alert.user_id}</td>
+                        <td>${fraudType}</td>
                         <td>${riskPercent}%</td>
-                        <td><span class="risk-badge ${riskClass}">${alert.risk_level || 'UNKNOWN'}</span></td>
+                        <td><span class="risk-badge ${riskClass}">${alert.risk_level}</span></td>
                         <td>${timestamp}</td>
                         <td>${status}</td>
                     </tr>
@@ -223,10 +542,8 @@
             tbody.innerHTML = html;
         }
 
-        // Helper function to get risk class
         function getRiskClass(level) {
-            if (!level) return '';
-            switch(level.toUpperCase()) {
+            switch(level?.toUpperCase()) {
                 case 'CRITICAL': return 'risk-critical';
                 case 'HIGH': return 'risk-high';
                 case 'MEDIUM': return 'risk-medium';
@@ -235,46 +552,41 @@
             }
         }
 
-        // View alert details
         function viewAlert(alertId) {
-            window.location.href = `analyze.html?id=${alertId}`;
+            window.location.href = `/analyze?id=${alertId}`;
         }
 
-        // Filter alerts by type
         function filterAlerts(type) {
             currentFilter = type;
-            
-            // Update active button
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 btn.classList.remove('active');
                 if (btn.dataset.filter === type) {
                     btn.classList.add('active');
                 }
             });
-            
-            updateDashboard();
+            updateDisplay();
         }
 
-        // Search alerts
         function searchAlerts() {
             searchTerm = document.getElementById('searchInput').value;
-            updateDashboard();
+            updateDisplay();
         }
 
-        // Add filter button event listeners
-        document.addEventListener('DOMContentLoaded', function() {
+        window.onload = function() {
+            if (sessionStorage.getItem('adminLoggedIn') !== 'true') {
+                window.location.href = '/login';
+                return;
+            }
+            
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     filterAlerts(this.dataset.filter);
                 });
             });
             
-            // Load alerts
             fetchAlerts();
-            
-            // Refresh every 30 seconds
             setInterval(fetchAlerts, 30000);
-        });
+        };
     </script>
 </body>
 </html>
