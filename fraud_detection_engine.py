@@ -10,63 +10,63 @@ class FraudDetectionEngine:
                 'risk_level': 'CRITICAL',
                 'threshold': 0.75,
                 'color': '#c00',
-                'icon': 'í³±'
+                'icon': 'SW'
             },
             'IDENTITY_THEFT': {
                 'name': 'Identity Theft',
                 'risk_level': 'CRITICAL',
                 'threshold': 0.70,
                 'color': '#c00',
-                'icon': 'í¶”'
+                'icon': 'ID'
             },
             'DEVICE_CLONING': {
                 'name': 'Device Cloning',
                 'risk_level': 'CRITICAL',
                 'threshold': 0.80,
                 'color': '#c00',
-                'icon': 'ï¿½ï¿½'
+                'icon': 'DC'
             },
             'MOBILE_MONEY_FRAUD': {
                 'name': 'Mobile Money Fraud',
                 'risk_level': 'HIGH',
                 'threshold': 0.65,
                 'color': '#f57c00',
-                'icon': 'í²°'
+                'icon': 'MF'
             },
             'AGENT_COLLUSION': {
                 'name': 'Agent Collusion',
                 'risk_level': 'HIGH',
                 'threshold': 0.70,
                 'color': '#f57c00',
-                'icon': 'í±¥'
+                'icon': 'AC'
             },
             'SOCIAL_ENGINEERING': {
                 'name': 'Social Engineering',
                 'risk_level': 'MEDIUM',
                 'threshold': 0.60,
                 'color': '#fbc02d',
-                'icon': 'í¾£'
+                'icon': 'SE'
             },
             'REPAYMENT_FRAUD': {
                 'name': 'Repayment Fraud',
                 'risk_level': 'MEDIUM',
                 'threshold': 0.65,
                 'color': '#fbc02d',
-                'icon': 'í´„'
+                'icon': 'RF'
             },
             'SYNTHETIC_IDENTITY': {
                 'name': 'Synthetic Identity',
                 'risk_level': 'CRITICAL',
                 'threshold': 0.85,
                 'color': '#c00',
-                'icon': 'í¾­'
+                'icon': 'SI'
             },
             'NORMAL': {
                 'name': 'Normal Transaction',
                 'risk_level': 'LOW',
                 'threshold': 0.20,
                 'color': '#2e7d32',
-                'icon': 'âœ…'
+                'icon': 'OK'
             }
         }
 
