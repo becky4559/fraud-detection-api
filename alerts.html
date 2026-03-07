@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LogSense - Fraud Alerts</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .fraud-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+            display: inline-block;
+        }
+        .fraud-critical {
+            background: #fee;
+            color: #c00;
+        }
+        .fraud-high {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+        .fraud-medium {
+            background: #fff9c4;
+            color: #fbc02d;
+        }
+        .fraud-low {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>LogSense</h1>
+            <p>Fraud Detection System - Real-time Alerts</p>
+        </div>
+
+        <div class="nav">
+            <a href="/dashboard">Dashboard</a>
+            <a href="/alerts" class="active">Alerts</a>
+            <a href="/analyze">Analyze</a>
+            <a href="/settings">Settings</a>
+        </div>
+
+        <div class="main-content">
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card">
+                    <h3>Total Alerts</h3>
+                    <div class="number" id="totalAlerts">0</div>
+                    <div class="subtitle">All time</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Critical</h3>
+                    <div class="number" id="criticalCount">0</div>
+                    <div class="subtitle">Immediate action</div>
+                </div>
+                <div class="stat-card">
+                    <h3>High Risk</h3>
+                    <div class="number" id="highCount">0</div>
+                    <div class="subtitle">Needs review</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Unreviewed</h3>
+                    <div class="number" id="unreviewedCount">0</div>
+                    <div class="subtitle">Pending</div>
+                </div>
+            </div>
+
+            <div class="filter-section" id="filterSection">
+                <button class="filter-btn active" data-filter="all">All</button>
+                <button class="filter-btn" data-filter="SIM_SWAP">SIM Swap</button>
+                <button class="filter-btn" data-filter="IDENTITY_THEFT">Identity Theft</button>
+                <button class="filter-btn" data-filter="DEVICE_CLONING">Device Clone</button>
+                <button class="filter-btn" data-filter="MOBILE_MONEY_FRAUD">Mobile Fraud</button>
+                <button class="filter-btn" data-filter="AGENT_COLLUSION">Agent Collusion</button>
+                <button class="filter-btn" data-filter="SOCIAL_ENGINEERING">Social Engineering</button>
+                <button class="filter-btn" data-filter="REPAYMENT_FRAUD">Repayment Fraud</button>
+                <button class="filter-btn" data-filter="SYNTHETIC_IDENTITY">Synthetic Identity</button>
+            </div>
+
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="Search by user ID, transaction ID, or fraud type...">
+                <button onclick="searchAlerts()">Search</button>
+            </div>
+
+            <div class="table-container">
+                <table id="alertsTable">
+                    <thead>
+                        <tr>
+                            <th>Alert ID</th>
+                            <th>Transaction</th>
+                            <th>User ID</th>
+                            <th>Fraud Type</th>
+                            <th>Risk Score</th>
+                            <th>Risk Level</th>
+                            <th>Timestamp</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="alertsBody">
+                        <tr>
+                            <td colspan="8" class="loading">Loading alerts...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="footer">
+                <div class="total" id="footerTotal">Total: 0 alerts • 0 unreviewed</div>
+                <div class="email-info">Alerts sent to: rebeccabosibori589@gmail.com</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allAlerts = [];
+        let currentFilter = 'all';
+        let searchTerm = '';
+
+        const fraudTypeColors = {
+            'SIM_SWAP': 'fraud-critical',
+            'IDENTITY_THEFT': 'fraud-critical',
+            'DEVICE_CLONING': 'fraud-critical',
+            'MOBILE_MONEY_FRAUD': 'fraud-high',
+            'AGENT_COLLUSION': 'fraud-high',
+            'SOCIAL_ENGINEERING': 'fraud-medium',
+            'REPAYMENT_FRAUD': 'fraud-medium',
+            'SYNTHETIC_IDENTITY': 'fraud-critical',
+            'WRONG_PIN_ATTEMPT': 'fraud-high',
+            'BLOCKED_TRANSACTION': 'fraud-critical'
+        };
+
+        async function fetchAlerts() {
+            try {
+                const response = await fetch('/api/v2/alerts/recent?limit=50');
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                
+                const data = await response.json();
+                allAlerts = Array.isArray(data) ? data : [];
+                updateDisplay();
+            } catch (error) {
+                console.error('Error fetching alerts:', error);
+                document.getElementById('alertsBody').innerHTML = 
+                    '<tr><td colspan="8" class="error">Failed to load alerts</td></tr>';
+            }
+        }
+
+        function updateDisplay() {
+            let filteredAlerts = allAlerts;
+            
+            if (currentFilter !== 'all') {
+                filteredAlerts = filteredAlerts.filter(a => a.fraud_type === currentFilter);
+            }
+            
+            if (searchTerm) {
+                const term = searchTerm.toLowerCase();
+                filteredAlerts = filteredAlerts.filter(a => 
+                    (a.user_id && a.user_id.toLowerCase().includes(term)) ||
+                    (a.transaction_id && a.transaction_id.toLowerCase().includes(term)) ||
+                    (a.fraud_name && a.fraud_name.toLowerCase().includes(term))
+                );
+            }
+
+            updateStats(filteredAlerts);
+            renderAlerts(filteredAlerts);
+            
+            const unreviewed = filteredAlerts.filter(a => !a.acknowledged).length;
+            document.getElementById('footerTotal').textContent = 
+                `Total: ${filteredAlerts.length} alerts • ${unreviewed} unreviewed`;
+        }
+
+        function updateStats(alerts) {
+            const total = alerts.length;
+            const critical = alerts.filter(a => a.risk_level === 'CRITICAL').length;
+            const high = alerts.filter(a => a.risk_level === 'HIGH').length;
+            const unreviewed = alerts.filter(a => !a.acknowledged).length;
+            
+            document.getElementById('totalAlerts').textContent = total;
+            document.getElementById('criticalCount').textContent = critical;
+            document.getElementById('highCount').textContent = high;
+            document.getElementById('unreviewedCount').textContent = unreviewed;
+        }
+
+        function renderAlerts(alerts) {
+            const tbody = document.getElementById('alertsBody');
+            
+            if (alerts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="loading">No alerts found</td></tr>';
+                return;
+            }
+
+            let html = '';
+            alerts.forEach(alert => {
+                const fraudType = alert.fraud_name || alert.fraud_type.replace(/_/g, ' ');
+                const timestamp = new Date(alert.timestamp).toLocaleString();
+                const status = alert.acknowledged ? 
+                    '<span class="status-reviewed">Reviewed</span>' : 
+                    '<span class="status-new">New</span>';
+                const riskPercent = Math.round(alert.risk_score * 100);
+                const fraudClass = fraudTypeColors[alert.fraud_type] || 'fraud-medium';
+                
+                html += `
+                    <tr onclick="viewAlert(${alert.alert_id})" style="cursor: pointer;">
+                        <td>#${alert.alert_id}</td>
+                        <td>${alert.transaction_id}</td>
+                        <td>${alert.user_id}</td>
+                        <td><span class="fraud-badge ${fraudClass}">${fraudType}</span></td>
+                        <td>${riskPercent}%</td>
+                        <td><span class="risk-badge risk-${alert.risk_level.toLowerCase()}">${alert.risk_level}</span></td>
+                        <td>${timestamp}</td>
+                        <td>${status}</td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = html;
+        }
+
+        function viewAlert(alertId) {
+            window.location.href = `/analyze?id=${alertId}`;
+        }
+
+        function filterAlerts(type) {
+            currentFilter = type;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.filter === type) {
+                    btn.classList.add('active');
+                }
+            });
+            updateDisplay();
+        }
+
+        function searchAlerts() {
+            searchTerm = document.getElementById('searchInput').value;
+            updateDisplay();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    filterAlerts(this.dataset.filter);
+                });
+            });
+            
+            fetchAlerts();
+            setInterval(fetchAlerts, 30000);
+        });
+    </script>
+</body>
+</html>
