@@ -65,6 +65,141 @@ async def settings_page():
     return FileResponse('frontend/settings.html')
 
 # ============================================
+# FRAUD DETECTION - 8 TYPES WITH EXPLANATIONS
+# ============================================
+
+def generate_fraud_alert(user_id, user_name, amount, recipient, location, device_id):
+    """Generate a random fraud alert with proper type and explanations"""
+    
+    # 8 fraud types with their details
+    fraud_types = [
+        {
+            "type": "SIM_SWAP",
+            "name": "SIM Swap",
+            "risk_score": 0.92,
+            "risk_level": "CRITICAL",
+            "signals": {
+                "new_sim": "SIM card changed 5 minutes before transaction",
+                "device_change": "New device detected (IMEI: " + device_id[-8:] + ")",
+                "location_change": "Location changed from Nairobi to " + location,
+                "impossible_travel": "Cannot travel from Nairobi to " + location + " in 5 minutes"
+            },
+            "explanation": [
+                "New SIM card registered on different device",
+                "Transaction from new location (" + location + " vs Nairobi)",
+                "Impossible travel time between locations"
+            ]
+        },
+        {
+            "type": "IDENTITY_THEFT",
+            "name": "Identity Theft",
+            "risk_score": 0.88,
+            "risk_level": "CRITICAL",
+            "signals": {
+                "amount_ratio": str(round(amount / 25000, 1)) + "x higher than normal",
+                "new_recipient": "First time sending to " + recipient,
+                "unusual_time": "Transaction at unusual hour (3:00 AM)"
+            },
+            "explanation": [
+                "Amount is " + str(round(amount / 25000, 1)) + "x higher than normal",
+                "Sending to new recipient (first time)",
+                "Transaction at unusual hour (3:00 AM)"
+            ]
+        },
+        {
+            "type": "DEVICE_CLONING",
+            "name": "Device Cloning",
+            "risk_score": 0.85,
+            "risk_level": "CRITICAL",
+            "signals": {
+                "multiple_locations": "Same device active in Nairobi and " + location,
+                "device_rooted": "Device appears to be rooted/jailbroken"
+            },
+            "explanation": [
+                "Same device active in multiple locations simultaneously",
+                "Device appears to be rooted/jailbroken"
+            ]
+        },
+        {
+            "type": "MOBILE_MONEY_FRAUD",
+            "name": "Mobile Money Fraud",
+            "risk_score": 0.78,
+            "risk_level": "HIGH",
+            "signals": {
+                "high_velocity": "5 transactions in last 5 minutes",
+                "multiple_recipients": "Sending to 3 different people"
+            },
+            "explanation": [
+                "Multiple rapid transactions detected",
+                "Sending to multiple different recipients"
+            ]
+        },
+        {
+            "type": "AGENT_COLLUSION",
+            "name": "Agent Collusion",
+            "risk_score": 0.82,
+            "risk_level": "HIGH",
+            "signals": {
+                "agent_involved": "Transaction involves agent",
+                "large_cash_out": "Large cash out amount: KES " + str(amount)
+            },
+            "explanation": [
+                "Transaction involves agent - possible collusion",
+                "Large cash out amount"
+            ]
+        },
+        {
+            "type": "SOCIAL_ENGINEERING",
+            "name": "Social Engineering",
+            "risk_score": 0.72,
+            "risk_level": "MEDIUM",
+            "signals": {
+                "new_beneficiary": "Sending to new beneficiary",
+                "amount_ratio": str(round(amount / 25000, 1)) + "x higher than normal",
+                "urgent_keyword": "Message contains 'urgent'"
+            },
+            "explanation": [
+                "Sending to new beneficiary",
+                "Amount " + str(round(amount / 25000, 1)) + "x higher than normal",
+                "Urgent language detected"
+            ]
+        },
+        {
+            "type": "REPAYMENT_FRAUD",
+            "name": "Repayment Fraud",
+            "risk_score": 0.68,
+            "risk_level": "MEDIUM",
+            "signals": {
+                "circular_pattern": "Circular transaction pattern detected",
+                "amount_mismatch": "Repayment amount doesn't match loan"
+            },
+            "explanation": [
+                "Circular transaction pattern detected",
+                "Repayment amount doesn't match loan"
+            ]
+        },
+        {
+            "type": "SYNTHETIC_IDENTITY",
+            "name": "Synthetic Identity",
+            "risk_score": 0.89,
+            "risk_level": "CRITICAL",
+            "signals": {
+                "new_account": "Account created 2 days ago",
+                "large_first_tx": "First transaction large amount: KES " + str(amount)
+            },
+            "explanation": [
+                "Account created recently (2 days ago)",
+                "First transaction is unusually large"
+            ]
+        }
+    ]
+    
+    # Randomly select one fraud type for demo
+    selected = random.choice(fraud_types)
+    
+    return selected
+
+# ============================================
 # MOBILE APP ENDPOINT
 # ============================================
 
@@ -85,6 +220,7 @@ async def mobile_transaction(
         
         transaction_id = f"TXN-{random.randint(10000, 99999)}"
         
+        # Handle WRONG_PIN events
         if transaction.get("event") == "WRONG_PIN":
             alert = FraudAlert(
                 transaction_id=transaction_id,
@@ -114,9 +250,11 @@ async def mobile_transaction(
             return {
                 "status": "BLOCKED",
                 "transactionId": transaction_id,
+                "alertId": alert.id,
                 "message": "Transaction blocked - wrong PIN"
             }
         
+        # Handle BLOCKED transactions
         if transaction.get("event") == "TRANSACTION_BLOCKED":
             alert = FraudAlert(
                 transaction_id=transaction_id,
@@ -143,28 +281,20 @@ async def mobile_transaction(
             
             return {"status": "BLOCKED", "message": "Transaction blocked"}
         
-        fraud_types = ["SIM_SWAP", "IDENTITY_THEFT", "DEVICE_CLONING", "MOBILE_MONEY_FRAUD"]
-        fraud_names = ["SIM Swap", "Identity Theft", "Device Cloning", "Mobile Money Fraud"]
-        
-        idx = random.randint(0, 3)
-        fraud_type = fraud_types[idx]
-        fraud_name = fraud_names[idx]
-        risk_score = 0.75 + (random.random() * 0.2)
-        risk_level = "HIGH" if risk_score > 0.8 else "MEDIUM"
+        # Generate fraud alert with proper type and explanations
+        fraud_data = generate_fraud_alert(user_id, user_name, amount, recipient, location, device_id)
         
         alert = FraudAlert(
             transaction_id=transaction_id,
             user_id=user_id,
             user_name=user_name,
-            fraud_type=fraud_type,
-            fraud_name=fraud_name,
-            risk_score=risk_score,
-            risk_level=risk_level,
+            fraud_type=fraud_data["type"],
+            fraud_name=fraud_data["name"],
+            risk_score=fraud_data["risk_score"],
+            risk_level=fraud_data["risk_level"],
             detection_signals=json.dumps({
-                "amount": amount,
-                "recipient": recipient,
-                "location": location,
-                "time": timestamp
+                "signals": fraud_data["signals"],
+                "explanations": fraud_data["explanation"]
             }),
             amount=amount,
             recipient=recipient,
@@ -174,11 +304,12 @@ async def mobile_transaction(
         )
         db.add(alert)
         db.commit()
-        print("Alert created: " + fraud_name + " for " + user_name)
+        print("Alert created: " + fraud_data["name"] + " for " + user_name)
         
         return {
             "status": "SUCCESS",
             "transactionId": transaction_id,
+            "alertId": alert.id,
             "message": "Transaction processed"
         }
         
