@@ -274,66 +274,6 @@
             line-height: 1.6;
         }
 
-        /* Risk Scores */
-        .scores-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin: 20px 0;
-        }
-
-        .score-item {
-            background: #f9f9f9;
-            padding: 15px;
-            border-radius: 8px;
-        }
-
-        .score-label {
-            color: #666;
-            font-size: 13px;
-            margin-bottom: 5px;
-        }
-
-        .score-value {
-            font-size: 24px;
-            font-weight: 700;
-        }
-
-        .score-bar {
-            height: 8px;
-            background: #e0e0e0;
-            border-radius: 4px;
-            margin-top: 10px;
-            overflow: hidden;
-        }
-
-        .score-bar-fill {
-            height: 100%;
-            background: #1a1a1a;
-            border-radius: 4px;
-        }
-
-        /* Recommendation Box */
-        .recommendation-box {
-            background: #e8f4fd;
-            border-left: 4px solid #1976d2;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 30px 0;
-        }
-
-        .recommendation-box h4 {
-            color: #1976d2;
-            font-size: 16px;
-            margin-bottom: 10px;
-        }
-
-        .recommendation-box p {
-            color: #333;
-            font-size: 15px;
-            line-height: 1.6;
-        }
-
         /* Action Buttons */
         .action-buttons {
             display: flex;
@@ -359,21 +299,6 @@
         .btn-primary:disabled {
             background: #999;
             cursor: not-allowed;
-        }
-
-        .btn-danger {
-            background: white;
-            color: #c00;
-            padding: 14px 28px;
-            border: 2px solid #c00;
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        .btn-danger:hover {
-            background: #fee;
         }
 
         .btn-secondary {
@@ -449,11 +374,11 @@
             <div class="alert-card">
                 <div class="alert-header">
                     <div class="fraud-title">
-                        <span class="fraud-icon" id="fraudIcon">‚ö†Ô∏è</span>
+                        <span class="fraud-icon" id="fraudIcon">Ì∫®</span>
                         <span class="fraud-type-badge" id="fraudTypeBadge"></span>
                     </div>
                     <div class="alert-meta">
-                        Alert #<span id="alertId"></span> ‚Ä¢ <span id="timestamp"></span>
+                        Alert #<span id="alertId"></span>
                     </div>
                 </div>
 
@@ -483,10 +408,14 @@
                         <div class="detail-label">Risk Score</div>
                         <div class="detail-value" id="riskScore">0%</div>
                     </div>
-                </div>
-
-                <div class="scores-grid" id="scoresGrid">
-                    <!-- Risk scores will be populated here -->
+                    <div class="detail-item">
+                        <div class="detail-label">Time</div>
+                        <div class="detail-value small" id="timestamp"></div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Status</div>
+                        <div class="detail-value small" id="status"></div>
+                    </div>
                 </div>
 
                 <div class="signals-section">
@@ -494,14 +423,8 @@
                     <div id="signalsList"></div>
                 </div>
 
-                <div class="recommendation-box" id="recommendationBox">
-                    <h4>Recommendation</h4>
-                    <p id="recommendation">Analyzing signals...</p>
-                </div>
-
                 <div class="action-buttons">
                     <button id="markReviewedBtn" class="btn-primary" onclick="markAsReviewed()">Mark as Reviewed</button>
-                    <button class="btn-danger" onclick="blockUser()">Block User</button>
                     <button class="btn-secondary" onclick="window.location.href='/alerts'">Back to Alerts</button>
                 </div>
             </div>
@@ -509,110 +432,22 @@
     </div>
 
     <script>
-        const fraudTypes = {
-            'SIM_SWAP': {
-                name: 'SIM Swap',
-                icon: 'Ì≥±',
-                color: '#c00',
-                bgColor: '#fee',
-                risk: 'CRITICAL',
-                recommendation: 'This appears to be a SIM swap fraud. The user\'s SIM was changed recently. Recommend contacting the user immediately and blocking further transactions.'
-            },
-            'IDENTITY_THEFT': {
-                name: 'Identity Theft',
-                icon: 'Ì∂î',
-                color: '#c00',
-                bgColor: '#fee',
-                risk: 'CRITICAL',
-                recommendation: 'Multiple identity theft indicators detected. The transaction shows unusual patterns in amount, time, and recipient. Recommend immediate account suspension.'
-            },
-            'DEVICE_CLONING': {
-                name: 'Device Cloning',
-                icon: 'Ì≥ç',
-                color: '#c00',
-                bgColor: '#fee',
-                risk: 'CRITICAL',
-                recommendation: 'Device cloning detected - the same device appears to be active in multiple locations. This is a strong indicator of fraud.'
-            },
-            'MOBILE_MONEY_FRAUD': {
-                name: 'Mobile Money Fraud',
-                icon: 'Ì≤∞',
-                color: '#f57c00',
-                bgColor: '#fff3e0',
-                risk: 'HIGH',
-                recommendation: 'High velocity transactions detected. The user is making multiple rapid transactions to different recipients.'
-            },
-            'SOCIAL_ENGINEERING': {
-                name: 'Social Engineering',
-                icon: 'ÔøΩÔøΩ',
-                color: '#fbc02d',
-                bgColor: '#fff9c4',
-                risk: 'MEDIUM',
-                recommendation: 'Possible social engineering attack. Transaction to new beneficiary with urgent language. Recommend verifying with user.'
-            },
-            'WRONG_PIN_ATTEMPT': {
-                name: 'Wrong PIN Attempt',
-                icon: 'Ì¥í',
-                color: '#f57c00',
-                bgColor: '#fff3e0',
-                risk: 'HIGH',
-                recommendation: 'Multiple wrong PIN attempts detected. The transaction was automatically blocked.'
-            },
-            'BLOCKED_TRANSACTION': {
-                name: 'Blocked Transaction',
-                icon: 'Ì∫´',
-                color: '#c00',
-                bgColor: '#fee',
-                risk: 'CRITICAL',
-                recommendation: 'Transaction was blocked due to security concerns. No action needed.'
-            }
+        const fraudTypeColors = {
+            'SIM_SWAP': { bg: '#fee', color: '#c00', icon: 'Ì≥±' },
+            'IDENTITY_THEFT': { bg: '#fee', color: '#c00', icon: 'Ì∂î' },
+            'DEVICE_CLONING': { bg: '#fee', color: '#c00', icon: 'Ì≥ç' },
+            'MOBILE_MONEY_FRAUD': { bg: '#fff3e0', color: '#f57c00', icon: 'Ì≤∞' },
+            'AGENT_COLLUSION': { bg: '#fff3e0', color: '#f57c00', icon: 'Ì±•' },
+            'SOCIAL_ENGINEERING': { bg: '#fff9c4', color: '#fbc02d', icon: 'Ìæ£' },
+            'REPAYMENT_FRAUD': { bg: '#fff9c4', color: '#fbc02d', icon: 'Ì¥Ñ' },
+            'SYNTHETIC_IDENTITY': { bg: '#fee', color: '#c00', icon: 'Ìæ≠' },
+            'WRONG_PIN_ATTEMPT': { bg: '#fff3e0', color: '#f57c00', icon: 'Ì¥í' },
+            'BLOCKED_TRANSACTION': { bg: '#fee', color: '#c00', icon: 'Ì∫´' }
         };
 
         function logout() {
             sessionStorage.removeItem('adminLoggedIn');
             window.location.href = '/login';
-        }
-
-        function formatAmount(amount) {
-            return 'KES ' + (amount || 0).toLocaleString();
-        }
-
-        function generateExplanation(signals, fraudType) {
-            const explanations = [];
-            
-            if (!signals || !signals.signals) return ['No detection signals available'];
-
-            const signalData = signals.signals;
-
-            switch(fraudType) {
-                case 'SIM_SWAP':
-                    if (signalData.new_device) explanations.push('New SIM card registered on different device');
-                    if (signalData.new_location) explanations.push('Transaction from new location');
-                    if (signalData.impossible_travel) explanations.push('Impossible travel time between locations');
-                    if (signalData.failed_pins) explanations.push(`${signalData.failed_pins} failed PIN attempts recently`);
-                    break;
-                    
-                case 'IDENTITY_THEFT':
-                    if (signalData.amount_ratio) explanations.push(`Amount is ${Math.round(signalData.amount_ratio)}x higher than normal`);
-                    if (signalData.new_recipient) explanations.push('Sending to new recipient');
-                    if (signalData.unusual_time) explanations.push(`Transaction at unusual hour (${signalData.unusual_time}:00)`);
-                    break;
-                    
-                case 'DEVICE_CLONING':
-                    if (signalData.device_active_elsewhere) explanations.push('Device active in multiple locations simultaneously');
-                    if (signalData.device_rooted) explanations.push('Device appears to be rooted/jailbroken');
-                    break;
-                    
-                case 'MOBILE_MONEY_FRAUD':
-                    if (signalData.high_velocity) explanations.push(`${signalData.high_velocity} transactions in last 5 minutes`);
-                    if (signalData.many_recipients) explanations.push(`Sent to ${signalData.many_recipients} different people`);
-                    break;
-                    
-                default:
-                    if (signalData.reason) explanations.push(signalData.reason);
-            }
-
-            return explanations.length > 0 ? explanations : ['Unusual transaction pattern detected'];
         }
 
         async function fetchAlertDetails() {
@@ -643,64 +478,50 @@
             document.getElementById('loading').style.display = 'none';
             document.getElementById('alertContent').style.display = 'block';
 
-            const fraudInfo = fraudTypes[alert.fraud_type] || {
-                name: alert.fraud_name || 'Unknown',
-                icon: '‚ö†Ô∏è',
-                color: '#666',
-                bgColor: '#f0f0f0',
-                risk: alert.risk_level,
-                recommendation: 'Review transaction details for potential fraud indicators.'
-            };
+            const fraudInfo = fraudTypeColors[alert.fraud_type] || { bg: '#f0f0f0', color: '#666', icon: 'Ì∫®' };
             
             const badge = document.getElementById('fraudTypeBadge');
-            badge.textContent = fraudInfo.name;
-            badge.style.backgroundColor = fraudInfo.bgColor;
+            badge.textContent = alert.fraud_name || alert.fraud_type;
+            badge.style.backgroundColor = fraudInfo.bg;
             badge.style.color = fraudInfo.color;
             
             document.getElementById('fraudIcon').textContent = fraudInfo.icon;
             document.getElementById('alertId').textContent = alert.alert_id;
-            document.getElementById('userName').textContent = alert.user_name || 'Unknown';
+            document.getElementById('userName').textContent = alert.user_name || alert.user_id;
             document.getElementById('userId').textContent = alert.user_id;
             document.getElementById('transactionId').textContent = alert.transaction_id;
-            document.getElementById('amount').textContent = formatAmount(alert.amount);
+            document.getElementById('amount').textContent = 'KES ' + (alert.amount || 0).toLocaleString();
             document.getElementById('recipient').textContent = alert.recipient || 'Unknown';
             document.getElementById('location').textContent = alert.location || 'Unknown';
             document.getElementById('timestamp').textContent = new Date(alert.timestamp).toLocaleString();
+            document.getElementById('status').textContent = alert.acknowledged ? 'Reviewed' : 'New';
             
             const riskPercent = Math.round((alert.risk_score || 0) * 100);
             document.getElementById('riskScore').textContent = riskPercent + '%';
 
-            // Generate explanations
-            const explanations = generateExplanation(alert.detection_signals, alert.fraud_type);
-            
             // Display signals
             const signalsList = document.getElementById('signalsList');
-            signalsList.innerHTML = explanations.map(exp => `
-                <div class="signal-item signal-${alert.risk_level.toLowerCase()}">
-                    <div class="signal-name">Detection Signal</div>
-                    <div class="signal-desc">${exp}</div>
-                </div>
-            `).join('');
-
-            // Display all scores if available
-            if (alert.detection_signals && alert.detection_signals.all_scores) {
-                const scores = alert.detection_signals.all_scores;
-                const scoresGrid = document.getElementById('scoresGrid');
-                scoresGrid.innerHTML = Object.entries(scores)
-                    .filter(([_, score]) => score > 0.1)
-                    .map(([type, score]) => `
-                        <div class="score-item">
-                            <div class="score-label">${type.replace(/_/g, ' ')}</div>
-                            <div class="score-value">${Math.round(score * 100)}%</div>
-                            <div class="score-bar">
-                                <div class="score-bar-fill" style="width: ${score * 100}%"></div>
-                            </div>
+            if (alert.detection_signals) {
+                let signals = alert.detection_signals;
+                if (typeof signals === 'string') {
+                    try {
+                        signals = JSON.parse(signals);
+                    } catch {
+                        signalsList.innerHTML = `<div class="signal-item">${signals}</div>`;
+                    }
+                }
+                
+                if (typeof signals === 'object') {
+                    signalsList.innerHTML = Object.entries(signals).map(([key, value]) => `
+                        <div class="signal-item signal-${alert.risk_level?.toLowerCase() || 'medium'}">
+                            <div class="signal-name">${key.replace(/_/g, ' ')}</div>
+                            <div class="signal-desc">${typeof value === 'object' ? JSON.stringify(value) : value}</div>
                         </div>
                     `).join('');
+                }
+            } else {
+                signalsList.innerHTML = '<div class="signal-item">No detailed signals available</div>';
             }
-
-            // Set recommendation
-            document.getElementById('recommendation').textContent = fraudInfo.recommendation;
 
             if (alert.acknowledged) {
                 document.getElementById('markReviewedBtn').disabled = true;
@@ -721,17 +542,12 @@
                 if (response.ok) {
                     alert('Alert marked as reviewed');
                     document.getElementById('markReviewedBtn').disabled = true;
+                    document.getElementById('status').textContent = 'Reviewed';
                 } else {
                     alert('Failed to mark as reviewed');
                 }
             } catch (error) {
                 alert('Network error');
-            }
-        }
-
-        function blockUser() {
-            if (confirm('Block this user? This will prevent future transactions.')) {
-                alert('User blocked (demo action)');
             }
         }
 
