@@ -11,7 +11,6 @@ import traceback
 # Local imports
 from database import SessionLocal, engine, get_db, FraudAlert
 from fraud_detection_engine import FraudDetectionEngine
-from email_service import email_service
 
 # Initialize FastAPI
 app = FastAPI(title="Fraud Detection API", version="2.0.0")
@@ -33,7 +32,7 @@ app.add_middleware(
 # ============================================
 from database import Base
 Base.metadata.create_all(bind=engine)
-print("✅ Database ready")
+print("Database ready")
 
 # ============================================
 # FRONTEND ROUTES
@@ -66,43 +65,7 @@ async def settings_page():
     return FileResponse('frontend/settings.html')
 
 # ============================================
-# USER PROFILES STORAGE
-# ============================================
-
-user_profiles = {}
-user_transactions = {}
-user_flag_count = {}
-
-def get_user_profile(user_id):
-    if user_id not in user_profiles:
-        user_profiles[user_id] = {
-            'user_id': user_id,
-            'avg_amount': 25000,
-            'known_locations': ['Nairobi'],
-            'known_devices': [],
-            'frequent_recipients': [],
-            'active_hours': list(range(8, 21)),
-            'transaction_count': 0,
-            'account_age_days': 0,
-            'last_location': None,
-            'last_transaction_time': None,
-            'recent_failed_pins': 0,
-            'recent_transactions': [],
-            'transaction_count_5min': 0,
-            'unique_recipients_5min': 0,
-            'has_credit_history': True
-        }
-        user_transactions[user_id] = []
-    return user_profiles[user_id]
-
-def update_user_profile(user_id, transaction):
-    profile = get_user_profile(user_id)
-    profile['transaction_count'] += 1
-    # ... rest of update logic
-    return profile
-
-# ============================================
-# MOBILE APP ENDPOINT - WITH REAL USER NAMES
+# MOBILE APP ENDPOINT
 # ============================================
 
 @app.post("/api/mobile/transaction")
@@ -112,9 +75,8 @@ async def mobile_transaction(
     db: Session = Depends(get_db)
 ):
     try:
-        # Extract data with real user name
         user_id = transaction.get("userId", "U78901")
-        user_name = transaction.get("userName", "Unknown User")
+        user_name = transaction.get("userName", "Unknown")
         amount = transaction.get("amount", 0)
         recipient = transaction.get("recipient", "Unknown")
         location = transaction.get("location", "Nairobi")
@@ -123,7 +85,6 @@ async def mobile_transaction(
         
         transaction_id = f"TXN-{random.randint(10000, 99999)}"
         
-        # Handle WRONG_PIN events
         if transaction.get("event") == "WRONG_PIN":
             alert = FraudAlert(
                 transaction_id=transaction_id,
@@ -148,7 +109,7 @@ async def mobile_transaction(
             )
             db.add(alert)
             db.commit()
-            print(f"✅ Alert created: Wrong PIN Attempt for {user_name}")
+            print("Alert created: Wrong PIN Attempt for " + user_name)
             
             return {
                 "status": "BLOCKED",
@@ -156,7 +117,6 @@ async def mobile_transaction(
                 "message": "Transaction blocked - wrong PIN"
             }
         
-        # Handle BLOCKED transactions
         if transaction.get("event") == "TRANSACTION_BLOCKED":
             alert = FraudAlert(
                 transaction_id=transaction_id,
@@ -179,16 +139,13 @@ async def mobile_transaction(
             )
             db.add(alert)
             db.commit()
-            print(f"✅ Alert created: Blocked Transaction for {user_name}")
+            print("Alert created: Blocked Transaction for " + user_name)
             
             return {"status": "BLOCKED", "message": "Transaction blocked"}
         
-        # Normal transaction - create fraud alert for demo
-        # In real app, this would use the detection engine
         fraud_types = ["SIM_SWAP", "IDENTITY_THEFT", "DEVICE_CLONING", "MOBILE_MONEY_FRAUD"]
         fraud_names = ["SIM Swap", "Identity Theft", "Device Cloning", "Mobile Money Fraud"]
         
-        # Randomly select a fraud type for demo
         idx = random.randint(0, 3)
         fraud_type = fraud_types[idx]
         fraud_name = fraud_names[idx]
@@ -217,7 +174,7 @@ async def mobile_transaction(
         )
         db.add(alert)
         db.commit()
-        print(f"✅ Alert created: {fraud_name} for {user_name}")
+        print("Alert created: " + fraud_name + " for " + user_name)
         
         return {
             "status": "SUCCESS",
@@ -226,7 +183,7 @@ async def mobile_transaction(
         }
         
     except Exception as e:
-        print(f"❌ Error in mobile_transaction: {str(e)}")
+        print("Error in mobile_transaction: " + str(e))
         traceback.print_exc()
         return {"status": "ERROR", "message": str(e)}
 
@@ -269,11 +226,11 @@ def get_recent_alerts(limit: int = 50):
             })
         
         db.close()
-        print(f"��� Returning {len(result)} alerts")
+        print("Returning " + str(len(result)) + " alerts")
         return result
         
     except Exception as e:
-        print(f"❌ Error in get_recent_alerts: {str(e)}")
+        print("Error in get_recent_alerts: " + str(e))
         return []
 
 @app.get("/api/v2/alerts/{alert_id}")
@@ -312,7 +269,7 @@ def get_alert_details(alert_id: int):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"❌ Error in get_alert_details: {str(e)}")
+        print("Error in get_alert_details: " + str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/v2/alerts/{alert_id}/acknowledge")
