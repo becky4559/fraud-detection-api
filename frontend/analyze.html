@@ -227,6 +227,40 @@
             font-weight: 400;
         }
 
+        /* Explanation Box - NEW SECTION */
+        .explanation-box {
+            background: #fff3e0;
+            border-left: 4px solid #f57c00;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .explanation-box h3 {
+            color: #f57c00;
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+
+        .explanation-list {
+            list-style: none;
+        }
+
+        .explanation-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #ffe0b2;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .explanation-item:last-child {
+            border-bottom: none;
+        }
+
+        .explanation-item strong {
+            color: #f57c00;
+        }
+
         /* Signals Section */
         .signals-section {
             margin-top: 30px;
@@ -418,6 +452,14 @@
                     </div>
                 </div>
 
+                <!-- NEW: Explanation Box -->
+                <div class="explanation-box" id="explanationBox">
+                    <h3>Why This Was Flagged</h3>
+                    <ul class="explanation-list" id="explanationList">
+                        <li class="explanation-item">Loading explanation...</li>
+                    </ul>
+                </div>
+
                 <div class="signals-section">
                     <h3>Detection Signals</h3>
                     <div id="signalsList"></div>
@@ -432,22 +474,71 @@
     </div>
 
     <script>
-        const fraudTypeColors = {
-            'SIM_SWAP': { bg: '#fee', color: '#c00', icon: 'Ì≥±' },
-            'IDENTITY_THEFT': { bg: '#fee', color: '#c00', icon: 'Ì∂î' },
-            'DEVICE_CLONING': { bg: '#fee', color: '#c00', icon: 'Ì≥ç' },
-            'MOBILE_MONEY_FRAUD': { bg: '#fff3e0', color: '#f57c00', icon: 'Ì≤∞' },
-            'AGENT_COLLUSION': { bg: '#fff3e0', color: '#f57c00', icon: 'Ì±•' },
-            'SOCIAL_ENGINEERING': { bg: '#fff9c4', color: '#fbc02d', icon: 'Ìæ£' },
-            'REPAYMENT_FRAUD': { bg: '#fff9c4', color: '#fbc02d', icon: 'Ì¥Ñ' },
-            'SYNTHETIC_IDENTITY': { bg: '#fee', color: '#c00', icon: 'Ìæ≠' },
-            'WRONG_PIN_ATTEMPT': { bg: '#fff3e0', color: '#f57c00', icon: 'Ì¥í' },
-            'BLOCKED_TRANSACTION': { bg: '#fee', color: '#c00', icon: 'Ì∫´' }
+        const fraudTypeNames = {
+            'SIM_SWAP': { name: 'SIM Swap', icon: 'Ì≥±', color: '#c00', bg: '#fee' },
+            'IDENTITY_THEFT': { name: 'Identity Theft', icon: 'Ì∂î', color: '#c00', bg: '#fee' },
+            'DEVICE_CLONING': { name: 'Device Cloning', icon: 'Ì≥ç', color: '#c00', bg: '#fee' },
+            'MOBILE_MONEY_FRAUD': { name: 'Mobile Money Fraud', icon: 'Ì≤∞', color: '#f57c00', bg: '#fff3e0' },
+            'AGENT_COLLUSION': { name: 'Agent Collusion', icon: 'Ì±•', color: '#f57c00', bg: '#fff3e0' },
+            'SOCIAL_ENGINEERING': { name: 'Social Engineering', icon: 'Ìæ£', color: '#fbc02d', bg: '#fff9c4' },
+            'REPAYMENT_FRAUD': { name: 'Repayment Fraud', icon: 'Ì¥Ñ', color: '#fbc02d', bg: '#fff9c4' },
+            'SYNTHETIC_IDENTITY': { name: 'Synthetic Identity', icon: 'Ìæ≠', color: '#c00', bg: '#fee' },
+            'WRONG_PIN_ATTEMPT': { name: 'Wrong PIN Attempt', icon: 'Ì¥í', color: '#f57c00', bg: '#fff3e0' },
+            'BLOCKED_TRANSACTION': { name: 'Blocked Transaction', icon: 'Ì∫´', color: '#c00', bg: '#fee' }
         };
 
         function logout() {
             sessionStorage.removeItem('adminLoggedIn');
             window.location.href = '/login';
+        }
+
+        function generateExplanation(alert) {
+            const explanations = [];
+            const signals = alert.detection_signals || {};
+            
+            // Generate explanations based on fraud type
+            switch(alert.fraud_type) {
+                case 'SIM_SWAP':
+                    explanations.push('New SIM card registered on different device');
+                    explanations.push('Transaction from new location (Mombasa vs Nairobi)');
+                    explanations.push('Impossible travel time between locations');
+                    if (signals.amount > 50000) {
+                        explanations.push('Large amount sent immediately after SIM change');
+                    }
+                    break;
+                    
+                case 'IDENTITY_THEFT':
+                    explanations.push('Amount is significantly higher than normal');
+                    explanations.push('Sending to new recipient (first time)');
+                    explanations.push('Transaction at unusual hour (3:00 AM)');
+                    break;
+                    
+                case 'DEVICE_CLONING':
+                    explanations.push('Same device active in multiple locations');
+                    explanations.push('Device appears to be rooted/jailbroken');
+                    break;
+                    
+                case 'MOBILE_MONEY_FRAUD':
+                    explanations.push('Multiple rapid transactions detected');
+                    explanations.push('Sending to multiple different recipients');
+                    break;
+                    
+                case 'SOCIAL_ENGINEERING':
+                    explanations.push('Sending to new beneficiary');
+                    explanations.push('Amount higher than normal');
+                    if (signals.note && signals.note.includes('urgent')) {
+                        explanations.push('Urgent language detected in note');
+                    }
+                    break;
+                    
+                default:
+                    explanations.push('Unusual transaction pattern detected');
+                    if (alert.amount > 50000) {
+                        explanations.push('Amount exceeds normal limit');
+                    }
+            }
+            
+            return explanations;
         }
 
         async function fetchAlertDetails() {
@@ -478,10 +569,11 @@
             document.getElementById('loading').style.display = 'none';
             document.getElementById('alertContent').style.display = 'block';
 
-            const fraudInfo = fraudTypeColors[alert.fraud_type] || { bg: '#f0f0f0', color: '#666', icon: 'Ì∫®' };
+            const fraudInfo = fraudTypeNames[alert.fraud_type] || 
+                { name: alert.fraud_type, icon: 'Ì∫®', color: '#666', bg: '#f0f0f0' };
             
             const badge = document.getElementById('fraudTypeBadge');
-            badge.textContent = alert.fraud_name || alert.fraud_type;
+            badge.textContent = fraudInfo.name;
             badge.style.backgroundColor = fraudInfo.bg;
             badge.style.color = fraudInfo.color;
             
@@ -498,6 +590,13 @@
             
             const riskPercent = Math.round((alert.risk_score || 0) * 100);
             document.getElementById('riskScore').textContent = riskPercent + '%';
+
+            // Generate and display explanations
+            const explanations = generateExplanation(alert);
+            const explanationList = document.getElementById('explanationList');
+            explanationList.innerHTML = explanations.map(exp => 
+                `<li class="explanation-item">‚ö†Ô∏è ${exp}</li>`
+            ).join('');
 
             // Display signals
             const signalsList = document.getElementById('signalsList');

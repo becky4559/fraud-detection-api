@@ -332,6 +332,19 @@
     <script>
         let allAlerts = [];
 
+        const fraudTypeNames = {
+            'SIM_SWAP': 'SIM Swap',
+            'IDENTITY_THEFT': 'Identity Theft',
+            'DEVICE_CLONING': 'Device Cloning',
+            'MOBILE_MONEY_FRAUD': 'Mobile Money Fraud',
+            'AGENT_COLLUSION': 'Agent Collusion',
+            'SOCIAL_ENGINEERING': 'Social Engineering',
+            'REPAYMENT_FRAUD': 'Repayment Fraud',
+            'SYNTHETIC_IDENTITY': 'Synthetic Identity',
+            'WRONG_PIN_ATTEMPT': 'Wrong PIN Attempt',
+            'BLOCKED_TRANSACTION': 'Blocked Transaction'
+        };
+
         function logout() {
             sessionStorage.removeItem('adminLoggedIn');
             window.location.href = '/login';
@@ -389,11 +402,14 @@
                     '<span class="status-new">New</span>';
                 const riskPercent = Math.round((alert.risk_score || 0) * 100);
                 
+                // Get proper fraud type name
+                const fraudType = fraudTypeNames[alert.fraud_type] || alert.fraud_type;
+                
                 html += `
                     <tr onclick="viewAlert(${alert.alert_id})" style="cursor: pointer;">
                         <td>#${alert.alert_id}</td>
                         <td><strong>${alert.user_name || alert.user_id}</strong></td>
-                        <td>${alert.fraud_name || alert.fraud_type}</td>
+                        <td>${fraudType}</td>
                         <td>KES ${(alert.amount || 0).toLocaleString()}</td>
                         <td>${riskPercent}%</td>
                         <td><span class="risk-badge ${riskClass}">${alert.risk_level || 'MEDIUM'}</span></td>
