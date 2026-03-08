@@ -53,7 +53,7 @@ fraud_alerts = Table(
     Column('acknowledged', Boolean)
 )
 metadata.create_all(engine)
-print("✅ fraud_alerts table created/verified")
+print(" fraud_alerts table created/verified")
 
 # ============================================
 # FRONTEND ROUTES
@@ -211,7 +211,7 @@ async def mobile_transaction(
             )
             db.add(alert)
             db.commit()
-            print(f"✅ Alert created: Wrong PIN Attempt for {user_id}")
+            print(" Alert created: Wrong PIN Attempt for " + user_id)
             
             return {
                 "status": "BLOCKED",
@@ -242,7 +242,7 @@ async def mobile_transaction(
             )
             db.add(alert)
             db.commit()
-            print(f"✅ Alert created: Blocked Transaction for {user_id}")
+            print(" Alert created: Blocked Transaction for " + user_id)
             
             return {"status": "BLOCKED", "message": "Transaction blocked"}
         
@@ -284,12 +284,12 @@ async def mobile_transaction(
             )
             db.add(alert)
             db.commit()
-            print(f"✅ Alert created: {fraud_result['fraud_name']} for {user_name} ({user_id})")
+            print(" Alert created: " + fraud_result['fraud_name'] + " for " + user_name + " (" + user_id + ")")
             
             # Track flag count for Mary's special rule
             if user_id == 'U78902':
                 user_flag_count[user_id] = user_flag_count.get(user_id, 0) + 1
-                print(f"⚠️ Mary's flag count: {user_flag_count[user_id]}")
+                print(" Mary's flag count: " + str(user_flag_count[user_id]))
         
         return {
             "status": "SUCCESS",
@@ -298,7 +298,7 @@ async def mobile_transaction(
         }
         
     except Exception as e:
-        print(f"❌ Error in mobile_transaction: {str(e)}")
+        print(" Error in mobile_transaction: " + str(e))
         traceback.print_exc()
         return {"status": "ERROR", "message": str(e)}
 
@@ -341,11 +341,11 @@ def get_recent_alerts(limit: int = 50):
             })
         
         db.close()
-        print(f"��� Returning {len(result)} alerts")
+        print(" Returning " + str(len(result)) + " alerts")
         return result
         
     except Exception as e:
-        print(f"❌ Error in get_recent_alerts: {str(e)}")
+        print(" Error in get_recent_alerts: " + str(e))
         return []
 
 @app.get("/api/v2/alerts/{alert_id}")
@@ -384,7 +384,7 @@ def get_alert_details(alert_id: int):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"❌ Error in get_alert_details: {str(e)}")
+        print(" Error in get_alert_details: " + str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/v2/alerts/{alert_id}/acknowledge")
