@@ -10,21 +10,8 @@ import os
 import traceback
 
 # Local imports
-from database import SessionLocal, engine, get_db, Transaction, FraudType, DeviceFingerprint, UserLocation, UserBehavior, FraudAlert, EmailConfig
-from models import (
-    TransactionResponse, FraudTypeResponse, StatsResponse,
-    SimSwapRequest, SimSwapResponse,
-    IdentityTheftRequest, IdentityTheftResponse,
-    DeviceCloningRequest, DeviceCloningResponse,
-    MobileFraudRequest, MobileFraudResponse,
-    EmailConfigResponse, EmailTestResponse, FraudAlertResponse, UserBehaviorProfile
-)
-from fraud_detection_rules import (
-    detect_sim_swap, detect_identity_theft, detect_device_cloning,
-    detect_mobile_money_fraud, get_risk_level, should_alert, FRAUD_THRESHOLDS
-)
+from database import SessionLocal, engine, get_db, FraudAlert
 from fraud_detection_engine import FraudDetectionEngine
-from mock_services import MockTelecomAPI, MockBiometricAPI, MockDeviceAPI, MockFraudDatabase
 from email_service import email_service
 
 # Initialize FastAPI
@@ -69,7 +56,7 @@ metadata.create_all(engine)
 print("✅ fraud_alerts table created/verified")
 
 # ============================================
-# FRONTEND ROUTES - Clean URLs
+# FRONTEND ROUTES
 # ============================================
 
 @app.get("/")
@@ -99,11 +86,12 @@ async def settings_page():
     return FileResponse('frontend/settings.html')
 
 # ============================================
-# USER PROFILES STORAGE (In-memory for demo)
+# USER PROFILES STORAGE
 # ============================================
 
 user_profiles = {}
 user_transactions = {}
+user_flag_count = {}
 
 def get_user_profile(user_id):
     if user_id not in user_profiles:
@@ -184,6 +172,7 @@ async def mobile_transaction(
     db: Session = Depends(get_db)
 ):
     try:
+        # Extract data
         user_id = transaction.get("userId", "U78901")
         user_name = transaction.get("userName", "Unknown")
         amount = transaction.get("amount", 0)
@@ -217,10 +206,12 @@ async def mobile_transaction(
                 amount=amount,
                 recipient=recipient,
                 location=location,
-                timestamp=datetime.now()
+                timestamp=datetime.now(),
+                acknowledged=False
             )
             db.add(alert)
             db.commit()
+            print(f"✅ Alert created: Wrong PIN Attempt for {user_id}")
             
             return {
                 "status": "BLOCKED",
@@ -246,14 +237,16 @@ async def mobile_transaction(
                 amount=amount,
                 recipient=recipient,
                 location=location,
-                timestamp=datetime.now()
+                timestamp=datetime.now(),
+                acknowledged=False
             )
             db.add(alert)
             db.commit()
+            print(f"✅ Alert created: Blocked Transaction for {user_id}")
             
             return {"status": "BLOCKED", "message": "Transaction blocked"}
         
-        # Normal transaction - get user profile and analyze
+        # Normal transaction - analyze for fraud
         profile = get_user_profile(user_id)
         
         tx_data = {
@@ -265,10 +258,11 @@ async def mobile_transaction(
             'timestamp': timestamp
         }
         
+        # Run fraud detection
         fraud_result = detection_engine.analyze_transaction(tx_data, profile)
         update_user_profile(user_id, tx_data)
         
-        # Save alert if fraud detected
+        # Always save to database if fraud detected
         if fraud_result['fraud_type'] != 'NORMAL':
             alert = FraudAlert(
                 transaction_id=transaction_id,
@@ -285,11 +279,17 @@ async def mobile_transaction(
                 amount=amount,
                 recipient=recipient,
                 location=location,
-                timestamp=datetime.now()
+                timestamp=datetime.now(),
+                acknowledged=False
             )
             db.add(alert)
             db.commit()
-            print(f"✅ Alert created: {fraud_result['fraud_name']}")
+            print(f"✅ Alert created: {fraud_result['fraud_name']} for {user_name} ({user_id})")
+            
+            # Track flag count for Mary's special rule
+            if user_id == 'U78902':
+                user_flag_count[user_id] = user_flag_count.get(user_id, 0) + 1
+                print(f"⚠️ Mary's flag count: {user_flag_count[user_id]}")
         
         return {
             "status": "SUCCESS",
@@ -298,7 +298,7 @@ async def mobile_transaction(
         }
         
     except Exception as e:
-        print(f"❌ Error: {str(e)}")
+        print(f"❌ Error in mobile_transaction: {str(e)}")
         traceback.print_exc()
         return {"status": "ERROR", "message": str(e)}
 
@@ -310,11 +310,9 @@ async def mobile_transaction(
 def get_recent_alerts(limit: int = 50):
     try:
         from sqlalchemy import desc
-        from database import FraudAlert
         
         db = SessionLocal()
         alerts = db.query(FraudAlert).order_by(desc(FraudAlert.timestamp)).limit(limit).all()
-        db.close()
         
         result = []
         for alert in alerts:
@@ -342,16 +340,17 @@ def get_recent_alerts(limit: int = 50):
                 "acknowledged": alert.acknowledged or False
             })
         
+        db.close()
+        print(f"��� Returning {len(result)} alerts")
         return result
+        
     except Exception as e:
-        print(f"❌ Error: {str(e)}")
+        print(f"❌ Error in get_recent_alerts: {str(e)}")
         return []
 
 @app.get("/api/v2/alerts/{alert_id}")
 def get_alert_details(alert_id: int):
     try:
-        from database import FraudAlert
-
         db = SessionLocal()
         alert = db.query(FraudAlert).filter(FraudAlert.id == alert_id).first()
         db.close()
@@ -385,13 +384,12 @@ def get_alert_details(alert_id: int):
     except HTTPException:
         raise
     except Exception as e:
+        print(f"❌ Error in get_alert_details: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/v2/alerts/{alert_id}/acknowledge")
 def acknowledge_alert(alert_id: int):
     try:
-        from database import FraudAlert
-
         db = SessionLocal()
         alert = db.query(FraudAlert).filter(FraudAlert.id == alert_id).first()
         if alert:
