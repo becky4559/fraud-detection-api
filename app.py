@@ -191,11 +191,8 @@ async def mobile_transaction(
             alert = FraudAlert(
                 transaction_id=transaction_id,
                 user_id=user_id,
-                user_name=user_name,
                 fraud_type="WRONG_PIN_ATTEMPT",
-                fraud_name="Wrong PIN Attempt",
                 risk_score=0.85,
-                risk_level="HIGH",
                 detection_signals=json.dumps({
                     "event": "WRONG_PIN",
                     "attempt": transaction.get("attempt", 1),
@@ -203,9 +200,6 @@ async def mobile_transaction(
                     "location": location,
                     "amount": amount
                 }),
-                amount=amount,
-                recipient=recipient,
-                location=location,
                 timestamp=datetime.now(),
                 acknowledged=False
             )
@@ -224,19 +218,13 @@ async def mobile_transaction(
             alert = FraudAlert(
                 transaction_id=transaction_id,
                 user_id=user_id,
-                user_name=user_name,
                 fraud_type="BLOCKED_TRANSACTION",
-                fraud_name="Blocked Transaction",
                 risk_score=0.95,
-                risk_level="CRITICAL",
                 detection_signals=json.dumps({
                     "reason": transaction.get("reason", "Wrong PIN"),
                     "amount": amount,
                     "location": location
                 }),
-                amount=amount,
-                recipient=recipient,
-                location=location,
                 timestamp=datetime.now(),
                 acknowledged=False
             )
@@ -267,18 +255,17 @@ async def mobile_transaction(
             alert = FraudAlert(
                 transaction_id=transaction_id,
                 user_id=user_id,
-                user_name=user_name,
                 fraud_type=fraud_result['fraud_type'],
-                fraud_name=fraud_result['fraud_name'],
                 risk_score=fraud_result['risk_score'],
-                risk_level=fraud_result['risk_level'],
                 detection_signals=json.dumps({
+                    'fraud_name': fraud_result['fraud_name'],
+                    'risk_level': fraud_result['risk_level'],
                     'signals': fraud_result['detection_signals'],
-                    'all_scores': fraud_result['all_scores']
+                    'all_scores': fraud_result['all_scores'],
+                    'amount': amount,
+                    'recipient': recipient,
+                    'location': location
                 }),
-                amount=amount,
-                recipient=recipient,
-                location=location,
                 timestamp=datetime.now(),
                 acknowledged=False
             )
@@ -323,19 +310,26 @@ def get_recent_alerts(limit: int = 50):
                 except:
                     signals = {"raw": alert.detection_signals}
             
+            # Extract fraud_name and risk_level from signals if available
+            fraud_name = signals.get('fraud_name', alert.fraud_type.replace('_', ' ').title())
+            risk_level = signals.get('risk_level', 'MEDIUM')
+            amount = signals.get('amount', 0)
+            recipient = signals.get('recipient', 'Unknown')
+            location = signals.get('location', 'Unknown')
+            
             result.append({
                 "alert_id": alert.id,
                 "transaction_id": alert.transaction_id,
                 "user_id": alert.user_id,
-                "user_name": alert.user_name or "Unknown",
+                "user_name": "Unknown",  # We don't store this yet
                 "fraud_type": alert.fraud_type,
-                "fraud_name": alert.fraud_name,
+                "fraud_name": fraud_name,
                 "risk_score": alert.risk_score or 0,
-                "risk_level": alert.risk_level or "MEDIUM",
+                "risk_level": risk_level,
                 "detection_signals": signals,
-                "amount": alert.amount or 0,
-                "recipient": alert.recipient or "Unknown",
-                "location": alert.location or "Unknown",
+                "amount": amount,
+                "recipient": recipient,
+                "location": location,
                 "timestamp": alert.timestamp.isoformat() if alert.timestamp else None,
                 "acknowledged": alert.acknowledged or False
             })
@@ -364,20 +358,26 @@ def get_alert_details(alert_id: int):
                 signals = json.loads(alert.detection_signals)
             except:
                 signals = {"raw": alert.detection_signals}
+        
+        fraud_name = signals.get('fraud_name', alert.fraud_type.replace('_', ' ').title())
+        risk_level = signals.get('risk_level', 'MEDIUM')
+        amount = signals.get('amount', 0)
+        recipient = signals.get('recipient', 'Unknown')
+        location = signals.get('location', 'Unknown')
 
         return {
             "alert_id": alert.id,
             "transaction_id": alert.transaction_id,
             "user_id": alert.user_id,
-            "user_name": alert.user_name or "Unknown",
+            "user_name": "Unknown",
             "fraud_type": alert.fraud_type,
-            "fraud_name": alert.fraud_name,
+            "fraud_name": fraud_name,
             "risk_score": alert.risk_score or 0,
-            "risk_level": alert.risk_level or "MEDIUM",
+            "risk_level": risk_level,
             "detection_signals": signals,
-            "amount": alert.amount or 0,
-            "recipient": alert.recipient or "Unknown",
-            "location": alert.location or "Unknown",
+            "amount": amount,
+            "recipient": recipient,
+            "location": location,
             "timestamp": alert.timestamp.isoformat() if alert.timestamp else None,
             "acknowledged": alert.acknowledged or False
         }
