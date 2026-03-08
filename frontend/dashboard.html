@@ -179,23 +179,65 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #f0f0f0;
         }
 
         .card-header h2 {
             color: #333;
-            font-size: 16px;
+            font-size: 18px;
             font-weight: 600;
         }
 
         .card-header a {
             color: #1a1a1a;
             text-decoration: none;
-            font-size: 13px;
-            font-weight: 500;
+            font-size: 14px;
         }
 
         .card-header a:hover {
             text-decoration: underline;
+        }
+
+        /* Transaction List */
+        .transaction-list {
+            list-style: none;
+        }
+
+        .transaction-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .transaction-item:last-child {
+            border-bottom: none;
+        }
+
+        .transaction-user {
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .transaction-detail {
+            color: #666;
+            font-size: 13px;
+            margin-top: 2px;
+        }
+
+        .transaction-amount {
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .transaction-amount.credit {
+            color: #2e7d32;
+        }
+
+        .transaction-amount.debit {
+            color: #c00;
         }
 
         /* Fraud Types List */
@@ -240,33 +282,6 @@
             height: 100%;
             background: #1a1a1a;
             border-radius: 3px;
-        }
-
-        /* Recent Alerts Table */
-        .recent-alerts-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .recent-alerts-table th {
-            text-align: left;
-            padding: 12px;
-            color: #666;
-            font-size: 12px;
-            font-weight: 600;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        .recent-alerts-table td {
-            padding: 12px;
-            color: #333;
-            font-size: 13px;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        .recent-alerts-table tr:hover {
-            background: #f9f9f9;
-            cursor: pointer;
         }
 
         .risk-badge {
@@ -339,6 +354,7 @@
             <p>Overview of fraud detection activity</p>
         </div>
 
+        <!-- Stats Cards -->
         <div class="stats-grid">
             <div class="stat-card">
                 <h3>Total Alerts</h3>
@@ -362,27 +378,20 @@
             </div>
         </div>
 
+        <!-- Two Column Layout -->
         <div class="two-column">
+            <!-- Recent Transactions (replaces Recent Alerts) -->
             <div class="card">
                 <div class="card-header">
                     <h2>Recent Transactions</h2>
                     <a href="/alerts">View all →</a>
                 </div>
-                <table class="recent-alerts-table">
-                    <thead>
-                        <tr>
-                            <th>User</th>
-                            <th>Amount</th>
-                            <th>Type</th>
-                            <th>Time</th>
-                        </tr>
-                    </thead>
-                    <tbody id="recentTransactionsList">
-                        <!-- Transactions will be inserted here -->
-                    </tbody>
-                </table>
+                <div id="recentTransactions" class="transaction-list">
+                    <!-- Transactions will be inserted here -->
+                </div>
             </div>
 
+            <!-- Fraud Types Distribution -->
             <div class="card">
                 <div class="card-header">
                     <h2>Fraud Types Distribution</h2>
@@ -392,46 +401,22 @@
                 </div>
             </div>
         </div>
-
-        <div class="card">
-            <div class="card-header">
-                <h2>Recent Alerts</h2>
-                <a href="/alerts">View all →</a>
-            </div>
-            <table class="recent-alerts-table">
-                <thead>
-                    <tr>
-                        <th>User</th>
-                        <th>Fraud Type</th>
-                        <th>Amount</th>
-                        <th>Risk</th>
-                        <th>Time</th>
-                    </tr>
-                </thead>
-                <tbody id="recentAlertsList">
-                    <tr>
-                        <td colspan="5" class="loading">Loading alerts...</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
     </div>
 
     <script>
-        // Store transactions in memory (will reset on page refresh)
-        let recentTransactions = [];
-
-        // Mock data for initial load
-        const mockTransactions = [
-            { user: 'John Kamau', amount: 45000, type: 'Transfer', time: '2 min ago' },
-            { user: 'Mary Akinyi', amount: 120000, type: 'Transfer', time: '15 min ago' },
-            { user: 'Peter Odhiambo', amount: 25000, type: 'Bill Payment', time: '1 hour ago' },
-            { user: 'John Kamau', amount: 5000, type: 'Airtime', time: '3 hours ago' },
-            { user: 'Mary Akinyi', amount: 35000, type: 'Transfer', time: '5 hours ago' }
+        // Mock transactions data (same as mobile app)
+        const MOCK_TRANSACTIONS = [
+            { user: 'John Kamau', description: 'To Mary Akinyi', amount: -45000, time: '2 min ago', type: 'debit' },
+            { user: 'John Kamau', description: 'KPLC Bill', amount: -1200, time: '1 hour ago', type: 'debit' },
+            { user: 'John Kamau', description: 'Salary Credit', amount: 45000, time: '2 days ago', type: 'credit' },
+            { user: 'Mary Akinyi', description: 'To Peter Odhiambo', amount: -15000, time: '1 hour ago', type: 'debit' },
+            { user: 'Mary Akinyi', description: 'KPLC Bill', amount: -3200, time: '3 hours ago', type: 'debit' },
+            { user: 'Peter Odhiambo', description: 'Airtime', amount: -500, time: '30 min ago', type: 'debit' },
+            { user: 'Peter Odhiambo', description: 'To Mary', amount: -2000, time: '2 hours ago', type: 'debit' }
         ];
 
-        // Initialize with mock data
-        recentTransactions = [...mockTransactions];
+        // Store real transactions that come in
+        let realTransactions = [];
 
         function logout() {
             sessionStorage.removeItem('adminLoggedIn');
@@ -440,23 +425,22 @@
 
         async function fetchDashboardData() {
             try {
-                // Fetch alerts for stats and fraud types
+                // Fetch alerts for fraud distribution
                 const alertsResponse = await fetch('/api/v2/alerts/recent?limit=50');
                 const alerts = await alertsResponse.json();
                 
                 if (Array.isArray(alerts)) {
                     updateStats(alerts);
                     displayFraudTypes(alerts);
-                    displayRecentAlerts(alerts.slice(0, 5));
                 }
 
-                // Display recent transactions (mock + real)
-                displayRecentTransactions();
+                // Display transactions (mock + real)
+                displayTransactions();
 
             } catch (error) {
                 console.error('Error fetching dashboard data:', error);
                 // Still show mock data even if API fails
-                displayRecentTransactions();
+                displayTransactions();
             }
         }
 
@@ -470,27 +454,37 @@
             document.getElementById('highCount').textContent = highCount || 12;
         }
 
-        function displayRecentTransactions() {
-            const tbody = document.getElementById('recentTransactionsList');
+        function displayTransactions() {
+            const container = document.getElementById('recentTransactions');
             
-            if (recentTransactions.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="loading">No transactions</td></tr>';
+            // Combine mock and real transactions, sort by time
+            const allTransactions = [...MOCK_TRANSACTIONS, ...realTransactions];
+            
+            if (allTransactions.length === 0) {
+                container.innerHTML = '<div class="loading">No transactions</div>';
                 return;
             }
 
+            // Take first 5
+            const recent = allTransactions.slice(0, 5);
+            
             let html = '';
-            recentTransactions.slice(0, 5).forEach(tx => {
+            recent.forEach(tx => {
+                const amountClass = tx.amount > 0 ? 'credit' : 'debit';
+                const amountDisplay = tx.amount > 0 ? `+KES ${tx.amount.toLocaleString()}` : `KES ${Math.abs(tx.amount).toLocaleString()}`;
+                
                 html += `
-                    <tr>
-                        <td>${tx.user}</td>
-                        <td>KES ${tx.amount.toLocaleString()}</td>
-                        <td>${tx.type}</td>
-                        <td>${tx.time}</td>
-                    </tr>
+                    <div class="transaction-item">
+                        <div>
+                            <div class="transaction-user">${tx.user || 'John Kamau'}</div>
+                            <div class="transaction-detail">${tx.description || 'Transaction'} • ${tx.time}</div>
+                        </div>
+                        <div class="transaction-amount ${amountClass}">${amountDisplay}</div>
+                    </div>
                 `;
             });
             
-            tbody.innerHTML = html;
+            container.innerHTML = html;
         }
 
         function displayFraudTypes(alerts) {
@@ -529,47 +523,16 @@
             container.innerHTML = html;
         }
 
-        function displayRecentAlerts(alerts) {
-            const tbody = document.getElementById('recentAlertsList');
-            
-            if (!alerts || alerts.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="loading">No recent alerts</td></tr>';
-                return;
-            }
-
-            let html = '';
-            alerts.forEach(alert => {
-                const riskClass = alert.risk_level === 'CRITICAL' ? 'risk-critical' : 
-                                 alert.risk_level === 'HIGH' ? 'risk-high' : 'risk-medium';
-                const time = new Date(alert.timestamp).toLocaleTimeString();
-                
-                html += `
-                    <tr onclick="viewAlert(${alert.alert_id})" style="cursor: pointer;">
-                        <td>${alert.user_name || alert.user_id}</td>
-                        <td>${alert.fraud_name}</td>
-                        <td>KES ${(alert.amount || 0).toLocaleString()}</td>
-                        <td><span class="risk-badge ${riskClass}">${alert.risk_level}</span></td>
-                        <td>${time}</td>
-                    </tr>
-                `;
-            });
-            
-            tbody.innerHTML = html;
-        }
-
-        function viewAlert(alertId) {
-            window.location.href = `/analyze?id=${alertId}`;
-        }
-
         // Function to add a new transaction (called from mobile app)
         window.addTransaction = function(transaction) {
-            recentTransactions.unshift({
+            realTransactions.unshift({
                 user: transaction.user,
+                description: transaction.description,
                 amount: transaction.amount,
-                type: transaction.type,
-                time: 'Just now'
+                time: 'Just now',
+                type: transaction.amount > 0 ? 'credit' : 'debit'
             });
-            displayRecentTransactions();
+            displayTransactions();
         };
 
         window.onload = function() {
