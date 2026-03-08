@@ -70,10 +70,30 @@ class FraudDetectionEngine:
             }
         }
 
+        # User time frames (normal active hours)
+        self.user_time_frames = {
+            'U78901': {'start': 8, 'end': 22},  # John: 8am-10pm
+            'U78902': {'start': 9, 'end': 20},  # Mary: 9am-8pm
+            'U78903': {'start': 8, 'end': 18},  # Peter: 8am-6pm
+        }
+
+        # Track previous flags per user
+        self.user_flag_count = {}
+
     def analyze_transaction(self, transaction, user_profile):
         scores = {}
         signals = {}
 
+        # Get user ID
+        user_id = transaction.get('user_id')
+        
+        # Time anomaly detection
+        time_score, time_signals = self.detect_time_anomaly(transaction, user_id)
+        if time_score > 0:
+            scores['TIME_ANOMALY'] = time_score
+            signals['TIME_ANOMALY'] = time_signals
+
+        # Other detections
         sim_swap_score, sim_signals = self.detect_sim_swap(transaction, user_profile)
         scores['SIM_SWAP'] = sim_swap_score
         signals['SIM_SWAP'] = sim_signals
@@ -106,23 +126,93 @@ class FraudDetectionEngine:
         scores['SYNTHETIC_IDENTITY'] = synthetic_score
         signals['SYNTHETIC_IDENTITY'] = synthetic_signals
 
+        # Find highest scoring fraud type
         fraud_type = 'NORMAL'
         max_score = 0.2
 
         for f_type, score in scores.items():
-            threshold = self.fraud_types[f_type]['threshold']
+            threshold = self.fraud_types.get(f_type, self.fraud_types['NORMAL'])['threshold']
             if score > threshold and score > max_score:
                 max_score = score
                 fraud_type = f_type
 
+        # If time anomaly was detected but not highest, still include in signals
+        if time_score > 0.4 and fraud_type == 'NORMAL':
+            fraud_type = 'SOCIAL_ENGINEERING'
+            max_score = max(max_score, time_score)
+
+        # Track flag for Mary's special rule
+        if fraud_type != 'NORMAL':
+            self.user_flag_count[user_id] = self.user_flag_count.get(user_id, 0) + 1
+
         return {
             'fraud_type': fraud_type,
-            'fraud_name': self.fraud_types[fraud_type]['name'],
-            'risk_level': self.fraud_types[fraud_type]['risk_level'],
+            'fraud_name': self.fraud_types.get(fraud_type, self.fraud_types['NORMAL'])['name'],
+            'risk_level': self.get_risk_level(max_score, user_id),
             'risk_score': max_score,
-            'detection_signals': signals[fraud_type] if fraud_type != 'NORMAL' else {},
+            'detection_signals': signals.get(fraud_type, {}),
             'all_scores': scores
         }
+
+    def detect_time_anomaly(self, transaction, user_id):
+        """Detect if transaction is outside user's normal hours"""
+        try:
+            tx_time = datetime.fromisoformat(transaction['timestamp'])
+            hour = tx_time.hour
+            
+            # Get user's normal time frame
+            time_frame = self.user_time_frames.get(user_id, {'start': 8, 'end': 20})
+            
+            # Check if within normal hours
+            if hour >= time_frame['start'] and hour < time_frame['end']:
+                return 0.2, {}  # Normal time
+            
+            # Calculate how far outside
+            if hour < time_frame['start']:
+                hours_off = time_frame['start'] - hour
+            else:
+                hours_off = hour - time_frame['end']
+            
+            # Base score for time anomaly
+            score = 0.5 + (hours_off * 0.05)
+            
+            # Mary's special rule: previous flags increase risk
+            if user_id == 'U78902' and self.user_flag_count.get(user_id, 0) > 0:
+                score += 0.2
+                signals = {
+                    'time_anomaly': f"Transaction at {hour}:00 (normal hours: {time_frame['start']}-{time_frame['end']})",
+                    'previous_flags': self.user_flag_count.get(user_id, 0),
+                    'repeat_offender': True
+                }
+            else:
+                signals = {
+                    'time_anomaly': f"Transaction at {hour}:00 (normal hours: {time_frame['start']}-{time_frame['end']})"
+                }
+            
+            return min(score, 1.0), signals
+            
+        except Exception as e:
+            print(f"Error in time detection: {e}")
+            return 0.2, {}
+
+    def get_risk_level(self, score, user_id):
+        """Get risk level with special handling for Mary"""
+        base_level = 'LOW'
+        if score > 0.7:
+            base_level = 'CRITICAL'
+        elif score > 0.5:
+            base_level = 'HIGH'
+        elif score > 0.3:
+            base_level = 'MEDIUM'
+        
+        # Mary's previous flags escalate risk
+        if user_id == 'U78902' and self.user_flag_count.get(user_id, 0) > 1:
+            if base_level == 'MEDIUM':
+                return 'HIGH'
+            elif base_level == 'HIGH':
+                return 'CRITICAL'
+        
+        return base_level
 
     def detect_sim_swap(self, transaction, profile):
         score = 0.2
