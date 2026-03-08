@@ -2,7 +2,6 @@ from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy.orm import Session
-from typing import List, Optional
 from datetime import datetime, timedelta
 import json
 import random
@@ -28,32 +27,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# ============================================
-# CREATE DATABASE TABLES ON STARTUP
-# ============================================
-from sqlalchemy import MetaData, Table, Column, Integer, String, Float, Boolean, DateTime
-
-metadata = MetaData()
-fraud_alerts = Table(
-    'fraud_alerts', metadata,
-    Column('id', Integer, primary_key=True),
-    Column('transaction_id', String),
-    Column('user_id', String),
-    Column('user_name', String),
-    Column('fraud_type', String),
-    Column('fraud_name', String),
-    Column('risk_score', Float),
-    Column('risk_level', String),
-    Column('detection_signals', String),
-    Column('amount', Float),
-    Column('recipient', String),
-    Column('location', String),
-    Column('timestamp', DateTime),
-    Column('acknowledged', Boolean)
-)
-metadata.create_all(engine)
-print(" fraud_alerts table created/verified")
 
 # ============================================
 # FRONTEND ROUTES
@@ -172,7 +145,6 @@ async def mobile_transaction(
     db: Session = Depends(get_db)
 ):
     try:
-        # Extract data
         user_id = transaction.get("userId", "U78901")
         user_name = transaction.get("userName", "Unknown")
         amount = transaction.get("amount", 0)
@@ -191,8 +163,11 @@ async def mobile_transaction(
             alert = FraudAlert(
                 transaction_id=transaction_id,
                 user_id=user_id,
+                user_name=user_name,
                 fraud_type="WRONG_PIN_ATTEMPT",
+                fraud_name="Wrong PIN Attempt",
                 risk_score=0.85,
+                risk_level="HIGH",
                 detection_signals=json.dumps({
                     "event": "WRONG_PIN",
                     "attempt": transaction.get("attempt", 1),
@@ -200,12 +175,15 @@ async def mobile_transaction(
                     "location": location,
                     "amount": amount
                 }),
+                amount=amount,
+                recipient=recipient,
+                location=location,
                 timestamp=datetime.now(),
                 acknowledged=False
             )
             db.add(alert)
             db.commit()
-            print(" Alert created: Wrong PIN Attempt for " + user_id)
+            print(f"Alert created: Wrong PIN Attempt for {user_id}")
             
             return {
                 "status": "BLOCKED",
@@ -218,19 +196,25 @@ async def mobile_transaction(
             alert = FraudAlert(
                 transaction_id=transaction_id,
                 user_id=user_id,
+                user_name=user_name,
                 fraud_type="BLOCKED_TRANSACTION",
+                fraud_name="Blocked Transaction",
                 risk_score=0.95,
+                risk_level="CRITICAL",
                 detection_signals=json.dumps({
                     "reason": transaction.get("reason", "Wrong PIN"),
                     "amount": amount,
                     "location": location
                 }),
+                amount=amount,
+                recipient=recipient,
+                location=location,
                 timestamp=datetime.now(),
                 acknowledged=False
             )
             db.add(alert)
             db.commit()
-            print(" Alert created: Blocked Transaction for " + user_id)
+            print(f"Alert created: Blocked Transaction for {user_id}")
             
             return {"status": "BLOCKED", "message": "Transaction blocked"}
         
@@ -246,37 +230,36 @@ async def mobile_transaction(
             'timestamp': timestamp
         }
         
-        # Run fraud detection
         fraud_result = detection_engine.analyze_transaction(tx_data, profile)
         update_user_profile(user_id, tx_data)
         
-        # Always save to database if fraud detected
+        # Save to database if fraud detected
         if fraud_result['fraud_type'] != 'NORMAL':
             alert = FraudAlert(
                 transaction_id=transaction_id,
                 user_id=user_id,
+                user_name=user_name,
                 fraud_type=fraud_result['fraud_type'],
+                fraud_name=fraud_result['fraud_name'],
                 risk_score=fraud_result['risk_score'],
+                risk_level=fraud_result['risk_level'],
                 detection_signals=json.dumps({
-                    'fraud_name': fraud_result['fraud_name'],
-                    'risk_level': fraud_result['risk_level'],
                     'signals': fraud_result['detection_signals'],
-                    'all_scores': fraud_result['all_scores'],
-                    'amount': amount,
-                    'recipient': recipient,
-                    'location': location
+                    'all_scores': fraud_result['all_scores']
                 }),
+                amount=amount,
+                recipient=recipient,
+                location=location,
                 timestamp=datetime.now(),
                 acknowledged=False
             )
             db.add(alert)
             db.commit()
-            print(" Alert created: " + fraud_result['fraud_name'] + " for " + user_name + " (" + user_id + ")")
+            print(f"Alert created: {fraud_result['fraud_name']} for {user_name}")
             
-            # Track flag count for Mary's special rule
             if user_id == 'U78902':
                 user_flag_count[user_id] = user_flag_count.get(user_id, 0) + 1
-                print(" Mary's flag count: " + str(user_flag_count[user_id]))
+                print(f"Mary's flag count: {user_flag_count[user_id]}")
         
         return {
             "status": "SUCCESS",
@@ -285,7 +268,7 @@ async def mobile_transaction(
         }
         
     except Exception as e:
-        print(" Error in mobile_transaction: " + str(e))
+        print(f"Error in mobile_transaction: {str(e)}")
         traceback.print_exc()
         return {"status": "ERROR", "message": str(e)}
 
@@ -310,36 +293,29 @@ def get_recent_alerts(limit: int = 50):
                 except:
                     signals = {"raw": alert.detection_signals}
             
-            # Extract fraud_name and risk_level from signals if available
-            fraud_name = signals.get('fraud_name', alert.fraud_type.replace('_', ' ').title())
-            risk_level = signals.get('risk_level', 'MEDIUM')
-            amount = signals.get('amount', 0)
-            recipient = signals.get('recipient', 'Unknown')
-            location = signals.get('location', 'Unknown')
-            
             result.append({
                 "alert_id": alert.id,
                 "transaction_id": alert.transaction_id,
                 "user_id": alert.user_id,
-                "user_name": "Unknown",  # We don't store this yet
+                "user_name": alert.user_name or "Unknown",
                 "fraud_type": alert.fraud_type,
-                "fraud_name": fraud_name,
+                "fraud_name": alert.fraud_name,
                 "risk_score": alert.risk_score or 0,
-                "risk_level": risk_level,
+                "risk_level": alert.risk_level or "MEDIUM",
                 "detection_signals": signals,
-                "amount": amount,
-                "recipient": recipient,
-                "location": location,
+                "amount": alert.amount or 0,
+                "recipient": alert.recipient or "Unknown",
+                "location": alert.location or "Unknown",
                 "timestamp": alert.timestamp.isoformat() if alert.timestamp else None,
                 "acknowledged": alert.acknowledged or False
             })
         
         db.close()
-        print(" Returning " + str(len(result)) + " alerts")
+        print(f"Returning {len(result)} alerts")
         return result
         
     except Exception as e:
-        print(" Error in get_recent_alerts: " + str(e))
+        print(f"Error in get_recent_alerts: {str(e)}")
         return []
 
 @app.get("/api/v2/alerts/{alert_id}")
@@ -358,33 +334,27 @@ def get_alert_details(alert_id: int):
                 signals = json.loads(alert.detection_signals)
             except:
                 signals = {"raw": alert.detection_signals}
-        
-        fraud_name = signals.get('fraud_name', alert.fraud_type.replace('_', ' ').title())
-        risk_level = signals.get('risk_level', 'MEDIUM')
-        amount = signals.get('amount', 0)
-        recipient = signals.get('recipient', 'Unknown')
-        location = signals.get('location', 'Unknown')
 
         return {
             "alert_id": alert.id,
             "transaction_id": alert.transaction_id,
             "user_id": alert.user_id,
-            "user_name": "Unknown",
+            "user_name": alert.user_name or "Unknown",
             "fraud_type": alert.fraud_type,
-            "fraud_name": fraud_name,
+            "fraud_name": alert.fraud_name,
             "risk_score": alert.risk_score or 0,
-            "risk_level": risk_level,
+            "risk_level": alert.risk_level or "MEDIUM",
             "detection_signals": signals,
-            "amount": amount,
-            "recipient": recipient,
-            "location": location,
+            "amount": alert.amount or 0,
+            "recipient": alert.recipient or "Unknown",
+            "location": alert.location or "Unknown",
             "timestamp": alert.timestamp.isoformat() if alert.timestamp else None,
             "acknowledged": alert.acknowledged or False
         }
     except HTTPException:
         raise
     except Exception as e:
-        print(" Error in get_alert_details: " + str(e))
+        print(f"Error in get_alert_details: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/v2/alerts/{alert_id}/acknowledge")
