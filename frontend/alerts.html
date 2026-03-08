@@ -6,6 +6,7 @@
     <title>LogSense - Fraud Alerts</title>
     <link rel="stylesheet" href="styles.css">
     <style>
+        /* Additional styles for fraud badges */
         .fraud-badge {
             padding: 4px 8px;
             border-radius: 12px;
@@ -32,6 +33,20 @@
         .amount-cell {
             font-weight: 600;
         }
+        .status-new {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+        }
+        .status-reviewed {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+        }
     </style>
 </head>
 <body>
@@ -49,7 +64,8 @@
         </div>
 
         <div class="main-content">
-            <div class="stats-grid" id="statsGrid">
+            <!-- Stats Cards -->
+            <div class="stats-grid">
                 <div class="stat-card">
                     <h3>Total Alerts</h3>
                     <div class="number" id="totalAlerts">0</div>
@@ -72,7 +88,8 @@
                 </div>
             </div>
 
-            <div class="filter-section" id="filterSection">
+            <!-- Filter Buttons -->
+            <div class="filter-section">
                 <button class="filter-btn active" data-filter="all">All</button>
                 <button class="filter-btn" data-filter="SIM_SWAP">SIM Swap</button>
                 <button class="filter-btn" data-filter="IDENTITY_THEFT">Identity Theft</button>
@@ -84,13 +101,15 @@
                 <button class="filter-btn" data-filter="SYNTHETIC_IDENTITY">Synthetic Identity</button>
             </div>
 
+            <!-- Search Bar -->
             <div class="search-bar">
                 <input type="text" id="searchInput" placeholder="Search by user, transaction, or fraud type...">
                 <button onclick="searchAlerts()">Search</button>
             </div>
 
+            <!-- Alerts Table -->
             <div class="table-container">
-                <table id="alertsTable">
+                <table>
                     <thead>
                         <tr>
                             <th>Alert ID</th>
@@ -111,6 +130,7 @@
                 </table>
             </div>
 
+            <!-- Footer -->
             <div class="footer">
                 <div class="total" id="footerTotal">Total: 0 alerts • 0 unreviewed</div>
                 <div class="email-info">rebeccabosibori589@gmail.com</div>
@@ -209,9 +229,9 @@
                         <td>#${alert.alert_id}</td>
                         <td><strong>${alert.user_name || alert.user_id}</strong></td>
                         <td><span class="fraud-badge ${fraudClass}">${alert.fraud_name}</span></td>
-                        <td class="amount-cell">KES ${alert.amount.toLocaleString()}</td>
+                        <td class="amount-cell">KES ${(alert.amount || 0).toLocaleString()}</td>
                         <td>${riskPercent}%</td>
-                        <td><span class="risk-badge risk-${alert.risk_level.toLowerCase()}">${alert.risk_level}</span></td>
+                        <td><span class="risk-badge risk-${alert.risk_level?.toLowerCase() || 'medium'}">${alert.risk_level || 'MEDIUM'}</span></td>
                         <td>${timestamp}</td>
                         <td>${status}</td>
                     </tr>
