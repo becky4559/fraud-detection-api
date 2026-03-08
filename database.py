@@ -2,13 +2,10 @@ from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
-import os
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./fraud.db"
+DATABASE_URL = "sqlite:///./fraud.db"
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
+engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
@@ -24,12 +21,10 @@ class FraudAlert(Base):
     fraud_name = Column(String, nullable=True)
     risk_score = Column(Float)
     risk_level = Column(String, nullable=True)
-    detection_signals = Column(String, nullable=True)  # JSON stored as text
+    detection_signals = Column(String, nullable=True)
     amount = Column(Float, nullable=True)
     recipient = Column(String, nullable=True)
     location = Column(String, nullable=True)
-    email_sent = Column(Boolean, default=False)
-    email_recipient = Column(String, nullable=True)
     timestamp = Column(DateTime, default=datetime.utcnow)
     acknowledged = Column(Boolean, default=False)
 
@@ -42,3 +37,4 @@ def get_db():
 
 # Create tables
 Base.metadata.create_all(bind=engine)
+print("✅ Database created with correct schema")
