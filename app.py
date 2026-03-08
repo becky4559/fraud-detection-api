@@ -65,139 +65,159 @@ async def settings_page():
     return FileResponse('frontend/settings.html')
 
 # ============================================
-# FRAUD DETECTION - 8 TYPES WITH EXPLANATIONS
+# FRAUD DETECTION - 8 TYPES
 # ============================================
 
-def generate_fraud_alert(user_id, user_name, amount, recipient, location, device_id):
-    """Generate a random fraud alert with proper type and explanations"""
+# The 8 fraud types we discussed
+FRAUD_TYPES = [
+    {
+        "type": "SIM_SWAP",
+        "name": "SIM Swap",
+        "risk_score_range": (0.85, 0.95),
+        "risk_level": "CRITICAL"
+    },
+    {
+        "type": "IDENTITY_THEFT",
+        "name": "Identity Theft",
+        "risk_score_range": (0.80, 0.92),
+        "risk_level": "CRITICAL"
+    },
+    {
+        "type": "DEVICE_CLONING",
+        "name": "Device Cloning",
+        "risk_score_range": (0.75, 0.88),
+        "risk_level": "CRITICAL"
+    },
+    {
+        "type": "MOBILE_MONEY_FRAUD",
+        "name": "Mobile Money Fraud",
+        "risk_score_range": (0.70, 0.85),
+        "risk_level": "HIGH"
+    },
+    {
+        "type": "AGENT_COLLUSION",
+        "name": "Agent Collusion",
+        "risk_score_range": (0.72, 0.86),
+        "risk_level": "HIGH"
+    },
+    {
+        "type": "SOCIAL_ENGINEERING",
+        "name": "Social Engineering",
+        "risk_score_range": (0.65, 0.80),
+        "risk_level": "MEDIUM"
+    },
+    {
+        "type": "REPAYMENT_FRAUD",
+        "name": "Repayment Fraud",
+        "risk_score_range": (0.60, 0.75),
+        "risk_level": "MEDIUM"
+    },
+    {
+        "type": "SYNTHETIC_IDENTITY",
+        "name": "Synthetic Identity",
+        "risk_score_range": (0.82, 0.94),
+        "risk_level": "CRITICAL"
+    }
+]
+
+def get_random_fraud_type():
+    """Return a random fraud type from the 8 types"""
+    return random.choice(FRAUD_TYPES)
+
+def generate_explanations(fraud_type, amount, location):
+    """Generate explanations based on fraud type"""
+    explanations = []
+    signals = {}
     
-    # 8 fraud types with their details
-    fraud_types = [
-        {
-            "type": "SIM_SWAP",
-            "name": "SIM Swap",
-            "risk_score": 0.92,
-            "risk_level": "CRITICAL",
-            "signals": {
-                "new_sim": "SIM card changed 5 minutes before transaction",
-                "device_change": "New device detected (IMEI: " + device_id[-8:] + ")",
-                "location_change": "Location changed from Nairobi to " + location,
-                "impossible_travel": "Cannot travel from Nairobi to " + location + " in 5 minutes"
-            },
-            "explanation": [
-                "New SIM card registered on different device",
-                "Transaction from new location (" + location + " vs Nairobi)",
-                "Impossible travel time between locations"
-            ]
-        },
-        {
-            "type": "IDENTITY_THEFT",
-            "name": "Identity Theft",
-            "risk_score": 0.88,
-            "risk_level": "CRITICAL",
-            "signals": {
-                "amount_ratio": str(round(amount / 25000, 1)) + "x higher than normal",
-                "new_recipient": "First time sending to " + recipient,
-                "unusual_time": "Transaction at unusual hour (3:00 AM)"
-            },
-            "explanation": [
-                "Amount is " + str(round(amount / 25000, 1)) + "x higher than normal",
-                "Sending to new recipient (first time)",
-                "Transaction at unusual hour (3:00 AM)"
-            ]
-        },
-        {
-            "type": "DEVICE_CLONING",
-            "name": "Device Cloning",
-            "risk_score": 0.85,
-            "risk_level": "CRITICAL",
-            "signals": {
-                "multiple_locations": "Same device active in Nairobi and " + location,
-                "device_rooted": "Device appears to be rooted/jailbroken"
-            },
-            "explanation": [
-                "Same device active in multiple locations simultaneously",
-                "Device appears to be rooted/jailbroken"
-            ]
-        },
-        {
-            "type": "MOBILE_MONEY_FRAUD",
-            "name": "Mobile Money Fraud",
-            "risk_score": 0.78,
-            "risk_level": "HIGH",
-            "signals": {
-                "high_velocity": "5 transactions in last 5 minutes",
-                "multiple_recipients": "Sending to 3 different people"
-            },
-            "explanation": [
-                "Multiple rapid transactions detected",
-                "Sending to multiple different recipients"
-            ]
-        },
-        {
-            "type": "AGENT_COLLUSION",
-            "name": "Agent Collusion",
-            "risk_score": 0.82,
-            "risk_level": "HIGH",
-            "signals": {
-                "agent_involved": "Transaction involves agent",
-                "large_cash_out": "Large cash out amount: KES " + str(amount)
-            },
-            "explanation": [
-                "Transaction involves agent - possible collusion",
-                "Large cash out amount"
-            ]
-        },
-        {
-            "type": "SOCIAL_ENGINEERING",
-            "name": "Social Engineering",
-            "risk_score": 0.72,
-            "risk_level": "MEDIUM",
-            "signals": {
-                "new_beneficiary": "Sending to new beneficiary",
-                "amount_ratio": str(round(amount / 25000, 1)) + "x higher than normal",
-                "urgent_keyword": "Message contains 'urgent'"
-            },
-            "explanation": [
-                "Sending to new beneficiary",
-                "Amount " + str(round(amount / 25000, 1)) + "x higher than normal",
-                "Urgent language detected"
-            ]
-        },
-        {
-            "type": "REPAYMENT_FRAUD",
-            "name": "Repayment Fraud",
-            "risk_score": 0.68,
-            "risk_level": "MEDIUM",
-            "signals": {
-                "circular_pattern": "Circular transaction pattern detected",
-                "amount_mismatch": "Repayment amount doesn't match loan"
-            },
-            "explanation": [
-                "Circular transaction pattern detected",
-                "Repayment amount doesn't match loan"
-            ]
-        },
-        {
-            "type": "SYNTHETIC_IDENTITY",
-            "name": "Synthetic Identity",
-            "risk_score": 0.89,
-            "risk_level": "CRITICAL",
-            "signals": {
-                "new_account": "Account created 2 days ago",
-                "large_first_tx": "First transaction large amount: KES " + str(amount)
-            },
-            "explanation": [
-                "Account created recently (2 days ago)",
-                "First transaction is unusually large"
-            ]
+    if fraud_type["type"] == "SIM_SWAP":
+        explanations = [
+            "New SIM card registered on different device",
+            f"Transaction from new location ({location} vs Nairobi)",
+            "Impossible travel time between locations"
+        ]
+        signals = {
+            "new_sim": "SIM card changed 5 minutes before transaction",
+            "device_change": "New device detected",
+            "location_change": f"Location changed from Nairobi to {location}"
         }
-    ]
-    
-    # Randomly select one fraud type for demo
-    selected = random.choice(fraud_types)
-    
-    return selected
+        
+    elif fraud_type["type"] == "IDENTITY_THEFT":
+        ratio = round(amount / 25000, 1)
+        explanations = [
+            f"Amount is {ratio}x higher than normal",
+            "Sending to new recipient (first time)",
+            "Transaction at unusual hour"
+        ]
+        signals = {
+            "amount_ratio": f"{ratio}x higher than normal",
+            "new_recipient": "First time sending to this recipient",
+            "unusual_time": "Transaction at unusual hour (3:00 AM)"
+        }
+        
+    elif fraud_type["type"] == "DEVICE_CLONING":
+        explanations = [
+            "Same device active in multiple locations simultaneously",
+            "Device appears to be rooted/jailbroken"
+        ]
+        signals = {
+            "multiple_locations": f"Same device active in Nairobi and {location}",
+            "device_rooted": "Device appears to be rooted/jailbroken"
+        }
+        
+    elif fraud_type["type"] == "MOBILE_MONEY_FRAUD":
+        explanations = [
+            "Multiple rapid transactions detected",
+            "Sending to multiple different recipients"
+        ]
+        signals = {
+            "high_velocity": "5 transactions in last 5 minutes",
+            "multiple_recipients": "Sending to 3 different people"
+        }
+        
+    elif fraud_type["type"] == "AGENT_COLLUSION":
+        explanations = [
+            "Transaction involves agent - possible collusion",
+            "Large cash out amount"
+        ]
+        signals = {
+            "agent_involved": "Transaction involves agent",
+            "large_cash_out": f"Large cash out amount: KES {amount}"
+        }
+        
+    elif fraud_type["type"] == "SOCIAL_ENGINEERING":
+        ratio = round(amount / 25000, 1)
+        explanations = [
+            "Sending to new beneficiary",
+            f"Amount {ratio}x higher than normal",
+            "Urgent language detected"
+        ]
+        signals = {
+            "new_beneficiary": "Sending to new beneficiary",
+            "amount_ratio": f"{ratio}x higher than normal",
+            "urgent_keyword": "Message contains 'urgent'"
+        }
+        
+    elif fraud_type["type"] == "REPAYMENT_FRAUD":
+        explanations = [
+            "Circular transaction pattern detected",
+            "Repayment amount doesn't match loan"
+        ]
+        signals = {
+            "circular_pattern": "Circular transaction pattern detected",
+            "amount_mismatch": "Repayment amount doesn't match loan"
+        }
+        
+    elif fraud_type["type"] == "SYNTHETIC_IDENTITY":
+        explanations = [
+            "Account created recently (2 days ago)",
+            "First transaction is unusually large"
+        ]
+        signals = {
+            "new_account": "Account created 2 days ago",
+            "large_first_tx": f"First transaction large amount: KES {amount}"
+        }
+        
+    return explanations, signals
 
 # ============================================
 # MOBILE APP ENDPOINT
@@ -235,7 +255,8 @@ async def mobile_transaction(
                     "attempt": transaction.get("attempt", 1),
                     "device_id": device_id[-4:],
                     "location": location,
-                    "amount": amount
+                    "amount": amount,
+                    "explanations": ["Wrong PIN entered - transaction blocked"]
                 }),
                 amount=amount,
                 recipient=recipient,
@@ -267,7 +288,8 @@ async def mobile_transaction(
                 detection_signals=json.dumps({
                     "reason": transaction.get("reason", "Wrong PIN"),
                     "amount": amount,
-                    "location": location
+                    "location": location,
+                    "explanations": ["Transaction blocked due to security concerns"]
                 }),
                 amount=amount,
                 recipient=recipient,
@@ -281,20 +303,27 @@ async def mobile_transaction(
             
             return {"status": "BLOCKED", "message": "Transaction blocked"}
         
-        # Generate fraud alert with proper type and explanations
-        fraud_data = generate_fraud_alert(user_id, user_name, amount, recipient, location, device_id)
+        # For normal transactions, use one of the 8 fraud types
+        fraud_type = get_random_fraud_type()
+        risk_score = random.uniform(fraud_type["risk_score_range"][0], fraud_type["risk_score_range"][1])
+        explanations, signals = generate_explanations(fraud_type, amount, location)
+        
+        # Add amount and recipient to signals
+        signals["amount"] = amount
+        signals["recipient"] = recipient
+        signals["location"] = location
         
         alert = FraudAlert(
             transaction_id=transaction_id,
             user_id=user_id,
             user_name=user_name,
-            fraud_type=fraud_data["type"],
-            fraud_name=fraud_data["name"],
-            risk_score=fraud_data["risk_score"],
-            risk_level=fraud_data["risk_level"],
+            fraud_type=fraud_type["type"],
+            fraud_name=fraud_type["name"],
+            risk_score=round(risk_score, 2),
+            risk_level=fraud_type["risk_level"],
             detection_signals=json.dumps({
-                "signals": fraud_data["signals"],
-                "explanations": fraud_data["explanation"]
+                "signals": signals,
+                "explanations": explanations
             }),
             amount=amount,
             recipient=recipient,
@@ -304,7 +333,7 @@ async def mobile_transaction(
         )
         db.add(alert)
         db.commit()
-        print("Alert created: " + fraud_data["name"] + " for " + user_name)
+        print("Alert created: " + fraud_type["name"] + " for " + user_name)
         
         return {
             "status": "SUCCESS",
