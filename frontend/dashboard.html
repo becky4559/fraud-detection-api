@@ -1,692 +1,102 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LogSense - Dashboard</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-        }
-
-        body {
-            background-color: #f5f5f5;
-            display: flex;
-            min-height: 100vh;
-        }
-
-        /* Sidebar */
-        .sidebar {
-            width: 250px;
-            background: #1a1a1a;
-            color: white;
-            display: flex;
-            flex-direction: column;
-            position: fixed;
-            height: 100vh;
-        }
-
-        .sidebar-header {
-            padding: 24px 20px;
-            border-bottom: 1px solid #333;
-        }
-
-        .sidebar-header h2 {
-            font-size: 20px;
-            font-weight: 600;
-            letter-spacing: 1px;
-            color: white;
-        }
-
-        .sidebar-header p {
-            font-size: 12px;
-            color: #999;
-            margin-top: 4px;
-        }
-
-        .sidebar-nav {
-            flex: 1;
-            padding: 20px 0;
-        }
-
-        .sidebar-nav a {
-            display: flex;
-            align-items: center;
-            padding: 12px 20px;
-            color: #ccc;
-            text-decoration: none;
-            transition: all 0.3s;
-            font-size: 14px;
-        }
-
-        .sidebar-nav a:hover {
-            background: #333;
-            color: white;
-        }
-
-        .sidebar-nav a.active {
-            background: #333;
-            color: white;
-            border-left: 3px solid white;
-        }
-
-        .sidebar-nav a i {
-            width: 24px;
-            font-size: 16px;
-            margin-right: 12px;
-            display: inline-block;
-        }
-
-        .sidebar-footer {
-            padding: 20px;
-            border-top: 1px solid #333;
-        }
-
-        .sidebar-footer a {
-            display: flex;
-            align-items: center;
-            color: #ccc;
-            text-decoration: none;
-            font-size: 14px;
-            padding: 8px 0;
-        }
-
-        .sidebar-footer a:hover {
-            color: white;
-        }
-
-        .sidebar-footer a i {
-            width: 24px;
-            margin-right: 12px;
-            display: inline-block;
-        }
-
-        /* Main Content */
-        .main-content {
-            flex: 1;
-            margin-left: 250px;
-            padding: 30px;
-        }
-
-        .page-header {
-            margin-bottom: 30px;
-        }
-
-        .page-header h1 {
-            font-size: 24px;
-            color: #333;
-            font-weight: 500;
-        }
-
-        .page-header p {
-            color: #666;
-            font-size: 14px;
-            margin-top: 5px;
-        }
-
-        /* Stats Grid - Row 1 */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .stat-card {
-            background: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        }
-
-        .stat-card h3 {
-            color: #666;
-            font-size: 14px;
-            font-weight: 500;
-            margin-bottom: 10px;
-        }
-
-        .stat-number {
-            color: #1a1a1a;
-            font-size: 28px;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-
-        .stat-subtitle {
-            color: #999;
-            font-size: 12px;
-        }
-
-        /* Two Column Layout */
-        .two-column {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        /* Three Column Layout */
-        .three-column {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .card {
-            background: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        }
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .card-header h2 {
-            color: #333;
-            font-size: 16px;
-            font-weight: 600;
-        }
-
-        /* Tables */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th {
-            text-align: left;
-            padding: 12px;
-            color: #666;
-            font-size: 12px;
-            font-weight: 600;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        td {
-            padding: 12px;
-            color: #333;
-            font-size: 13px;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        tr:hover {
-            background: #f9f9f9;
-        }
-
-        /* Status Indicators */
-        .status-active {
-            color: #2e7d32;
-            background: #e8f5e9;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            display: inline-block;
-        }
-
-        .status-idle {
-            color: #f57c00;
-            background: #fff3e0;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            display: inline-block;
-        }
-
-        /* Risk Badges */
-        .risk-badge {
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 500;
-            display: inline-block;
-        }
-
-        .risk-critical {
-            background: #fee;
-            color: #c00;
-        }
-
-        .risk-high {
-            background: #fff3e0;
-            color: #f57c00;
-        }
-
-        .risk-medium {
-            background: #fff9c4;
-            color: #fbc02d;
-        }
-
-        .risk-low {
-            background: #e8f5e9;
-            color: #2e7d32;
-        }
-
-        /* Fraud Type List */
-        .fraud-list {
-            list-style: none;
-        }
-
-        .fraud-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        .fraud-item:last-child {
-            border-bottom: none;
-        }
-
-        .fraud-name {
-            color: #333;
-            font-size: 13px;
-        }
-
-        .fraud-count {
-            background: #f0f0f0;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 12px;
-            color: #666;
-        }
-
-        /* Risk Bar */
-        .risk-bar-item {
-            margin-bottom: 15px;
-        }
-
-        .risk-bar-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
-            font-size: 13px;
-        }
-
-        .risk-bar-label {
-            color: #666;
-        }
-
-        .risk-bar-value {
-            color: #333;
-            font-weight: 500;
-        }
-
-        .risk-bar {
-            height: 8px;
-            background: #f0f0f0;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-
-        .risk-bar-fill {
-            height: 100%;
-            background: #1a1a1a;
-            border-radius: 4px;
-        }
-
-        .risk-bar-fill.critical {
-            background: #c00;
-        }
-
-        .risk-bar-fill.high {
-            background: #f57c00;
-        }
-
-        .risk-bar-fill.medium {
-            background: #fbc02d;
-        }
-
-        .risk-bar-fill.low {
-            background: #2e7d32;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #666;
-        }
-    </style>
-</head>
-<body>
-    <div class="sidebar">
-        <div class="sidebar-header">
-            <h2>LOGSENSE</h2>
-            <p>Fraud Detection</p>
-        </div>
-
-        <div class="sidebar-nav">
-            <a href="/dashboard" class="active">
-                <i>DS</i> Dashboard
-            </a>
-            <a href="/alerts">
-                <i>AL</i> Alerts
-            </a>
-            <a href="/analyze">
-                <i>AN</i> Analyze
-            </a>
-            <a href="/settings">
-                <i>ST</i> Settings
-            </a>
-        </div>
-
-        <div class="sidebar-footer">
-            <a href="#" onclick="logout()">
-                <i>LO</i> Logout
-            </a>
-        </div>
-    </div>
-
-    <div class="main-content">
-        <div class="page-header">
-            <h1>Dashboard</h1>
-            <p>Overview of system activity and fraud detection</p>
-        </div>
-
-        <!-- Row 1: User Statistics -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <h3>Total Users</h3>
-                <div class="stat-number" id="totalUsers">3</div>
-                <div class="stat-subtitle">Registered accounts</div>
-            </div>
-            <div class="stat-card">
-                <h3>Active Today</h3>
-                <div class="stat-number" id="activeToday">2</div>
-                <div class="stat-subtitle">Last 24 hours</div>
-            </div>
-            <div class="stat-card">
-                <h3>High Risk Users</h3>
-                <div class="stat-number" id="highRiskUsers">1</div>
-                <div class="stat-subtitle">Needs attention</div>
-            </div>
-            <div class="stat-card">
-                <h3>Total Users</h3>
-                <div class="stat-number" id="totalUsers">3</div>
-                <div class="stat-subtitle">Registered</div>
-            </div>
-        </div>
-
-        <!-- Row 2: Transaction Overview -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <h3>Total Transactions</h3>
-                <div class="stat-number" id="totalTxns">1,247</div>
-                <div class="stat-subtitle">All time</div>
-            </div>
-            <div class="stat-card">
-                <h3>Successful</h3>
-                <div class="stat-number" id="successfulTxns">1,198</div>
-                <div class="stat-subtitle">Approved</div>
-            </div>
-            <div class="stat-card">
-                <h3>Blocked</h3>
-                <div class="stat-number" id="blockedTxns">32</div>
-                <div class="stat-subtitle">Fraud detected</div>
-            </div>
-            <div class="stat-card">
-                <h3>Pending</h3>
-                <div class="stat-number" id="pendingTxns">17</div>
-                <div class="stat-subtitle">Under review</div>
-            </div>
-        </div>
-
-        <!-- Row 3: User Activity Table and Fraud Summary -->
-        <div class="two-column">
-            <!-- User Activity Table -->
-            <div class="card">
-                <div class="card-header">
-                    <h2>User Activity - Last 7 Days</h2>
-                </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>User</th>
-                            <th>Transactions</th>
-                            <th>Total Amount</th>
-                            <th>Last Transaction</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="userActivityTable">
-                        <tr>
-                            <td>John Kamau</td>
-                            <td>156</td>
-                            <td>KES 2.4M</td>
-                            <td>2 min ago</td>
-                            <td><span class="status-active">Active</span></td>
-                        </tr>
-                        <tr>
-                            <td>Mary Akinyi</td>
-                            <td>89</td>
-                            <td>KES 850K</td>
-                            <td>1 hour ago</td>
-                            <td><span class="status-active">Active</span></td>
-                        </tr>
-                        <tr>
-                            <td>Peter Odhiambo</td>
-                            <td>45</td>
-                            <td>KES 125K</td>
-                            <td>1 day ago</td>
-                            <td><span class="status-idle">Idle</span></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Fraud Detection Summary (Fixed - Now shows real data) -->
-            <div class="card">
-                <div class="card-header">
-                    <h2>Fraud Detection Summary</h2>
-                </div>
-                <ul class="fraud-list" id="fraudSummary">
-                    <li class="fraud-item">
-                        <span class="fraud-name">SIM Swap</span>
-                        <span class="fraud-count" id="simSwapCount">0</span>
-                    </li>
-                    <li class="fraud-item">
-                        <span class="fraud-name">Identity Theft</span>
-                        <span class="fraud-count" id="identityTheftCount">0</span>
-                    </li>
-                    <li class="fraud-item">
-                        <span class="fraud-name">Device Cloning</span>
-                        <span class="fraud-count" id="deviceCloningCount">0</span>
-                    </li>
-                    <li class="fraud-item">
-                        <span class="fraud-name">Mobile Money Fraud</span>
-                        <span class="fraud-count" id="mobileFraudCount">0</span>
-                    </li>
-                    <li class="fraud-item">
-                        <span class="fraud-name">Agent Collusion</span>
-                        <span class="fraud-count" id="agentCollusionCount">0</span>
-                    </li>
-                    <li class="fraud-item">
-                        <span class="fraud-name">Social Engineering</span>
-                        <span class="fraud-count" id="socialEngineeringCount">0</span>
-                    </li>
-                    <li class="fraud-item">
-                        <span class="fraud-name">Repayment Fraud</span>
-                        <span class="fraud-count" id="repaymentFraudCount">0</span>
-                    </li>
-                    <li class="fraud-item">
-                        <span class="fraud-name">Synthetic Identity</span>
-                        <span class="fraud-count" id="syntheticIdentityCount">0</span>
-                    </li>
-                </ul>
-            </div>
-        </div>
-
-        <!-- Row 4: Risk Distribution and Recent Transactions -->
-        <div class="two-column">
-            <!-- Risk Distribution -->
-            <div class="card">
-                <div class="card-header">
-                    <h2>Risk Level Distribution</h2>
-                </div>
-                <div id="riskDistribution">
-                    <div class="risk-bar-item">
-                        <div class="risk-bar-header">
-                            <span class="risk-bar-label">CRITICAL</span>
-                            <span class="risk-bar-value" id="criticalCount">0</span>
-                        </div>
-                        <div class="risk-bar">
-                            <div class="risk-bar-fill critical" id="criticalBar" style="width: 0%;"></div>
-                        </div>
-                    </div>
-                    <div class="risk-bar-item">
-                        <div class="risk-bar-header">
-                            <span class="risk-bar-label">HIGH</span>
-                            <span class="risk-bar-value" id="highCount">0</span>
-                        </div>
-                        <div class="risk-bar">
-                            <div class="risk-bar-fill high" id="highBar" style="width: 0%;"></div>
-                        </div>
-                    </div>
-                    <div class="risk-bar-item">
-                        <div class="risk-bar-header">
-                            <span class="risk-bar-label">MEDIUM</span>
-                            <span class="risk-bar-value" id="mediumCount">0</span>
-                        </div>
-                        <div class="risk-bar">
-                            <div class="risk-bar-fill medium" id="mediumBar" style="width: 0%;"></div>
-                        </div>
-                    </div>
-                    <div class="risk-bar-item">
-                        <div class="risk-bar-header">
-                            <span class="risk-bar-label">LOW</span>
-                            <span class="risk-bar-value" id="lowCount">0</span>
-                        </div>
-                        <div class="risk-bar">
-                            <div class="risk-bar-fill low" id="lowBar" style="width: 0%;"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Recent Transactions (removed View all link) -->
-            <div class="card">
-                <div class="card-header">
-                    <h2>Recent Transactions</h2>
-                </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>User</th>
-                            <th>Amount</th>
-                            <th>Risk Level</th>
-                        </tr>
-                    </thead>
-                    <tbody id="recentTransactionsList">
-                        <tr>
-                            <td>John Kamau</td>
-                            <td>KES 150,000</td>
-                            <td><span class="risk-badge risk-critical">CRITICAL</span></td>
-                        </tr>
-                        <tr>
-                            <td>Mary Akinyi</td>
-                            <td>KES 25,000</td>
-                            <td><span class="risk-badge risk-medium">MEDIUM</span></td>
-                        </tr>
-                        <tr>
-                            <td>Peter Odhiambo</td>
-                            <td>KES 5,000</td>
-                            <td><span class="risk-badge risk-low">LOW</span></td>
-                        </tr>
-                        <tr>
-                            <td>John Kamau</td>
-                            <td>KES 45,000</td>
-                            <td><span class="risk-badge risk-high">HIGH</span></td>
-                        </tr>
-                        <tr>
-                            <td>Mary Akinyi</td>
-                            <td>KES 12,000</td>
-                            <td><span class="risk-badge risk-low">LOW</span></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <script>
+<script>
         function logout() {
             sessionStorage.removeItem('adminLoggedIn');
             window.location.href = '/login';
         }
 
-        // Update dashboard with real data
+        // Logic to refresh and calculate the Kenyan Dashboard stats
+        async function refreshDashboard() {
+            try {
+                const response = await fetch('/api/v2/alerts/recent?limit=200');
+                const alerts = await response.json();
+                
+                if (Array.isArray(alerts) && alerts.length > 0) {
+                    const total = alerts.length;
+
+                    // 1. Calculate Risk Levels
+                    const critical = alerts.filter(a => a.risk_level === 'CRITICAL').length;
+                    const high = alerts.filter(a => a.risk_level === 'HIGH').length;
+                    const medium = alerts.filter(a => a.risk_level === 'MEDIUM').length;
+                    const low = alerts.filter(a => a.risk_level === 'LOW').length;
+
+                    // Update Risk UI
+                    document.getElementById('criticalCount').textContent = critical;
+                    document.getElementById('highCount').textContent = high;
+                    document.getElementById('mediumCount').textContent = medium;
+                    document.getElementById('lowCount').textContent = low;
+
+                    // Update Visual Bars (Safety check for divide by zero)
+                    const getWidth = (count) => total > 0 ? (count / total * 100) + '%' : '0%';
+                    document.getElementById('criticalBar').style.width = getWidth(critical);
+                    document.getElementById('highBar').style.width = getWidth(high);
+                    document.getElementById('mediumBar').style.width = getWidth(medium);
+                    document.getElementById('lowBar').style.width = getWidth(low);
+
+                    // 2. Count All 8 Fraud Types + Recurring Pattern
+                    const fraudCounts = {
+                        'SIM_SWAP': 0,
+                        'IDENTITY_THEFT': 0,
+                        'DEVICE_CLONING': 0,
+                        'MOBILE_MONEY_FRAUD': 0,
+                        'AGENT_COLLUSION': 0,
+                        'SOCIAL_ENGINEERING': 0,
+                        'REPAYMENT_FRAUD': 0,
+                        'SYNTHETIC_IDENTITY': 0,
+                        'RECURRING_FRAUD_PATTERN': 0 // Combined with Social Engineering for summary
+                    };
+
+                    alerts.forEach(a => {
+                        if (fraudCounts.hasOwnProperty(a.fraud_type)) {
+                            fraudCounts[a.fraud_type]++;
+                        }
+                    });
+
+                    // Update Fraud Summary UI
+                    document.getElementById('simSwapCount').textContent = fraudCounts.SIM_SWAP;
+                    document.getElementById('identityTheftCount').textContent = fraudCounts.IDENTITY_THEFT;
+                    document.getElementById('deviceCloningCount').textContent = fraudCounts.DEVICE_CLONING;
+                    document.getElementById('mobileFraudCount').textContent = fraudCounts.MOBILE_MONEY_FRAUD;
+                    document.getElementById('agentCollusionCount').textContent = fraudCounts.AGENT_COLLUSION;
+                    // For the demo, we'll combine Social Engineering and Recurring Pattern for a cleaner list
+                    document.getElementById('socialEngineeringCount').textContent = 
+                        fraudCounts.SOCIAL_ENGINEERING + fraudCounts.RECURRING_FRAUD_PATTERN;
+                    document.getElementById('repaymentFraudCount').textContent = fraudCounts.REPAYMENT_FRAUD;
+                    document.getElementById('syntheticIdentityCount').textContent = fraudCounts.SYNTHETIC_IDENTITY;
+
+                    // 3. Update Stats Cards (Simulated dynamic stats based on alerts)
+                    document.getElementById('totalTxns').textContent = (1247 + total).toLocaleString();
+                    document.getElementById('blockedTxns').textContent = (critical + high);
+                    document.getElementById('pendingTxns').textContent = alerts.filter(a => !a.acknowledged).length;
+
+                    // 4. Update Recent Transactions Table
+                    const recentTable = document.getElementById('recentTransactionsList');
+                    let tableHtml = '';
+                    // Take the top 5 most recent
+                    alerts.slice(0, 5).forEach(a => {
+                        tableHtml += `
+                            <tr>
+                                <td>${a.user_name || 'User'}</td>
+                                <td><strong>KES ${a.amount.toLocaleString()}</strong></td>
+                                <td><span class="risk-badge risk-${a.risk_level.toLowerCase()}">${a.risk_level}</span></td>
+                            </tr>
+                        `;
+                    });
+                    recentTable.innerHTML = tableHtml;
+                }
+            } catch (error) {
+                console.error('Dashboard sync error:', error);
+            }
+        }
+
         window.onload = function() {
             if (sessionStorage.getItem('adminLoggedIn') !== 'true') {
                 window.location.href = '/login';
                 return;
             }
             
-            // Fetch real alerts data
-            fetch('/api/v2/alerts/recent?limit=100')
-                .then(r => r.json())
-                .then(alerts => {
-                    if (Array.isArray(alerts) && alerts.length > 0) {
-                        // Update risk counts
-                        const critical = alerts.filter(a => a.risk_level === 'CRITICAL').length;
-                        const high = alerts.filter(a => a.risk_level === 'HIGH').length;
-                        const medium = alerts.filter(a => a.risk_level === 'MEDIUM').length;
-                        const low = alerts.filter(a => a.risk_level === 'LOW').length;
-                        const total = alerts.length;
-                        
-                        document.getElementById('criticalCount').textContent = critical;
-                        document.getElementById('highCount').textContent = high;
-                        document.getElementById('mediumCount').textContent = medium;
-                        document.getElementById('lowCount').textContent = low;
-                        
-                        // Update bars
-                        document.getElementById('criticalBar').style.width = total > 0 ? (critical / total * 100) + '%' : '0%';
-                        document.getElementById('highBar').style.width = total > 0 ? (high / total * 100) + '%' : '0%';
-                        document.getElementById('mediumBar').style.width = total > 0 ? (medium / total * 100) + '%' : '0%';
-                        document.getElementById('lowBar').style.width = total > 0 ? (low / total * 100) + '%' : '0%';
-                        
-                        // Update fraud summary counts
-                        const fraudCounts = {
-                            'SIM_SWAP': 0,
-                            'IDENTITY_THEFT': 0,
-                            'DEVICE_CLONING': 0,
-                            'MOBILE_MONEY_FRAUD': 0,
-                            'AGENT_COLLUSION': 0,
-                            'SOCIAL_ENGINEERING': 0,
-                            'REPAYMENT_FRAUD': 0,
-                            'SYNTHETIC_IDENTITY': 0
-                        };
-                        
-                        alerts.forEach(a => {
-                            if (fraudCounts.hasOwnProperty(a.fraud_type)) {
-                                fraudCounts[a.fraud_type]++;
-                            }
-                        });
-                        
-                        document.getElementById('simSwapCount').textContent = fraudCounts.SIM_SWAP;
-                        document.getElementById('identityTheftCount').textContent = fraudCounts.IDENTITY_THEFT;
-                        document.getElementById('deviceCloningCount').textContent = fraudCounts.DEVICE_CLONING;
-                        document.getElementById('mobileFraudCount').textContent = fraudCounts.MOBILE_MONEY_FRAUD;
-                        document.getElementById('agentCollusionCount').textContent = fraudCounts.AGENT_COLLUSION;
-                        document.getElementById('socialEngineeringCount').textContent = fraudCounts.SOCIAL_ENGINEERING;
-                        document.getElementById('repaymentFraudCount').textContent = fraudCounts.REPAYMENT_FRAUD;
-                        document.getElementById('syntheticIdentityCount').textContent = fraudCounts.SYNTHETIC_IDENTITY;
-                    }
-                })
-                .catch(() => {
-                    // Keep mock data if API fails
-                    console.log('Using mock data');
-                });
+            // Run once on load
+            refreshDashboard();
+            // Refresh every 10 seconds to show "Live" M-Pesa/Bank feeds
+            setInterval(refreshDashboard, 10000);
         };
     </script>
-</body>
-</html>
