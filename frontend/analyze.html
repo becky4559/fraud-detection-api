@@ -2,81 +2,181 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LogSense - Forensic Analysis</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
-        body { background: #f5f5f5; display: flex; }
-        .sidebar { width: 250px; background: #1a1a1a; color: white; height: 100vh; position: fixed; padding: 20px; }
-        .main { flex: 1; margin-left: 250px; padding: 30px; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .signal-item { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; }
-        .badge { padding: 5px 10px; border-radius: 4px; font-weight: bold; }
-        .bg-red { background: #fee; color: #c00; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: #f8f9fa; display: flex; color: #333; }
+        
+        /* Sidebar */
+        .sidebar { width: 260px; background: #1a1a1a; color: white; height: 100vh; position: fixed; padding: 25px; }
+        .sidebar h2 { font-size: 20px; letter-spacing: 1px; margin-bottom: 30px; color: #fff; }
+        .sidebar a { display: block; color: #bbb; padding: 12px; text-decoration: none; border-radius: 6px; margin-bottom: 10px; transition: 0.3s; }
+        .sidebar a:hover { background: #333; color: #fff; }
+
+        /* Main */
+        .main { flex: 1; margin-left: 260px; padding: 40px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        
+        .grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 25px; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .card h3 { margin-bottom: 20px; font-size: 18px; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; }
+
+        /* Data Styling */
+        .info-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f9f9f9; }
+        .label { color: #777; font-size: 14px; }
+        .value { font-weight: 600; font-size: 14px; }
+
+        .risk-badge { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
+        .CRITICAL { background: #fee2e2; color: #dc2626; }
+        .HIGH { background: #ffedd5; color: #ea580c; }
+        
+        /* AI Signals */
+        .signal-box { background: #fff5f5; border-left: 4px solid #dc2626; padding: 15px; margin-top: 10px; border-radius: 4px; }
+        .signal-text { color: #991b1b; font-size: 14px; font-weight: 500; margin-bottom: 5px; }
+        
+        .loading { text-align: center; padding: 50px; font-size: 18px; color: #666; }
+        .error-btn { padding: 10px 20px; background: #1a1a1a; color: white; text-decoration: none; border-radius: 5px; }
     </style>
 </head>
 <body>
-    <div class="sidebar">
-        <h2>LOGSENSE</h2><br>
-        <a href="/dashboard" style="color: #ccc; text-decoration: none;">← Back to Dashboard</a>
-    </div>
-    <div class="main">
-        <h1>Forensic Investigation</h1>
-        <p id="caseId" style="color: #666; margin-bottom: 20px;">Loading case...</p>
 
-        <div class="grid">
-            <div class="card">
-                <h3>Transaction Details</h3><br>
-                <div class="signal-item"><span>User</span> <strong id="userName">-</strong></div>
-                <div class="signal-item"><span>Amount</span> <strong id="amount">-</strong></div>
-                <div class="signal-item"><span>Recipient</span> <strong id="recipient">-</strong></div>
-                <div class="signal-item"><span>Risk Level</span> <span id="riskLevel" class="badge bg-red">-</span></div>
+    <div class="sidebar">
+        <h2>LOGSENSE</h2>
+        <a href="/dashboard">Dashboard</a>
+        <a href="/alerts">Alert History</a>
+        <div style="margin-top: 50px;">
+            <a href="/alerts" style="border: 1px solid #444; text-align: center;">← Exit Analysis</a>
+        </div>
+    </div>
+
+    <div class="main" id="contentArea">
+        <div class="loading" id="loader">
+            Searching Database for Case Details...
+        </div>
+
+        <div id="mainDisplay" style="display: none;">
+            <div class="header">
+                <div>
+                    <h1 id="pageTitle">Forensic Analysis</h1>
+                    <p id="txnId" style="color: #888; font-weight: 500;"></p>
+                </div>
+                <div id="riskBadgeTop"></div>
             </div>
 
-            <div class="card">
-                <h3>AI Detection Signals</h3><br>
-                <div id="signalList">
+            <div class="grid">
+                <div class="card">
+                    <h3>Transaction Profile</h3>
+                    <div class="info-row">
+                        <span class="label">Initiator Name</span>
+                        <span class="value" id="valUser">-</span>
                     </div>
+                    <div class="info-row">
+                        <span class="label">Amount (KES)</span>
+                        <span class="value" id="valAmount">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Destination/Recipient</span>
+                        <span class="value" id="valRecipient">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Location</span>
+                        <span class="value" id="valLocation">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Timestamp</span>
+                        <span class="value" id="valTime">-</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>AI Detection Evidence</h3>
+                    <p style="font-size: 13px; color: #666; margin-bottom: 15px;">The following anomalies were flagged by the LogSense Engine:</p>
+                    <div id="evidenceList">
+                        </div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        async function loadAnalysis() {
-            const params = new URLSearchParams(window.location.search);
-            const alertId = params.get('id');
+        async function initAnalysis() {
+            // 1. Get the ID from the URL (?id=5)
+            const urlParams = new URLSearchParams(window.location.search);
+            const alertId = urlParams.get('id');
 
             if (!alertId) {
-                document.body.innerHTML = "<h1>Error: No Alert ID provided. Go back to Alerts and click 'Analyze'.</h1>";
+                showError("No Case ID provided. Please select an alert from the history page.");
                 return;
             }
 
             try {
+                // 2. Fetch the specific alert from your API
                 const response = await fetch(`/api/v2/alerts/${alertId}`);
-                if (!response.ok) throw new Error("Not found");
+                
+                if (!response.ok) {
+                    showError("Case Not Found. The transaction might have been purged from the session.");
+                    return;
+                }
+
                 const data = await response.json();
 
-                document.getElementById('caseId').textContent = "Case ID: " + data.transaction_id;
-                document.getElementById('userName').textContent = data.user_name;
-                document.getElementById('amount').textContent = "KES " + data.amount.toLocaleString();
-                document.getElementById('recipient').textContent = data.recipient;
-                document.getElementById('riskLevel').textContent = data.risk_level;
-
-                const signals = JSON.parse(data.detection_signals);
-                const signalDiv = document.getElementById('signalList');
+                // 3. Fill the UI with Data
+                document.getElementById('txnId').innerText = "Transaction Reference: " + (data.transaction_id || "N/A");
+                document.getElementById('valUser').innerText = data.user_name;
+                document.getElementById('valAmount').innerText = data.amount.toLocaleString();
+                document.getElementById('valRecipient').innerText = data.recipient;
+                document.getElementById('valLocation').innerText = data.location || "Nairobi, KE";
+                document.getElementById('valTime').innerText = new Date(data.timestamp).toLocaleString();
                 
-                let signalHtml = '';
-                // Loop through explanations provided by the Python engine
-                signals.explanations.forEach(text => {
-                    signalHtml += `<div class="signal-item" style="color: #d32f2f;">⚠️ ${text}</div>`;
-                });
-                signalDiv.innerHTML = signalHtml;
+                // Risk Badge
+                const rLevel = data.risk_level || "UNKNOWN";
+                document.getElementById('riskBadgeTop').innerHTML = `<span class="risk-badge ${rLevel}">${rLevel} RISK</span>`;
+
+                // 4. Parse AI Signals (The tricky part)
+                let evidenceHtml = '';
+                try {
+                    // Try to parse the JSON string from the database
+                    const signals = JSON.parse(data.detection_signals);
+                    
+                    if (signals.explanations && signals.explanations.length > 0) {
+                        signals.explanations.forEach(msg => {
+                            evidenceHtml += `
+                                <div class="signal-box">
+                                    <div class="signal-text">⚠️ ALERT: ${msg}</div>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        evidenceHtml = "<p>No specific anomalies recorded.</p>";
+                    }
+                } catch (e) {
+                    evidenceHtml = `<div class="signal-box"><div class="signal-text">⚠️ AI Analysis: ${data.fraud_name} detected.</div></div>`;
+                }
+                
+                document.getElementById('evidenceList').innerHTML = evidenceHtml;
+
+                // 5. Show Content, Hide Loader
+                document.getElementById('loader').style.display = 'none';
+                document.getElementById('mainDisplay').style.display = 'block';
 
             } catch (err) {
-                document.body.innerHTML = "<h1>Details Not Found. Ensure the ID is correct.</h1>";
+                console.error(err);
+                showError("Database connection error. Please try again.");
             }
         }
-        window.onload = loadAnalysis;
+
+        function showError(msg) {
+            document.getElementById('contentArea').innerHTML = `
+                <div style="text-align:center; padding-top:100px;">
+                    <h2 style="color:red;">Details Not Found</h2>
+                    <p style="margin:20px 0; color:#666;">${msg}</p>
+                    <a href="/alerts" class="error-btn">Return to Alerts History</a>
+                </div>
+            `;
+        }
+
+        window.onload = initAnalysis;
     </script>
 </body>
 </html>
