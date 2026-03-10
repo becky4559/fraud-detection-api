@@ -1,490 +1,16 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LogSense - Analyze Alert</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-        }
-
-        body {
-            background-color: #f5f5f5;
-            display: flex;
-            min-height: 100vh;
-        }
-
-        /* Sidebar */
-        .sidebar {
-            width: 250px;
-            background: #1a1a1a;
-            color: white;
-            display: flex;
-            flex-direction: column;
-            position: fixed;
-            height: 100vh;
-        }
-
-        .sidebar-header {
-            padding: 24px 20px;
-            border-bottom: 1px solid #333;
-        }
-
-        .sidebar-header h2 {
-            font-size: 20px;
-            font-weight: 600;
-            letter-spacing: 1px;
-            color: white;
-        }
-
-        .sidebar-header p {
-            font-size: 12px;
-            color: #999;
-            margin-top: 4px;
-        }
-
-        .sidebar-nav {
-            flex: 1;
-            padding: 20px 0;
-        }
-
-        .sidebar-nav a {
-            display: flex;
-            align-items: center;
-            padding: 12px 20px;
-            color: #ccc;
-            text-decoration: none;
-            transition: all 0.3s;
-            font-size: 14px;
-        }
-
-        .sidebar-nav a:hover {
-            background: #333;
-            color: white;
-        }
-
-        .sidebar-nav a.active {
-            background: #333;
-            color: white;
-            border-left: 3px solid white;
-        }
-
-        .sidebar-nav a i {
-            width: 24px;
-            font-size: 16px;
-            margin-right: 12px;
-        }
-
-        .sidebar-footer {
-            padding: 20px;
-            border-top: 1px solid #333;
-        }
-
-        .sidebar-footer a {
-            display: flex;
-            align-items: center;
-            color: #ccc;
-            text-decoration: none;
-            font-size: 14px;
-            padding: 8px 0;
-        }
-
-        .sidebar-footer a:hover {
-            color: white;
-        }
-
-        .sidebar-footer a i {
-            width: 24px;
-            margin-right: 12px;
-        }
-
-        /* Main Content */
-        .main-content {
-            flex: 1;
-            margin-left: 250px;
-            padding: 30px;
-        }
-
-        .page-header {
-            margin-bottom: 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .page-header h1 {
-            font-size: 24px;
-            color: #333;
-            font-weight: 500;
-        }
-
-        .back-link {
-            color: #666;
-            text-decoration: none;
-            font-size: 14px;
-        }
-
-        .back-link:hover {
-            color: #1a1a1a;
-            text-decoration: underline;
-        }
-
-        /* Alert Card */
-        .alert-card {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            padding: 30px;
-            margin-bottom: 25px;
-        }
-
-        .alert-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #f0f0f0;
-        }
-
-        .fraud-title {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .fraud-icon {
-            font-size: 32px;
-        }
-
-        .fraud-type-badge {
-            padding: 10px 20px;
-            border-radius: 30px;
-            font-size: 20px;
-            font-weight: 600;
-        }
-
-        .fraud-critical {
-            background: #fee;
-            color: #c00;
-        }
-
-        .fraud-high {
-            background: #fff3e0;
-            color: #f57c00;
-        }
-
-        .fraud-medium {
-            background: #fff9c4;
-            color: #fbc02d;
-        }
-
-        .fraud-low {
-            background: #e8f5e9;
-            color: #2e7d32;
-        }
-
-        .alert-meta {
-            color: #666;
-            font-size: 14px;
-        }
-
-        /* Details Grid */
-        .details-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .detail-item {
-            padding: 15px;
-            background: #f9f9f9;
-            border-radius: 8px;
-            border-left: 4px solid #1a1a1a;
-        }
-
-        .detail-label {
-            color: #666;
-            font-size: 12px;
-            margin-bottom: 5px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .detail-value {
-            color: #1a1a1a;
-            font-size: 18px;
-            font-weight: 600;
-        }
-
-        .detail-value.small {
-            font-size: 14px;
-            font-weight: 400;
-        }
-
-        /* Explanation Box - NEW SECTION */
-        .explanation-box {
-            background: #fff3e0;
-            border-left: 4px solid #f57c00;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 20px 0;
-        }
-
-        .explanation-box h3 {
-            color: #f57c00;
-            font-size: 18px;
-            margin-bottom: 15px;
-        }
-
-        .explanation-list {
-            list-style: none;
-        }
-
-        .explanation-item {
-            padding: 10px 0;
-            border-bottom: 1px solid #ffe0b2;
-            color: #333;
-            font-size: 14px;
-        }
-
-        .explanation-item:last-child {
-            border-bottom: none;
-        }
-
-        .explanation-item strong {
-            color: #f57c00;
-        }
-
-        /* Signals Section */
-        .signals-section {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 2px solid #f0f0f0;
-        }
-
-        .signals-section h3 {
-            color: #333;
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 20px;
-        }
-
-        .signal-item {
-            background: #f9f9f9;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            border-left: 4px solid;
-        }
-
-        .signal-critical {
-            border-left-color: #c00;
-        }
-
-        .signal-high {
-            border-left-color: #f57c00;
-        }
-
-        .signal-medium {
-            border-left-color: #fbc02d;
-        }
-
-        .signal-name {
-            color: #1a1a1a;
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 10px;
-        }
-
-        .signal-desc {
-            color: #666;
-            font-size: 14px;
-            line-height: 1.6;
-        }
-
-        /* Action Buttons */
-        .action-buttons {
-            display: flex;
-            gap: 15px;
-            margin-top: 30px;
-        }
-
-        .btn-primary {
-            background: #1a1a1a;
-            color: white;
-            padding: 14px 28px;
-            border: none;
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        .btn-primary:hover {
-            background: #333;
-        }
-
-        .btn-primary:disabled {
-            background: #999;
-            cursor: not-allowed;
-        }
-
-        .btn-secondary {
-            background: white;
-            color: #1a1a1a;
-            padding: 14px 28px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        .btn-secondary:hover {
-            background: #f5f5f5;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 60px;
-            color: #666;
-            font-size: 16px;
-        }
-
-        .error {
-            text-align: center;
-            padding: 60px;
-            color: #c00;
-            background: #fee;
-            border-radius: 8px;
-        }
-    </style>
-</head>
-<body>
-    <div class="sidebar">
-        <div class="sidebar-header">
-            <h2>LOGSENSE</h2>
-            <p>Fraud Detection</p>
-        </div>
-
-        <div class="sidebar-nav">
-            <a href="/dashboard">
-                <i>DS</i> Dashboard
-            </a>
-            <a href="/alerts">
-                <i>AL</i> Alerts
-            </a>
-            <a href="/analyze" class="active">
-                <i>AN</i> Analyze
-            </a>
-            <a href="/settings">
-                <i>ST</i> Settings
-            </a>
-        </div>
-
-        <div class="sidebar-footer">
-            <a href="#" onclick="logout()">
-                <i>LO</i> Logout
-            </a>
-        </div>
-    </div>
-
-    <div class="main-content">
-        <div class="page-header">
-            <h1>Analyze Alert</h1>
-            <a href="/alerts" class="back-link">‚Üê Back to Alerts</a>
-        </div>
-
-        <div id="loading" class="loading">Loading alert details...</div>
-        <div id="error" class="error" style="display: none;"></div>
-        
-        <div id="alertContent" style="display: none;">
-            <div class="alert-card">
-                <div class="alert-header">
-                    <div class="fraud-title">
-                        <span class="fraud-icon" id="fraudIcon">Ì∫®</span>
-                        <span class="fraud-type-badge" id="fraudTypeBadge"></span>
-                    </div>
-                    <div class="alert-meta">
-                        Alert #<span id="alertId"></span>
-                    </div>
-                </div>
-
-                <div class="details-grid">
-                    <div class="detail-item">
-                        <div class="detail-label">User</div>
-                        <div class="detail-value" id="userName"></div>
-                        <div class="detail-value small" id="userId"></div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">Transaction ID</div>
-                        <div class="detail-value small" id="transactionId"></div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">Amount</div>
-                        <div class="detail-value" id="amount">KES 0</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">Recipient</div>
-                        <div class="detail-value small" id="recipient"></div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">Location</div>
-                        <div class="detail-value small" id="location"></div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">Risk Score</div>
-                        <div class="detail-value" id="riskScore">0%</div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">Time</div>
-                        <div class="detail-value small" id="timestamp"></div>
-                    </div>
-                    <div class="detail-item">
-                        <div class="detail-label">Status</div>
-                        <div class="detail-value small" id="status"></div>
-                    </div>
-                </div>
-
-                <!-- NEW: Explanation Box -->
-                <div class="explanation-box" id="explanationBox">
-                    <h3>Why This Was Flagged</h3>
-                    <ul class="explanation-list" id="explanationList">
-                        <li class="explanation-item">Loading explanation...</li>
-                    </ul>
-                </div>
-
-                <div class="signals-section">
-                    <h3>Detection Signals</h3>
-                    <div id="signalsList"></div>
-                </div>
-
-                <div class="action-buttons">
-                    <button id="markReviewedBtn" class="btn-primary" onclick="markAsReviewed()">Mark as Reviewed</button>
-                    <button class="btn-secondary" onclick="window.location.href='/alerts'">Back to Alerts</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
+<script>
+        // 1. Expanded Fraud Types for Kenya
         const fraudTypeNames = {
-            'SIM_SWAP': { name: 'SIM Swap', icon: 'Ì≥±', color: '#c00', bg: '#fee' },
-            'IDENTITY_THEFT': { name: 'Identity Theft', icon: 'Ì∂î', color: '#c00', bg: '#fee' },
-            'DEVICE_CLONING': { name: 'Device Cloning', icon: 'Ì≥ç', color: '#c00', bg: '#fee' },
-            'MOBILE_MONEY_FRAUD': { name: 'Mobile Money Fraud', icon: 'Ì≤∞', color: '#f57c00', bg: '#fff3e0' },
-            'AGENT_COLLUSION': { name: 'Agent Collusion', icon: 'Ì±•', color: '#f57c00', bg: '#fff3e0' },
-            'SOCIAL_ENGINEERING': { name: 'Social Engineering', icon: 'Ìæ£', color: '#fbc02d', bg: '#fff9c4' },
-            'REPAYMENT_FRAUD': { name: 'Repayment Fraud', icon: 'Ì¥Ñ', color: '#fbc02d', bg: '#fff9c4' },
-            'SYNTHETIC_IDENTITY': { name: 'Synthetic Identity', icon: 'Ìæ≠', color: '#c00', bg: '#fee' },
-            'WRONG_PIN_ATTEMPT': { name: 'Wrong PIN Attempt', icon: 'Ì¥í', color: '#f57c00', bg: '#fff3e0' },
-            'BLOCKED_TRANSACTION': { name: 'Blocked Transaction', icon: 'Ì∫´', color: '#c00', bg: '#fee' }
+            'SIM_SWAP': { name: 'SIM Swap', icon: 'üì±', color: '#c00', bg: '#fee' },
+            'IDENTITY_THEFT': { name: 'Identity Theft', icon: 'üë§', color: '#c00', bg: '#fee' },
+            'DEVICE_CLONING': { name: 'Device Cloning', icon: 'üëØ', color: '#c00', bg: '#fee' },
+            'MOBILE_MONEY_FRAUD': { name: 'Mobile Money Fraud', icon: 'üí∏', color: '#f57c00', bg: '#fff3e0' },
+            'AGENT_COLLUSION': { name: 'Agent Collusion', icon: 'ü§ù', color: '#f57c00', bg: '#fff3e0' },
+            'SOCIAL_ENGINEERING': { name: 'Social Engineering', icon: 'üìû', color: '#fbc02d', bg: '#fff9c4' },
+            'REPAYMENT_FRAUD': { name: 'Repayment Fraud', icon: 'üîÑ', color: '#fbc02d', bg: '#fff9c4' },
+            'SYNTHETIC_IDENTITY': { name: 'Synthetic Identity', icon: 'üé≠', color: '#c00', bg: '#fee' },
+            'WRONG_PIN_ATTEMPT': { name: 'Wrong PIN Attempt', icon: 'üîê', color: '#f57c00', bg: '#fff3e0' },
+            'RECURRING_FRAUD_PATTERN': { name: 'Repeated Fraud Pattern', icon: 'üîÅ', color: '#c00', bg: '#fee' }
         };
 
         function logout() {
@@ -492,76 +18,24 @@
             window.location.href = '/login';
         }
 
-        function generateExplanation(alert) {
-            const explanations = [];
-            const signals = alert.detection_signals || {};
-            
-            // Generate explanations based on fraud type
-            switch(alert.fraud_type) {
-                case 'SIM_SWAP':
-                    explanations.push('New SIM card registered on different device');
-                    explanations.push('Transaction from new location (Mombasa vs Nairobi)');
-                    explanations.push('Impossible travel time between locations');
-                    if (signals.amount > 50000) {
-                        explanations.push('Large amount sent immediately after SIM change');
-                    }
-                    break;
-                    
-                case 'IDENTITY_THEFT':
-                    explanations.push('Amount is significantly higher than normal');
-                    explanations.push('Sending to new recipient (first time)');
-                    explanations.push('Transaction at unusual hour (3:00 AM)');
-                    break;
-                    
-                case 'DEVICE_CLONING':
-                    explanations.push('Same device active in multiple locations');
-                    explanations.push('Device appears to be rooted/jailbroken');
-                    break;
-                    
-                case 'MOBILE_MONEY_FRAUD':
-                    explanations.push('Multiple rapid transactions detected');
-                    explanations.push('Sending to multiple different recipients');
-                    break;
-                    
-                case 'SOCIAL_ENGINEERING':
-                    explanations.push('Sending to new beneficiary');
-                    explanations.push('Amount higher than normal');
-                    if (signals.note && signals.note.includes('urgent')) {
-                        explanations.push('Urgent language detected in note');
-                    }
-                    break;
-                    
-                default:
-                    explanations.push('Unusual transaction pattern detected');
-                    if (alert.amount > 50000) {
-                        explanations.push('Amount exceeds normal limit');
-                    }
-            }
-            
-            return explanations;
-        }
-
         async function fetchAlertDetails() {
             const urlParams = new URLSearchParams(window.location.search);
             const alertId = urlParams.get('id');
 
             if (!alertId) {
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('error').style.display = 'block';
-                document.getElementById('error').textContent = 'No alert ID specified';
+                document.getElementById('loading').textContent = 'No alert ID specified';
                 return;
             }
 
             try {
                 const response = await fetch(`/api/v2/alerts/${alertId}`);
                 if (!response.ok) throw new Error('Alert not found');
-                
                 const alert = await response.json();
                 displayAlert(alert);
             } catch (error) {
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('error').style.display = 'block';
-                document.getElementById('error').textContent = 'Failed to load alert: ' + error.message;
+                document.getElementById('error').textContent = 'Failed to load: ' + error.message;
             }
         }
 
@@ -570,93 +44,80 @@
             document.getElementById('alertContent').style.display = 'block';
 
             const fraudInfo = fraudTypeNames[alert.fraud_type] || 
-                { name: alert.fraud_type, icon: 'Ì∫®', color: '#666', bg: '#f0f0f0' };
+                { name: alert.fraud_type, icon: '‚ö†Ô∏è', color: '#666', bg: '#f0f0f0' };
             
+            // Set Header Info
             const badge = document.getElementById('fraudTypeBadge');
             badge.textContent = fraudInfo.name;
             badge.style.backgroundColor = fraudInfo.bg;
             badge.style.color = fraudInfo.color;
-            
             document.getElementById('fraudIcon').textContent = fraudInfo.icon;
+            
+            // Set Details
             document.getElementById('alertId').textContent = alert.alert_id;
-            document.getElementById('userName').textContent = alert.user_name || alert.user_id;
+            document.getElementById('userName').textContent = alert.user_name || "Unknown User";
             document.getElementById('userId').textContent = alert.user_id;
             document.getElementById('transactionId').textContent = alert.transaction_id;
             document.getElementById('amount').textContent = 'KES ' + (alert.amount || 0).toLocaleString();
-            document.getElementById('recipient').textContent = alert.recipient || 'Unknown';
-            document.getElementById('location').textContent = alert.location || 'Unknown';
+            document.getElementById('recipient').textContent = alert.recipient || 'N/A';
+            document.getElementById('location').textContent = alert.location || 'Nairobi, KE';
             document.getElementById('timestamp').textContent = new Date(alert.timestamp).toLocaleString();
             document.getElementById('status').textContent = alert.acknowledged ? 'Reviewed' : 'New';
             
             const riskPercent = Math.round((alert.risk_score || 0) * 100);
             document.getElementById('riskScore').textContent = riskPercent + '%';
 
-            // Generate and display explanations
-            const explanations = generateExplanation(alert);
+            // --- SMART EXPLANATIONS & SIGNALS ---
+            const signalsList = document.getElementById('signalsList');
             const explanationList = document.getElementById('explanationList');
+            
+            let data = alert.detection_signals;
+            // Handle if data is string or object
+            if (typeof data === 'string') {
+                try { data = JSON.parse(data); } catch(e) { data = {}; }
+            }
+
+            // 1. Show Explanations (The "Why")
+            const explanations = data.explanations || ["Unusual activity detected by the AI engine."];
             explanationList.innerHTML = explanations.map(exp => 
-                `<li class="explanation-item">‚ö†Ô∏è ${exp}</li>`
+                `<li class="explanation-item"><strong>‚ö†Ô∏è ALERT:</strong> ${exp}</li>`
             ).join('');
 
-            // Display signals
-            const signalsList = document.getElementById('signalsList');
-            if (alert.detection_signals) {
-                let signals = alert.detection_signals;
-                if (typeof signals === 'string') {
-                    try {
-                        signals = JSON.parse(signals);
-                    } catch {
-                        signalsList.innerHTML = `<div class="signal-item">${signals}</div>`;
-                    }
-                }
-                
-                if (typeof signals === 'object') {
-                    signalsList.innerHTML = Object.entries(signals).map(([key, value]) => `
-                        <div class="signal-item signal-${alert.risk_level?.toLowerCase() || 'medium'}">
-                            <div class="signal-name">${key.replace(/_/g, ' ')}</div>
-                            <div class="signal-desc">${typeof value === 'object' ? JSON.stringify(value) : value}</div>
-                        </div>
-                    `).join('');
-                }
+            // 2. Show Technical Signals (The "How")
+            const signals = data.signals || {};
+            if (Object.keys(signals).length > 0) {
+                signalsList.innerHTML = Object.entries(signals).map(([key, value]) => `
+                    <div class="signal-item signal-${alert.risk_level?.toLowerCase() || 'medium'}">
+                        <div class="signal-name">${key.replace(/_/g, ' ').toUpperCase()}</div>
+                        <div class="signal-desc">${value}</div>
+                    </div>
+                `).join('');
             } else {
-                signalsList.innerHTML = '<div class="signal-item">No detailed signals available</div>';
+                signalsList.innerHTML = '<div class="signal-item">Technical metadata summarized in explanation above.</div>';
             }
 
             if (alert.acknowledged) {
                 document.getElementById('markReviewedBtn').disabled = true;
+                document.getElementById('markReviewedBtn').textContent = 'Already Reviewed';
             }
         }
 
         async function markAsReviewed() {
             const urlParams = new URLSearchParams(window.location.search);
             const alertId = urlParams.get('id');
-            
-            if (!alertId) return;
-
             try {
-                const response = await fetch(`/api/v2/alerts/${alertId}/acknowledge`, {
-                    method: 'POST'
-                });
-
+                const response = await fetch(`/api/v2/alerts/${alertId}/acknowledge`, { method: 'POST' });
                 if (response.ok) {
-                    alert('Alert marked as reviewed');
-                    document.getElementById('markReviewedBtn').disabled = true;
-                    document.getElementById('status').textContent = 'Reviewed';
-                } else {
-                    alert('Failed to mark as reviewed');
+                    alert('Alert cleared from active queue.');
+                    location.reload();
                 }
             } catch (error) {
-                alert('Network error');
+                alert('Connection error');
             }
         }
 
         window.onload = function() {
-            if (sessionStorage.getItem('adminLoggedIn') !== 'true') {
-                window.location.href = '/login';
-                return;
-            }
+            // Check login if needed
             fetchAlertDetails();
         };
     </script>
-</body>
-</html>
