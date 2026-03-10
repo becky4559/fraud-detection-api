@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy.orm import Session
@@ -10,14 +10,12 @@ import random
 import os
 import traceback
 
-# Local imports
+# Local imports (Ensure these files exist in your directory)
 from database import SessionLocal, engine, get_db, FraudAlert, Base
 from fraud_detection_engine import FraudDetectionEngine
 
 # Initialize FastAPI
-app = FastAPI(title="Fraud Detection API - Kenyan Edition", version="2.0.0")
-
-# Initialize fraud detection engine
+app = FastAPI(title="LogSense - Kenya Fraud Engine", version="2.5.0")
 detection_engine = FraudDetectionEngine()
 
 # Configure CORS
@@ -30,264 +28,174 @@ app.add_middleware(
 )
 
 # ============================================
-# DATABASE INITIALIZATION & SEEDING
+# DATABASE INITIALIZATION & EXPANDED SEEDING
 # ============================================
 Base.metadata.create_all(bind=engine)
 
 def seed_demo_data():
-    """Seeds historical data so the 'Repeated Pattern' demo works on restart"""
+    """Seeds a variety of Kenyan fraud cases so the dashboard looks active on restart"""
     db = SessionLocal()
     try:
         if db.query(FraudAlert).count() == 0:
-            print("Seeding Kenyan Demo Data (Mary Akinyi - Tainted Recipient)...")
-            # We create a historical alert for Mary Akinyi
-            # This ensures that the NEXT time someone sends to her in the demo, it triggers 'Repeated Pattern'
-            demo_alert = FraudAlert(
-                transaction_id="TXN-MPESA-INITIAL",
-                user_id="U1001",
-                user_name="John Kamau",
-                fraud_type="MOBILE_MONEY_FRAUD",
-                fraud_name="Mobile Money Fraud",
-                risk_score=0.92,
-                risk_level="CRITICAL",
-                amount=15000.0,
-                recipient="Mary Akinyi", 
-                location="Nakuru",
-                timestamp=datetime.now() - timedelta(days=2),
-                acknowledged=True,
-                detection_signals=json.dumps({
-                    "signals": {"note": "Historical fraud entry"},
-                    "explanations": ["Previously flagged for suspicious mobile money aggregation"]
-                })
-            )
-            db.add(demo_alert)
+            print("🚀 Seeding Expanded Kenyan Demo Data...")
+            
+            seeds = [
+                # 1. RECURRING PATTERN (The "Mary Akinyi" Blacklist)
+                FraudAlert(
+                    transaction_id="TXN-MPESA-8821", user_id="U1001", user_name="John Kamau",
+                    fraud_type="RECURRING_FRAUD_PATTERN", fraud_name="Repeated Fraud Pattern",
+                    risk_score=0.99, risk_level="CRITICAL", amount=45000.0,
+                    recipient="Mary Akinyi", location="Nairobi", timestamp=datetime.now() - timedelta(hours=2),
+                    acknowledged=False, detection_signals=json.dumps({
+                        "signals": {"history": "Match found in M-Pesa Blacklist"},
+                        "explanations": ["Recipient Mary Akinyi was previously flagged for 'Kamiti' style scams."]
+                    })
+                ),
+                # 2. SIM SWAP (Mombasa Example)
+                FraudAlert(
+                    transaction_id="TXN-EQUITY-9902", user_id="U2005", user_name="Alice Wambui",
+                    fraud_type="SIM_SWAP", fraud_name="SIM Swap Detected",
+                    risk_score=0.94, risk_level="CRITICAL", amount=120000.0,
+                    recipient="Unknown Agent", location="Mombasa", timestamp=datetime.now() - timedelta(hours=5),
+                    acknowledged=False, detection_signals=json.dumps({
+                        "signals": {"telco_alert": "SIM replacement 45mins ago", "imei_change": "True"},
+                        "explanations": ["High-value transfer immediately following a SIM card replacement."]
+                    })
+                ),
+                # 3. AGENT COLLUSION (Nakuru Example)
+                FraudAlert(
+                    transaction_id="TXN-BANK-4431", user_id="U3009", user_name="Peter Omondi",
+                    fraud_type="AGENT_COLLUSION", fraud_name="Agent Collusion",
+                    risk_score=0.82, risk_level="HIGH", amount=15000.0,
+                    recipient="Shared Float", location="Nakuru", timestamp=datetime.now() - timedelta(hours=12),
+                    acknowledged=True, detection_signals=json.dumps({
+                        "signals": {"agent_id": "AG-772", "pattern": "Circular Float Aggregation"},
+                        "explanations": ["Transaction involves an agent ID flagged for unusual float movements."]
+                    })
+                ),
+                # 4. SOCIAL ENGINEERING (Urgent Language)
+                FraudAlert(
+                    transaction_id="TXN-MPESA-1102", user_id="U4002", user_name="Fatuma Ali",
+                    fraud_type="SOCIAL_ENGINEERING", fraud_name="Social Engineering",
+                    risk_score=0.75, risk_level="HIGH", amount=8500.0,
+                    recipient="Health Insurance Claim", location="Garissa", timestamp=datetime.now() - timedelta(days=1),
+                    acknowledged=False, detection_signals=json.dumps({
+                        "signals": {"note_analysis": "Urgent/Medical Keywords detected"},
+                        "explanations": ["User was pressured into a fast transfer using 'Emergency' keywords."]
+                    })
+                ),
+                # 5. IDENTITY THEFT (Odd Hours)
+                FraudAlert(
+                    transaction_id="TXN-SYS-5567", user_id="U5001", user_name="Kevin Otieno",
+                    fraud_type="IDENTITY_THEFT", fraud_name="Identity Theft",
+                    risk_score=0.88, risk_level="CRITICAL", amount=65000.0,
+                    recipient="Direct Bank Transfer", location="Kisumu", timestamp=datetime.now() - timedelta(hours=22),
+                    acknowledged=False, detection_signals=json.dumps({
+                        "signals": {"time": "03:15 AM", "velocity": "High"},
+                        "explanations": ["Transaction at 3 AM from Kisumu (User usually transacts in Nairobi at noon)."]
+                    })
+                )
+            ]
+            db.add_all(seeds)
             db.commit()
-            print("Seeding complete.")
+            print("✅ Seeding complete. Dashboard is now populated.")
     except Exception as e:
-        print(f"Seed error: {e}")
+        print(f"❌ Seed error: {e}")
     finally:
         db.close()
 
 seed_demo_data()
 
 # ============================================
-# FRONTEND ROUTES
+# API ENDPOINTS
 # ============================================
 
 @app.get("/")
 async def root():
-    return FileResponse('frontend/login.html') if os.path.exists("frontend/login.html") else RedirectResponse(url="/login")
-
-@app.get("/login")
-async def login_page():
     return FileResponse('frontend/login.html')
 
-@app.get("/dashboard")
-async def dashboard_page():
-    return FileResponse('frontend/dashboard.html')
-
-@app.get("/alerts")
-async def alerts_page():
-    return FileResponse('frontend/alerts.html')
-
-@app.get("/analyze")
-async def analyze_page():
-    return FileResponse('frontend/analyze.html')
-
-@app.get("/settings")
-async def settings_page():
-    return FileResponse('frontend/settings.html')
-
-# ============================================
-# FRAUD ENGINE HELPERS
-# ============================================
-
-FRAUD_TYPES = [
-    {"type": "SIM_SWAP", "name": "SIM Swap", "range": (0.85, 0.98), "level": "CRITICAL"},
-    {"type": "IDENTITY_THEFT", "name": "Identity Theft", "range": (0.80, 0.95), "level": "CRITICAL"},
-    {"type": "DEVICE_CLONING", "name": "Device Cloning", "range": (0.75, 0.90), "level": "CRITICAL"},
-    {"type": "AGENT_COLLUSION", "name": "Agent Collusion", "range": (0.70, 0.85), "level": "HIGH"},
-    {"type": "SOCIAL_ENGINEERING", "name": "Social Engineering", "range": (0.65, 0.82), "level": "HIGH"}
-]
-
-def generate_dynamic_explanations(f_type, amount, location, user_name):
-    """Generates Kenyan-specific signals based on type"""
-    if f_type == "SIM_SWAP":
-        return ["SIM replacement detected via Telco API", "New device IMEI detected", "Impossible travel: Nairobi to " + location], \
-               {"telco_alert": "SIM Swap within 24hrs", "location": location}
-    
-    if f_type == "IDENTITY_THEFT":
-        return [f"Transaction for KES {amount} is outside {user_name}'s normal profile", "High-value transfer at midnight"], \
-               {"time_check": "Transaction at 3:00 AM", "behavioral_score": "Low"}
-               
-    return ["Unusual pattern detected", "System flagged high-risk recipient"], {"risk": "Elevated"}
-
-# ============================================
-# MAIN MOBILE TRANSACTION ENDPOINT
-# ============================================
+@app.get("/{page}")
+async def serve_frontend(page: str):
+    path = f"frontend/{page}.html"
+    if os.path.exists(path):
+        return FileResponse(path)
+    return RedirectResponse(url="/dashboard")
 
 @app.post("/api/mobile/transaction")
 async def mobile_transaction(transaction: dict, db: Session = Depends(get_db)):
+    """Main endpoint for your Mobile App to send data to"""
     try:
-        # 1. Extract Data
-        user_name = transaction.get("userName", "John Kamau")
-        user_id = transaction.get("userId", "U254")
+        recipient = transaction.get("recipient", "Unknown")
         amount = float(transaction.get("amount", 0))
-        recipient = transaction.get("recipient", "Mary Akinyi")
-        location = transaction.get("location", "Nairobi")
-        device_id = transaction.get("deviceId", "EQUITY-APP-001")
         
-        tx_id = f"KES-{random.randint(100000, 999999)}"
-        current_time = datetime.now()
+        # Check if recipient is Mary (The Blacklisted Demo Case)
+        prev_flag = db.query(FraudAlert).filter(FraudAlert.recipient == recipient).first()
         
-        # 2. STATEFUL CHECK: Repeated Pattern (Check if Recipient was ever flagged)
-        prev_flag = db.query(FraudAlert).filter(
-            FraudAlert.recipient == recipient, 
-            FraudAlert.fraud_type != "WRONG_PIN_ATTEMPT"
-        ).first()
-
-        # 3. TIMEFRAME CHECK: Odd hours (11 PM - 5 AM)
-        is_late_night = current_time.hour < 5 or current_time.hour > 23
-
-        # --- SELECTION LOGIC ---
-        risk_score = 0.1
-        fraud_type = "NORMAL"
-        fraud_name = "Normal Transaction"
-        risk_level = "LOW"
-        explanations = []
-        signals = {"currency": "KES", "device": device_id}
-
-        # Check for Wrong PIN first
-        if transaction.get("event") == "WRONG_PIN":
-            fraud_type = "WRONG_PIN_ATTEMPT"
-            fraud_name = "Wrong PIN Attempt"
-            risk_score = 0.88
-            risk_level = "HIGH"
-            explanations = ["Security block: Incorrect PIN entered for transaction."]
-            signals["attempt_number"] = transaction.get("attempt", 1)
-
-        # Check for Repeated Pattern (Blacklisted Recipient)
-        elif prev_flag:
+        # Logic for "Mary Akinyi" (Repeated Pattern)
+        if recipient == "Mary Akinyi" or prev_flag:
             fraud_type = "RECURRING_FRAUD_PATTERN"
-            fraud_name = "Repeated Fraud Pattern"
             risk_score = 0.99
             risk_level = "CRITICAL"
-            explanations = [
-                f"Recipient {recipient} is on the system blacklist.",
-                "Previously flagged for fraudulent M-Pesa/Bank activity.",
-                "Matches 'Kamiti' social engineering patterns."
-            ]
-            signals["historical_match"] = "TRUE"
-            signals["original_alert_id"] = prev_flag.id
-
-        # Check for Odd Hours
-        elif is_late_night:
-            fraud_type = "IDENTITY_THEFT"
-            fraud_name = "Unusual Transaction Time"
-            risk_score = 0.82
+            expl = [f"Recipient {recipient} is on the system blacklist.", "Matches historical fraud patterns."]
+            signals = {"historical_match": "TRUE", "original_case": "M-Pesa Scam 2025"}
+        
+        # Logic for Wrong PIN
+        elif transaction.get("event") == "WRONG_PIN":
+            fraud_type = "WRONG_PIN_ATTEMPT"
+            risk_score = 0.85
             risk_level = "HIGH"
-            explanations = [f"Transaction at {current_time.strftime('%H:%M')} is high-risk.", "Deviates from daylight activity profile."]
-            signals["time_anomaly"] = "Night-time Activity"
-
-        # Otherwise, pick a random fraud type for demo variety
+            expl = ["Security block: Multiple incorrect PIN entries."]
+            signals = {"attempts": 3}
+            
         else:
-            f_obj = random.choice(FRAUD_TYPES)
-            fraud_type, fraud_name, risk_level = f_obj["type"], f_obj["name"], f_obj["level"]
-            risk_score = random.uniform(f_obj["range"][0], f_obj["range"][1])
-            explanations, signals_extra = generate_dynamic_explanations(fraud_type, amount, location, user_name)
-            signals.update(signals_extra)
+            # Default fallback for random variety
+            fraud_type = "IDENTITY_THEFT"
+            risk_score = 0.45
+            risk_level = "LOW"
+            expl = ["Transaction looks normal."]
+            signals = {"analysis": "Normal profile"}
 
-        # 4. Save to Database
         new_alert = FraudAlert(
-            transaction_id=tx_id,
-            user_id=user_id,
-            user_name=user_name,
+            transaction_id=f"TXN-{random.randint(1000,9999)}",
+            user_id=transaction.get("userId", "U-APP"),
+            user_name=transaction.get("userName", "App User"),
             fraud_type=fraud_type,
-            fraud_name=fraud_name,
-            risk_score=round(risk_score, 2),
+            fraud_name=fraud_type.replace("_", " ").title(),
+            risk_score=risk_score,
             risk_level=risk_level,
-            detection_signals=json.dumps({"signals": signals, "explanations": explanations}, ensure_ascii=False),
             amount=amount,
             recipient=recipient,
-            location=location,
-            timestamp=current_time,
-            acknowledged=False
+            location="Nairobi",
+            detection_signals=json.dumps({"signals": signals, "explanations": expl}),
+            timestamp=datetime.now()
         )
         db.add(new_alert)
         db.commit()
+        
+        return {"status": "BLOCKED" if risk_score > 0.7 else "SUCCESS", "alertId": new_alert.id}
 
-        # 5. Return Response to Mobile App
-        status = "BLOCKED" if risk_score > 0.7 else "SUCCESS"
-        return {
-            "status": status,
-            "transactionId": tx_id,
-            "alertId": new_alert.id,
-            "message": "Transaction blocked for security" if status == "BLOCKED" else "Transaction successful"
-        }
-
-    except Exception as e:
-        print(f"Error: {e}")
+    except Exception:
         traceback.print_exc()
-        return {"status": "ERROR", "message": "Internal Server Error"}
-
-# ============================================
-# ALERTS ENDPOINTS
-# ============================================
+        return {"status": "ERROR"}
 
 @app.get("/api/v2/alerts/recent")
-def get_recent_alerts(limit: int = 50):
-    db = SessionLocal()
-    try:
-        alerts = db.query(FraudAlert).order_by(desc(FraudAlert.timestamp)).limit(limit).all()
-        result = []
-        for alert in alerts:
-            try:
-                sig_data = json.loads(alert.detection_signals)
-            except:
-                sig_data = {"explanations": ["Manual alert entry"]}
-                
-            result.append({
-                "alert_id": alert.id,
-                "transaction_id": alert.transaction_id,
-                "user_name": alert.user_name,
-                "fraud_name": alert.fraud_name,
-                "risk_score": alert.risk_score,
-                "risk_level": alert.risk_level,
-                "amount": alert.amount,
-                "recipient": alert.recipient,
-                "location": alert.location,
-                "timestamp": alert.timestamp.isoformat(),
-                "detection_signals": sig_data
-            })
-        return result
-    finally:
-        db.close()
+def get_recent_alerts(limit: int = 50, db: Session = Depends(get_db)):
+    alerts = db.query(FraudAlert).order_by(desc(FraudAlert.timestamp)).limit(limit).all()
+    return alerts
 
 @app.get("/api/v2/alerts/{alert_id}")
-def get_alert_details(alert_id: int):
-    db = SessionLocal()
-    try:
-        alert = db.query(FraudAlert).filter(FraudAlert.id == alert_id).first()
-        if not alert: raise HTTPException(status_code=404, detail="Alert not found")
-        return {
-            "alert_id": alert.id,
-            "transaction_id": alert.transaction_id,
-            "user_name": alert.user_name,
-            "fraud_name": alert.fraud_name,
-            "risk_score": alert.risk_score,
-            "risk_level": alert.risk_level,
-            "amount": alert.amount,
-            "recipient": alert.recipient,
-            "location": alert.location,
-            "timestamp": alert.timestamp.isoformat(),
-            "detection_signals": json.loads(alert.detection_signals)
-        }
-    finally:
-        db.close()
+def get_alert(alert_id: int, db: Session = Depends(get_db)):
+    alert = db.query(FraudAlert).filter(FraudAlert.id == alert_id).first()
+    if not alert: raise HTTPException(status_code=404)
+    return alert
 
-@app.get("/health")
-def health():
-    return {"status": "healthy", "region": "Kenya", "timestamp": datetime.now().isoformat()}
+@app.post("/api/v2/alerts/{alert_id}/acknowledge")
+def acknowledge(alert_id: int, db: Session = Depends(get_db)):
+    alert = db.query(FraudAlert).filter(FraudAlert.id == alert_id).first()
+    if alert:
+        alert.acknowledged = True
+        db.commit()
+    return {"status": "success"}
 
 if __name__ == "__main__":
     import uvicorn
