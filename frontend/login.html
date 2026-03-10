@@ -3,119 +3,132 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LogSense - Admin Login</title>
+    <title>LogSense - Admin Portal</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: 'Inter', -apple-system, sans-serif;
         }
 
         body {
-            background-color: #f5f5f5;
+            background-color: #0b0c10; /* Matching Forensic Background */
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-        }
-
-        .login-container {
-            width: 100%;
-            max-width: 400px;
-            padding: 20px;
+            color: #c5c6c7;
         }
 
         .login-box {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            background: #1f2833; /* Matching Sidebar Color */
+            border: 1px solid #45a29e;
+            border-radius: 4px;
             padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
 
         .logo {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 35px;
         }
 
         .logo h1 {
-            color: #1a1a1a;
-            font-size: 28px;
-            font-weight: 600;
-            letter-spacing: 1px;
-            margin-bottom: 5px;
+            color: #66fcf1; /* Neon Teal Accent */
+            font-size: 32px;
+            letter-spacing: 3px;
+            font-weight: 800;
         }
 
         .logo p {
-            color: #666;
-            font-size: 14px;
+            color: #8892b0;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 5px;
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 25px;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 8px;
-            color: #333;
-            font-size: 14px;
-            font-weight: 500;
+            margin-bottom: 10px;
+            color: #66fcf1;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
         }
 
         .form-group input {
             width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
-            transition: border-color 0.3s;
+            padding: 14px;
+            background: #0b0c10;
+            border: 1px solid #45a29e;
+            border-radius: 4px;
+            color: #fff;
+            font-size: 15px;
+            transition: all 0.3s;
         }
 
         .form-group input:focus {
             outline: none;
-            border-color: #1a1a1a;
+            border-color: #66fcf1;
+            box-shadow: 0 0 10px rgba(102, 252, 241, 0.2);
         }
 
         .login-btn {
             width: 100%;
-            padding: 14px;
-            background: #1a1a1a;
-            color: white;
+            padding: 16px;
+            background: #45a29e;
+            color: #0b0c10;
             border: none;
-            border-radius: 6px;
+            border-radius: 4px;
             font-size: 16px;
-            font-weight: 500;
+            font-weight: 700;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .login-btn:hover {
-            background: #333;
+            background: #66fcf1;
+            transform: translateY(-2px);
         }
 
         .login-btn:disabled {
-            background: #999;
+            background: #1f2833;
+            color: #45a29e;
+            border: 1px solid #45a29e;
             cursor: not-allowed;
         }
 
         .error-message {
-            color: #dc2626;
-            font-size: 14px;
-            margin-top: 10px;
+            color: #ff4c4c;
+            font-size: 13px;
+            margin-top: 15px;
             text-align: center;
             display: none;
+            background: rgba(255, 76, 76, 0.1);
+            padding: 10px;
+            border-radius: 4px;
         }
 
+        /* Loading Spinner */
         .loading {
             display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #1a1a1a;
+            width: 18px;
+            height: 18px;
+            border: 3px solid rgba(11, 12, 16, 0.3);
+            border-top: 3px solid #0b0c10;
             border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 8px;
+            animation: spin 0.8s linear infinite;
+            margin-right: 10px;
             vertical-align: middle;
         }
 
@@ -126,29 +139,26 @@
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <div class="login-box">
-            <div class="logo">
-                <h1>LOGSENSE</h1>
-                <p>Fraud Detection System</p>
-            </div>
-
-            <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" placeholder="Enter username" value="admin">
-            </div>
-
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" placeholder="Enter password" value="admin123">
-            </div>
-
-            <button class="login-btn" id="loginBtn" onclick="handleLogin()">
-                <span id="loginText">Login</span>
-            </button>
-
-            <div class="error-message" id="errorMessage"></div>
+    <div class="login-box">
+        <div class="logo">
+            <h1>LOGSENSE</h1>
+            <p>Admin Secure Access</p>
         </div>
+
+        <div class="form-group">
+            <label>System Credentials</label>
+            <input type="text" id="username" placeholder="Username" value="admin">
+        </div>
+
+        <div class="form-group">
+            <input type="password" id="password" placeholder="Password" value="admin123">
+        </div>
+
+        <button class="login-btn" id="loginBtn" onclick="handleLogin()">
+            <span id="loginText">Initialize Session</span>
+        </button>
+
+        <div class="error-message" id="errorMessage"></div>
     </div>
 
     <script>
@@ -156,49 +166,50 @@
         const ADMIN_PASSWORD = 'admin123';
 
         async function handleLogin() {
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const loginBtn = document.getElementById('loginBtn');
-            const loginText = document.getElementById('loginText');
-            const errorMsg = document.getElementById('errorMessage');
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            const btn = document.getElementById('loginBtn');
+            const text = document.getElementById('loginText');
+            const err = document.getElementById('errorMessage');
 
-            if (!username || !password) {
-                showError('Please enter username and password');
+            if (!user || !pass) {
+                showError('Credentials Required');
                 return;
             }
 
-            loginBtn.disabled = true;
-            loginText.innerHTML = '<span class="loading"></span> Logging in...';
-            errorMsg.style.display = 'none';
+            btn.disabled = true;
+            text.innerHTML = '<span class="loading"></span> Verifying...';
+            err.style.display = 'none';
 
+            // Artificial delay to look like it's "computing" security
             setTimeout(() => {
-                if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+                if (user === ADMIN_USERNAME && pass === ADMIN_PASSWORD) {
                     sessionStorage.setItem('adminLoggedIn', 'true');
                     window.location.href = '/dashboard';
                 } else {
-                    showError('Invalid username or password');
-                    loginBtn.disabled = false;
-                    loginText.innerHTML = 'Login';
+                    showError('Access Denied: Invalid Credentials');
+                    btn.disabled = false;
+                    text.innerHTML = 'Initialize Session';
                 }
-            }, 1000);
+            }, 1200);
         }
 
         function showError(message) {
-            const errorMsg = document.getElementById('errorMessage');
-            errorMsg.textContent = message;
-            errorMsg.style.display = 'block';
+            const err = document.getElementById('errorMessage');
+            err.textContent = message;
+            err.style.display = 'block';
         }
 
+        // Auto-redirect if already logged in
         window.onload = function() {
             if (sessionStorage.getItem('adminLoggedIn') === 'true') {
                 window.location.href = '/dashboard';
             }
         };
 
-        document.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                handleLogin();
-            }
+        // Enter key support
+        document.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleLogin();
         });
     </script>
 </body>
