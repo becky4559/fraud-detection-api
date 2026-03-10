@@ -1,123 +1,82 @@
-<script>
-        // 1. Expanded Fraud Types for Kenya
-        const fraudTypeNames = {
-            'SIM_SWAP': { name: 'SIM Swap', icon: '📱', color: '#c00', bg: '#fee' },
-            'IDENTITY_THEFT': { name: 'Identity Theft', icon: '👤', color: '#c00', bg: '#fee' },
-            'DEVICE_CLONING': { name: 'Device Cloning', icon: '👯', color: '#c00', bg: '#fee' },
-            'MOBILE_MONEY_FRAUD': { name: 'Mobile Money Fraud', icon: '💸', color: '#f57c00', bg: '#fff3e0' },
-            'AGENT_COLLUSION': { name: 'Agent Collusion', icon: '🤝', color: '#f57c00', bg: '#fff3e0' },
-            'SOCIAL_ENGINEERING': { name: 'Social Engineering', icon: '📞', color: '#fbc02d', bg: '#fff9c4' },
-            'REPAYMENT_FRAUD': { name: 'Repayment Fraud', icon: '🔄', color: '#fbc02d', bg: '#fff9c4' },
-            'SYNTHETIC_IDENTITY': { name: 'Synthetic Identity', icon: '🎭', color: '#c00', bg: '#fee' },
-            'WRONG_PIN_ATTEMPT': { name: 'Wrong PIN Attempt', icon: '🔐', color: '#f57c00', bg: '#fff3e0' },
-            'RECURRING_FRAUD_PATTERN': { name: 'Repeated Fraud Pattern', icon: '🔁', color: '#c00', bg: '#fee' }
-        };
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>LogSense - Forensic Analysis</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
+        body { background: #f5f5f5; display: flex; }
+        .sidebar { width: 250px; background: #1a1a1a; color: white; height: 100vh; position: fixed; padding: 20px; }
+        .main { flex: 1; margin-left: 250px; padding: 30px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .signal-item { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; }
+        .badge { padding: 5px 10px; border-radius: 4px; font-weight: bold; }
+        .bg-red { background: #fee; color: #c00; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>LOGSENSE</h2><br>
+        <a href="/dashboard" style="color: #ccc; text-decoration: none;">← Back to Dashboard</a>
+    </div>
+    <div class="main">
+        <h1>Forensic Investigation</h1>
+        <p id="caseId" style="color: #666; margin-bottom: 20px;">Loading case...</p>
 
-        function logout() {
-            sessionStorage.removeItem('adminLoggedIn');
-            window.location.href = '/login';
-        }
+        <div class="grid">
+            <div class="card">
+                <h3>Transaction Details</h3><br>
+                <div class="signal-item"><span>User</span> <strong id="userName">-</strong></div>
+                <div class="signal-item"><span>Amount</span> <strong id="amount">-</strong></div>
+                <div class="signal-item"><span>Recipient</span> <strong id="recipient">-</strong></div>
+                <div class="signal-item"><span>Risk Level</span> <span id="riskLevel" class="badge bg-red">-</span></div>
+            </div>
 
-        async function fetchAlertDetails() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const alertId = urlParams.get('id');
+            <div class="card">
+                <h3>AI Detection Signals</h3><br>
+                <div id="signalList">
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function loadAnalysis() {
+            const params = new URLSearchParams(window.location.search);
+            const alertId = params.get('id');
 
             if (!alertId) {
-                document.getElementById('loading').textContent = 'No alert ID specified';
+                document.body.innerHTML = "<h1>Error: No Alert ID provided. Go back to Alerts and click 'Analyze'.</h1>";
                 return;
             }
 
             try {
                 const response = await fetch(`/api/v2/alerts/${alertId}`);
-                if (!response.ok) throw new Error('Alert not found');
-                const alert = await response.json();
-                displayAlert(alert);
-            } catch (error) {
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('error').style.display = 'block';
-                document.getElementById('error').textContent = 'Failed to load: ' + error.message;
+                if (!response.ok) throw new Error("Not found");
+                const data = await response.json();
+
+                document.getElementById('caseId').textContent = "Case ID: " + data.transaction_id;
+                document.getElementById('userName').textContent = data.user_name;
+                document.getElementById('amount').textContent = "KES " + data.amount.toLocaleString();
+                document.getElementById('recipient').textContent = data.recipient;
+                document.getElementById('riskLevel').textContent = data.risk_level;
+
+                const signals = JSON.parse(data.detection_signals);
+                const signalDiv = document.getElementById('signalList');
+                
+                let signalHtml = '';
+                // Loop through explanations provided by the Python engine
+                signals.explanations.forEach(text => {
+                    signalHtml += `<div class="signal-item" style="color: #d32f2f;">⚠️ ${text}</div>`;
+                });
+                signalDiv.innerHTML = signalHtml;
+
+            } catch (err) {
+                document.body.innerHTML = "<h1>Details Not Found. Ensure the ID is correct.</h1>";
             }
         }
-
-        function displayAlert(alert) {
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('alertContent').style.display = 'block';
-
-            const fraudInfo = fraudTypeNames[alert.fraud_type] || 
-                { name: alert.fraud_type, icon: '⚠️', color: '#666', bg: '#f0f0f0' };
-            
-            // Set Header Info
-            const badge = document.getElementById('fraudTypeBadge');
-            badge.textContent = fraudInfo.name;
-            badge.style.backgroundColor = fraudInfo.bg;
-            badge.style.color = fraudInfo.color;
-            document.getElementById('fraudIcon').textContent = fraudInfo.icon;
-            
-            // Set Details
-            document.getElementById('alertId').textContent = alert.alert_id;
-            document.getElementById('userName').textContent = alert.user_name || "Unknown User";
-            document.getElementById('userId').textContent = alert.user_id;
-            document.getElementById('transactionId').textContent = alert.transaction_id;
-            document.getElementById('amount').textContent = 'KES ' + (alert.amount || 0).toLocaleString();
-            document.getElementById('recipient').textContent = alert.recipient || 'N/A';
-            document.getElementById('location').textContent = alert.location || 'Nairobi, KE';
-            document.getElementById('timestamp').textContent = new Date(alert.timestamp).toLocaleString();
-            document.getElementById('status').textContent = alert.acknowledged ? 'Reviewed' : 'New';
-            
-            const riskPercent = Math.round((alert.risk_score || 0) * 100);
-            document.getElementById('riskScore').textContent = riskPercent + '%';
-
-            // --- SMART EXPLANATIONS & SIGNALS ---
-            const signalsList = document.getElementById('signalsList');
-            const explanationList = document.getElementById('explanationList');
-            
-            let data = alert.detection_signals;
-            // Handle if data is string or object
-            if (typeof data === 'string') {
-                try { data = JSON.parse(data); } catch(e) { data = {}; }
-            }
-
-            // 1. Show Explanations (The "Why")
-            const explanations = data.explanations || ["Unusual activity detected by the AI engine."];
-            explanationList.innerHTML = explanations.map(exp => 
-                `<li class="explanation-item"><strong>⚠️ ALERT:</strong> ${exp}</li>`
-            ).join('');
-
-            // 2. Show Technical Signals (The "How")
-            const signals = data.signals || {};
-            if (Object.keys(signals).length > 0) {
-                signalsList.innerHTML = Object.entries(signals).map(([key, value]) => `
-                    <div class="signal-item signal-${alert.risk_level?.toLowerCase() || 'medium'}">
-                        <div class="signal-name">${key.replace(/_/g, ' ').toUpperCase()}</div>
-                        <div class="signal-desc">${value}</div>
-                    </div>
-                `).join('');
-            } else {
-                signalsList.innerHTML = '<div class="signal-item">Technical metadata summarized in explanation above.</div>';
-            }
-
-            if (alert.acknowledged) {
-                document.getElementById('markReviewedBtn').disabled = true;
-                document.getElementById('markReviewedBtn').textContent = 'Already Reviewed';
-            }
-        }
-
-        async function markAsReviewed() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const alertId = urlParams.get('id');
-            try {
-                const response = await fetch(`/api/v2/alerts/${alertId}/acknowledge`, { method: 'POST' });
-                if (response.ok) {
-                    alert('Alert cleared from active queue.');
-                    location.reload();
-                }
-            } catch (error) {
-                alert('Connection error');
-            }
-        }
-
-        window.onload = function() {
-            // Check login if needed
-            fetchAlertDetails();
-        };
+        window.onload = loadAnalysis;
     </script>
+</body>
+</html>
