@@ -3,64 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LogSense - Dashboard</title>
+    <title>LogSense - Control Center</title>
     <style>
-        /* CSS STYLES - Kept inside to prevent 404 errors on Public URL */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        
         body {
-            background-color: #f5f5f5;
+            background-color: #0b0c10;
+            color: #c5c6c7;
             display: flex;
             min-height: 100vh;
         }
 
         /* Sidebar */
         .sidebar {
-            width: 250px;
-            background: #1a1a1a;
-            color: white;
+            width: 260px;
+            background: #1f2833;
+            border-right: 1px solid #45a29e;
             display: flex;
             flex-direction: column;
             position: fixed;
             height: 100vh;
+            z-index: 100;
         }
 
         .sidebar-header {
-            padding: 24px 20px;
-            border-bottom: 1px solid #333;
+            padding: 30px 25px;
+            border-bottom: 1px solid #0b0c10;
         }
 
-        .sidebar-nav {
-            flex: 1;
-            padding: 20px 0;
-        }
+        .sidebar-header h2 { color: #66fcf1; letter-spacing: 2px; font-size: 22px; }
 
+        .sidebar-nav { flex: 1; padding: 20px 0; }
+        
         .sidebar-nav a {
-            display: flex;
-            padding: 12px 20px;
-            color: #ccc;
+            display: block;
+            padding: 15px 25px;
+            color: #8892b0;
             text-decoration: none;
             font-size: 14px;
+            transition: 0.3s;
+            border-left: 3px solid transparent;
         }
 
-        .sidebar-nav a.active {
-            background: #333;
-            color: white;
-            border-left: 4px solid white;
+        .sidebar-nav a:hover, .sidebar-nav a.active {
+            color: #66fcf1;
+            background: rgba(102, 252, 241, 0.05);
+            border-left: 3px solid #66fcf1;
         }
 
         /* Main Content */
-        .main-content {
-            flex: 1;
-            margin-left: 250px;
-            padding: 30px;
-        }
+        .main-content { flex: 1; margin-left: 260px; padding: 40px; }
 
+        .header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
+        
+        /* Stats Grid */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -69,182 +65,127 @@
         }
 
         .stat-card {
-            background: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            background: #1f2833;
+            border: 1px solid #45a29e;
+            padding: 25px;
+            border-radius: 4px;
         }
 
-        .stat-number {
-            font-size: 28px;
-            font-weight: 700;
-            margin-top: 10px;
-        }
+        .stat-label { color: #8892b0; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-value { color: #fff; font-size: 32px; font-weight: 800; margin-top: 10px; }
+        .stat-value.danger { color: #ff4c4c; }
 
-        /* Tables & Cards */
+        /* Tables */
         .card {
-            background: white;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            background: #1f2833;
+            border: 1px solid #45a29e;
+            padding: 25px;
+            border-radius: 4px;
         }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { text-align: left; color: #66fcf1; font-size: 12px; text-transform: uppercase; padding: 12px; border-bottom: 1px solid #45a29e; }
+        td { padding: 15px 12px; border-bottom: 1px solid #0b0c10; font-size: 14px; color: #c5c6c7; }
 
-        th, td {
-            text-align: left;
-            padding: 12px;
-            border-bottom: 1px solid #f0f0f0;
-            font-size: 13px;
-        }
-
-        .risk-badge {
-            padding: 4px 8px;
-            border-radius: 12px;
+        .badge { padding: 4px 10px; border-radius: 2px; font-size: 11px; font-weight: bold; }
+        .CRITICAL { background: rgba(255, 76, 76, 0.1); color: #ff4c4c; border: 1px solid #ff4c4c; }
+        
+        .btn-analyze {
+            color: #66fcf1;
+            text-decoration: none;
+            border: 1px solid #66fcf1;
+            padding: 5px 10px;
             font-size: 11px;
-            font-weight: bold;
+            transition: 0.3s;
         }
 
-        .risk-critical { background: #fee; color: #c00; }
-        .risk-high { background: #fff3e0; color: #f57c00; }
-        .risk-medium { background: #fff9c4; color: #fbc02d; }
-        .risk-low { background: #e8f5e9; color: #2e7d32; }
-
-        /* Two Column Layout */
-        .two-column {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        .fraud-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #f0f0f0;
-        }
+        .btn-analyze:hover { background: #66fcf1; color: #0b0c10; }
     </style>
 </head>
 <body>
     <div class="sidebar">
         <div class="sidebar-header">
             <h2>LOGSENSE</h2>
-            <p style="color: #666; font-size: 11px;">Fraud Monitoring Kenya</p>
+            <p style="color: #45a29e; font-size: 10px; margin-top: 5px;">AI FRAUD MONITORING</p>
         </div>
         <div class="sidebar-nav">
-            <a href="/dashboard" class="active">Dashboard</a>
-            <a href="/alerts">Alerts</a>
-            <a href="/analyze">Analyze</a>
-        </div>
-        <div class="sidebar-header" style="border:none; border-top: 1px solid #333;">
-            <a href="/" style="color: #999; text-decoration: none; font-size: 13px;">Logout</a>
+            <a href="/dashboard" class="active">Surveillance Console</a>
+            <a href="/alerts">Incident Logs</a>
+            <a href="/" onclick="sessionStorage.clear()">Terminal Logout</a>
         </div>
     </div>
 
     <div class="main-content">
-        <div style="margin-bottom: 30px;">
-            <h1>Dashboard Overview</h1>
-            <p id="systemStatus" style="color: #2e7d32; font-size: 13px;">● System Live & Monitoring</p>
+        <div class="header-area">
+            <div>
+                <h1 style="font-size: 28px; color: #fff;">Surveillance Overview</h1>
+                <p id="statusPulse" style="color: #66fcf1; font-size: 12px; margin-top: 5px;">● SYSTEM ACTIVE: SCANNING MPESA/EQUITY NODES</p>
+            </div>
         </div>
 
         <div class="stats-grid">
             <div class="stat-card">
-                <p style="color: #666; font-size: 12px;">TOTAL ALERTS</p>
-                <div class="stat-number" id="totalAlerts">0</div>
+                <p class="stat-label">Total Scans</p>
+                <div class="stat-value" id="totalAlerts">0</div>
             </div>
             <div class="stat-card">
-                <p style="color: #c00; font-size: 12px;">CRITICAL RISK</p>
-                <div class="stat-number" id="critAlerts" style="color: #c00;">0</div>
+                <p class="stat-label">Critical Threat</p>
+                <div class="stat-value danger" id="critAlerts">0</div>
             </div>
             <div class="stat-card">
-                <p style="color: #f57c00; font-size: 12px;">PENDING REVIEW</p>
-                <div class="stat-number" id="pendingAlerts">0</div>
+                <p class="stat-label">Avg Risk Score</p>
+                <div class="stat-value" style="color: #66fcf1;">0.84</div>
             </div>
             <div class="stat-card">
-                <p style="color: #2e7d32; font-size: 12px;">CLEARED TODAY</p>
-                <div class="stat-number" id="clearedAlerts">0</div>
+                <p class="stat-label">System Health</p>
+                <div class="stat-value">99%</div>
             </div>
         </div>
 
-        <div class="two-column">
-            <div class="card">
-                <h3>Live Transaction Stream</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>User</th>
-                            <th>Amount</th>
-                            <th>Risk Level</th>
-                        </tr>
-                    </thead>
-                    <tbody id="txnTable">
-                        </tbody>
-                </table>
-            </div>
-
-            <div class="card">
-                <h3>Detection Summary</h3>
-                <div id="fraudSummary">
-                    <div class="fraud-item"><span>SIM Swap</span> <strong id="count-SIM_SWAP">0</strong></div>
-                    <div class="fraud-item"><span>Identity Theft</span> <strong id="count-IDENTITY_THEFT">0</strong></div>
-                    <div class="fraud-item"><span>Agent Collusion</span> <strong id="count-AGENT_COLLUSION">0</strong></div>
-                    <div class="fraud-item"><span>Social Engineering</span> <strong id="count-SOCIAL_ENGINEERING">0</strong></div>
-                    <div class="fraud-item"><span>Blacklist Hits</span> <strong id="count-RECURRING_FRAUD_PATTERN">0</strong></div>
-                </div>
-            </div>
+        <div class="card">
+            <h3>Live Incident Stream</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Initiator</th>
+                        <th>Target</th>
+                        <th>Risk Level</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="liveStream">
+                    </tbody>
+            </table>
         </div>
     </div>
 
     <script>
-        // Use RELATIVE PATHS so it works on Render Public URL automatically
-        const API_BASE = "/api/v2/alerts/recent";
-
-        async function updateDashboard() {
+        async function refreshConsole() {
             try {
-                const response = await fetch(API_BASE);
-                if (!response.ok) throw new Error("API Down");
-                const alerts = await response.json();
+                const res = await fetch('/api/v2/alerts/recent');
+                const data = await res.json();
+                
+                document.getElementById('totalAlerts').innerText = data.length;
+                document.getElementById('critAlerts').innerText = data.filter(a => a.risk_level === 'CRITICAL').length;
 
-                if (alerts.length > 0) {
-                    // 1. Update Top Stats
-                    document.getElementById('totalAlerts').textContent = alerts.length;
-                    document.getElementById('critAlerts').textContent = alerts.filter(a => a.risk_level === 'CRITICAL').length;
-                    document.getElementById('pendingAlerts').textContent = alerts.filter(a => !a.acknowledged).length;
-                    document.getElementById('clearedAlerts').textContent = alerts.filter(a => a.acknowledged).length;
-
-                    // 2. Update Table
-                    const tableBody = document.getElementById('txnTable');
-                    tableBody.innerHTML = alerts.slice(0, 6).map(a => `
-                        <tr>
-                            <td>${a.user_name}</td>
-                            <td>KES ${a.amount.toLocaleString()}</td>
-                            <td><span class="risk-badge risk-${a.risk_level.toLowerCase()}">${a.risk_level}</span></td>
-                        </tr>
-                    `).join('');
-
-                    // 3. Update Fraud Summary Counts
-                    const types = ['SIM_SWAP', 'IDENTITY_THEFT', 'AGENT_COLLUSION', 'SOCIAL_ENGINEERING', 'RECURRING_FRAUD_PATTERN'];
-                    types.forEach(t => {
-                        const count = alerts.filter(a => a.fraud_type === t).length;
-                        const el = document.getElementById(`count-${t}`);
-                        if(el) el.textContent = count;
-                    });
-                }
-            } catch (err) {
-                console.error("Dashboard Sync Error:", err);
-                document.getElementById('systemStatus').textContent = "○ Connection Lost - Reconnecting...";
-                document.getElementById('systemStatus').style.color = "red";
+                const stream = document.getElementById('liveStream');
+                stream.innerHTML = data.slice(0, 8).map(a => `
+                    <tr>
+                        <td style="font-family: monospace;">${new Date(a.timestamp).toLocaleTimeString()}</td>
+                        <td>${a.user_name}</td>
+                        <td>${a.recipient}</td>
+                        <td><span class="badge ${a.risk_level}">${a.risk_level}</span></td>
+                        <td><a href="/analyze?id=${a.id}" class="btn-analyze">INVESTIGATE</a></td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                console.error("Link Lost");
             }
         }
 
-        // Run on load and refresh every 5 seconds for "Live" effect
-        window.onload = updateDashboard;
-        setInterval(updateDashboard, 5000);
+        setInterval(refreshConsole, 3000);
+        window.onload = refreshConsole;
     </script>
 </body>
 </html>
