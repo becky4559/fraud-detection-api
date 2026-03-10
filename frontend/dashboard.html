@@ -1,102 +1,250 @@
-<script>
-        function logout() {
-            sessionStorage.removeItem('adminLoggedIn');
-            window.location.href = '/login';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LogSense - Dashboard</title>
+    <style>
+        /* CSS STYLES - Kept inside to prevent 404 errors on Public URL */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
 
-        // Logic to refresh and calculate the Kenyan Dashboard stats
-        async function refreshDashboard() {
+        body {
+            background-color: #f5f5f5;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background: #1a1a1a;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+        }
+
+        .sidebar-header {
+            padding: 24px 20px;
+            border-bottom: 1px solid #333;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 20px 0;
+        }
+
+        .sidebar-nav a {
+            display: flex;
+            padding: 12px 20px;
+            color: #ccc;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .sidebar-nav a.active {
+            background: #333;
+            color: white;
+            border-left: 4px solid white;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 250px;
+            padding: 30px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-number {
+            font-size: 28px;
+            font-weight: 700;
+            margin-top: 10px;
+        }
+
+        /* Tables & Cards */
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 13px;
+        }
+
+        .risk-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .risk-critical { background: #fee; color: #c00; }
+        .risk-high { background: #fff3e0; color: #f57c00; }
+        .risk-medium { background: #fff9c4; color: #fbc02d; }
+        .risk-low { background: #e8f5e9; color: #2e7d32; }
+
+        /* Two Column Layout */
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .fraud-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>LOGSENSE</h2>
+            <p style="color: #666; font-size: 11px;">Fraud Monitoring Kenya</p>
+        </div>
+        <div class="sidebar-nav">
+            <a href="/dashboard" class="active">Dashboard</a>
+            <a href="/alerts">Alerts</a>
+            <a href="/analyze">Analyze</a>
+        </div>
+        <div class="sidebar-header" style="border:none; border-top: 1px solid #333;">
+            <a href="/" style="color: #999; text-decoration: none; font-size: 13px;">Logout</a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div style="margin-bottom: 30px;">
+            <h1>Dashboard Overview</h1>
+            <p id="systemStatus" style="color: #2e7d32; font-size: 13px;">● System Live & Monitoring</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <p style="color: #666; font-size: 12px;">TOTAL ALERTS</p>
+                <div class="stat-number" id="totalAlerts">0</div>
+            </div>
+            <div class="stat-card">
+                <p style="color: #c00; font-size: 12px;">CRITICAL RISK</p>
+                <div class="stat-number" id="critAlerts" style="color: #c00;">0</div>
+            </div>
+            <div class="stat-card">
+                <p style="color: #f57c00; font-size: 12px;">PENDING REVIEW</p>
+                <div class="stat-number" id="pendingAlerts">0</div>
+            </div>
+            <div class="stat-card">
+                <p style="color: #2e7d32; font-size: 12px;">CLEARED TODAY</p>
+                <div class="stat-number" id="clearedAlerts">0</div>
+            </div>
+        </div>
+
+        <div class="two-column">
+            <div class="card">
+                <h3>Live Transaction Stream</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Amount</th>
+                            <th>Risk Level</th>
+                        </tr>
+                    </thead>
+                    <tbody id="txnTable">
+                        </tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <h3>Detection Summary</h3>
+                <div id="fraudSummary">
+                    <div class="fraud-item"><span>SIM Swap</span> <strong id="count-SIM_SWAP">0</strong></div>
+                    <div class="fraud-item"><span>Identity Theft</span> <strong id="count-IDENTITY_THEFT">0</strong></div>
+                    <div class="fraud-item"><span>Agent Collusion</span> <strong id="count-AGENT_COLLUSION">0</strong></div>
+                    <div class="fraud-item"><span>Social Engineering</span> <strong id="count-SOCIAL_ENGINEERING">0</strong></div>
+                    <div class="fraud-item"><span>Blacklist Hits</span> <strong id="count-RECURRING_FRAUD_PATTERN">0</strong></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Use RELATIVE PATHS so it works on Render Public URL automatically
+        const API_BASE = "/api/v2/alerts/recent";
+
+        async function updateDashboard() {
             try {
-                const response = await fetch('/api/v2/alerts/recent?limit=200');
+                const response = await fetch(API_BASE);
+                if (!response.ok) throw new Error("API Down");
                 const alerts = await response.json();
-                
-                if (Array.isArray(alerts) && alerts.length > 0) {
-                    const total = alerts.length;
 
-                    // 1. Calculate Risk Levels
-                    const critical = alerts.filter(a => a.risk_level === 'CRITICAL').length;
-                    const high = alerts.filter(a => a.risk_level === 'HIGH').length;
-                    const medium = alerts.filter(a => a.risk_level === 'MEDIUM').length;
-                    const low = alerts.filter(a => a.risk_level === 'LOW').length;
+                if (alerts.length > 0) {
+                    // 1. Update Top Stats
+                    document.getElementById('totalAlerts').textContent = alerts.length;
+                    document.getElementById('critAlerts').textContent = alerts.filter(a => a.risk_level === 'CRITICAL').length;
+                    document.getElementById('pendingAlerts').textContent = alerts.filter(a => !a.acknowledged).length;
+                    document.getElementById('clearedAlerts').textContent = alerts.filter(a => a.acknowledged).length;
 
-                    // Update Risk UI
-                    document.getElementById('criticalCount').textContent = critical;
-                    document.getElementById('highCount').textContent = high;
-                    document.getElementById('mediumCount').textContent = medium;
-                    document.getElementById('lowCount').textContent = low;
+                    // 2. Update Table
+                    const tableBody = document.getElementById('txnTable');
+                    tableBody.innerHTML = alerts.slice(0, 6).map(a => `
+                        <tr>
+                            <td>${a.user_name}</td>
+                            <td>KES ${a.amount.toLocaleString()}</td>
+                            <td><span class="risk-badge risk-${a.risk_level.toLowerCase()}">${a.risk_level}</span></td>
+                        </tr>
+                    `).join('');
 
-                    // Update Visual Bars (Safety check for divide by zero)
-                    const getWidth = (count) => total > 0 ? (count / total * 100) + '%' : '0%';
-                    document.getElementById('criticalBar').style.width = getWidth(critical);
-                    document.getElementById('highBar').style.width = getWidth(high);
-                    document.getElementById('mediumBar').style.width = getWidth(medium);
-                    document.getElementById('lowBar').style.width = getWidth(low);
-
-                    // 2. Count All 8 Fraud Types + Recurring Pattern
-                    const fraudCounts = {
-                        'SIM_SWAP': 0,
-                        'IDENTITY_THEFT': 0,
-                        'DEVICE_CLONING': 0,
-                        'MOBILE_MONEY_FRAUD': 0,
-                        'AGENT_COLLUSION': 0,
-                        'SOCIAL_ENGINEERING': 0,
-                        'REPAYMENT_FRAUD': 0,
-                        'SYNTHETIC_IDENTITY': 0,
-                        'RECURRING_FRAUD_PATTERN': 0 // Combined with Social Engineering for summary
-                    };
-
-                    alerts.forEach(a => {
-                        if (fraudCounts.hasOwnProperty(a.fraud_type)) {
-                            fraudCounts[a.fraud_type]++;
-                        }
+                    // 3. Update Fraud Summary Counts
+                    const types = ['SIM_SWAP', 'IDENTITY_THEFT', 'AGENT_COLLUSION', 'SOCIAL_ENGINEERING', 'RECURRING_FRAUD_PATTERN'];
+                    types.forEach(t => {
+                        const count = alerts.filter(a => a.fraud_type === t).length;
+                        const el = document.getElementById(`count-${t}`);
+                        if(el) el.textContent = count;
                     });
-
-                    // Update Fraud Summary UI
-                    document.getElementById('simSwapCount').textContent = fraudCounts.SIM_SWAP;
-                    document.getElementById('identityTheftCount').textContent = fraudCounts.IDENTITY_THEFT;
-                    document.getElementById('deviceCloningCount').textContent = fraudCounts.DEVICE_CLONING;
-                    document.getElementById('mobileFraudCount').textContent = fraudCounts.MOBILE_MONEY_FRAUD;
-                    document.getElementById('agentCollusionCount').textContent = fraudCounts.AGENT_COLLUSION;
-                    // For the demo, we'll combine Social Engineering and Recurring Pattern for a cleaner list
-                    document.getElementById('socialEngineeringCount').textContent = 
-                        fraudCounts.SOCIAL_ENGINEERING + fraudCounts.RECURRING_FRAUD_PATTERN;
-                    document.getElementById('repaymentFraudCount').textContent = fraudCounts.REPAYMENT_FRAUD;
-                    document.getElementById('syntheticIdentityCount').textContent = fraudCounts.SYNTHETIC_IDENTITY;
-
-                    // 3. Update Stats Cards (Simulated dynamic stats based on alerts)
-                    document.getElementById('totalTxns').textContent = (1247 + total).toLocaleString();
-                    document.getElementById('blockedTxns').textContent = (critical + high);
-                    document.getElementById('pendingTxns').textContent = alerts.filter(a => !a.acknowledged).length;
-
-                    // 4. Update Recent Transactions Table
-                    const recentTable = document.getElementById('recentTransactionsList');
-                    let tableHtml = '';
-                    // Take the top 5 most recent
-                    alerts.slice(0, 5).forEach(a => {
-                        tableHtml += `
-                            <tr>
-                                <td>${a.user_name || 'User'}</td>
-                                <td><strong>KES ${a.amount.toLocaleString()}</strong></td>
-                                <td><span class="risk-badge risk-${a.risk_level.toLowerCase()}">${a.risk_level}</span></td>
-                            </tr>
-                        `;
-                    });
-                    recentTable.innerHTML = tableHtml;
                 }
-            } catch (error) {
-                console.error('Dashboard sync error:', error);
+            } catch (err) {
+                console.error("Dashboard Sync Error:", err);
+                document.getElementById('systemStatus').textContent = "○ Connection Lost - Reconnecting...";
+                document.getElementById('systemStatus').style.color = "red";
             }
         }
 
-        window.onload = function() {
-            if (sessionStorage.getItem('adminLoggedIn') !== 'true') {
-                window.location.href = '/login';
-                return;
-            }
-            
-            // Run once on load
-            refreshDashboard();
-            // Refresh every 10 seconds to show "Live" M-Pesa/Bank feeds
-            setInterval(refreshDashboard, 10000);
-        };
+        // Run on load and refresh every 5 seconds for "Live" effect
+        window.onload = updateDashboard;
+        setInterval(updateDashboard, 5000);
     </script>
+</body>
+</html>
