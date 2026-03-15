@@ -21,11 +21,11 @@ class FraudAlert(Base):
     fraud_name = Column(String, nullable=True)
     risk_score = Column(Float)
     risk_level = Column(String, nullable=True)
-    detection_signals = Column(String, nullable=True)
+    detection_signals = Column(String, nullable=True) 
     amount = Column(Float, nullable=True)
     recipient = Column(String, nullable=True)
     location = Column(String, nullable=True)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
     acknowledged = Column(Boolean, default=False)
 
 def get_db():
@@ -35,6 +35,4 @@ def get_db():
     finally:
         db.close()
 
-# Create tables
 Base.metadata.create_all(bind=engine)
-print("✅ Database created with correct schema")

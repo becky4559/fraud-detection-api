@@ -1,23 +1,17 @@
 import os
 import json
 import random
-import pandas as pd
 from datetime import datetime, timedelta
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
-
-# Ensure database.py and models are present in your directory
 from database import SessionLocal, engine, get_db, FraudAlert, Base
 
 app = FastAPI(title="LogSense - Forensic Fraud Engine")
 
-# --- CONFIGURATION ---
+# File for Isolation Forest Research
 TRANSACTION_LOGS = "logs/transaction_forensics.json"
-os.makedirs("logs", exist_ok=True)
 
 app.add_middleware(
     CORSMiddleware,
@@ -27,12 +21,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-Base.metadata.create_all(bind=engine)
-
-# --- FORENSIC DATA GENERATORS ---
-
 def log_event(data, status, flags=[]):
-    """Saves the forensic payload for later research analysis."""
+    """Writes raw logs for unsupervised machine learning research."""
     log_entry = {
         **data,
         "server_timestamp": datetime.now().isoformat(),
@@ -42,76 +32,6 @@ def log_event(data, status, flags=[]):
     with open(TRANSACTION_LOGS, "a") as f:
         f.write(json.dumps(log_entry) + "\n")
 
-def generate_forensics(fraud_type, recipient, location):
-    """Generates deep technical metadata for investigations"""
-    now = datetime.now()
-    if fraud_type == "SIM_SWAP" or "RECURRING" in fraud_type:
-        return {
-            "signals": {
-                "SIM_Serial_New": f"89254-{random.randint(1000,9999)}-001",
-                "Last_Swap_Time": (now - timedelta(minutes=42)).strftime("%H:%M EAT"),
-                "Provisioning_Point": f"Agent_{random.randint(100,999)} ({location})",
-                "Device_IMEI": f"356781-00-{random.randint(1000,9999)}-09"
-            },
-            "explanations": [
-                f"Critical: SIM replacement detected recently.",
-                f"Location Anomaly: Transaction initiated from {location}."
-            ]
-        }
-    return {
-        "signals": {"Auth_Attempts": 1, "Origin_IP": "192.168.1.45"}, 
-        "explanations": ["Manual alert triggered by security engine."]
-    }
-
-# --- SEEDING LOGIC FOR DEMO ---
-
-def seed_demo_data():
-    db = SessionLocal()
-    try:
-        if db.query(FraudAlert).count() == 0:
-            print("íº€ Seeding LogSense Forensic Demo Data...")
-            
-            # Case 1: Mary Akinyi (Historical Blacklist Match)
-            f1 = generate_forensics("RECURRING_FRAUD_PATTERN", "Mary Akinyi", "Nairobi")
-            db.add(FraudAlert(
-                transaction_id="TXN-HIST-8821", 
-                user_name="John Kamau",
-                fraud_type="RECURRING_FRAUD_PATTERN", 
-                fraud_name="Blacklisted Recipient",
-                risk_score=0.99, 
-                risk_level="CRITICAL", 
-                amount=45000.0,
-                recipient="Mary Akinyi", 
-                location="Nairobi", 
-                timestamp=datetime.now() - timedelta(days=1),
-                detection_signals=json.dumps(f1), 
-                acknowledged=False
-            ))
-            
-            # Case 2: Alice Wambui (SIM Swap Anomaly)
-            f2 = generate_forensics("SIM_SWAP", "Agent 442", "Mombasa")
-            db.add(FraudAlert(
-                transaction_id="TXN-EQUITY-9902", 
-                user_name="Alice Wambui",
-                fraud_type="SIM_SWAP", 
-                fraud_name="SIM Swap Detected",
-                risk_score=0.94, 
-                risk_level="CRITICAL", 
-                amount=12500.0,
-                recipient="Agent 442", 
-                location="Mombasa", 
-                timestamp=datetime.now() - timedelta(hours=4),
-                detection_signals=json.dumps(f2), 
-                acknowledged=False
-            ))
-            db.commit()
-    finally:
-        db.close()
-
-seed_demo_data()
-
-# --- FRAUD EVALUATION ENGINE ---
-
 def evaluate_fraud(user_name, amount, recipient, location, hour, pin_attempt):
     profiles = {
         "John Kamau": {"limit": 20000, "home": "Nairobi", "hours": range(7, 23)},
@@ -120,7 +40,7 @@ def evaluate_fraud(user_name, amount, recipient, location, hour, pin_attempt):
     profile = profiles.get(user_name, {"limit": 50000, "home": "Nairobi", "hours": range(7, 23)})
     reasons = []
     risk_score = 0.1 
-    
+
     if "mary" in recipient.lower() or "akinyi" in recipient.lower():
         reasons.append("RECURRING_FRAUD_PATTERN")
         risk_score = 1.0
@@ -140,33 +60,6 @@ def evaluate_fraud(user_name, amount, recipient, location, hour, pin_attempt):
     status = "BLOCKED" if risk_score >= 0.8 else "SUCCESS"
     return status, reasons, min(risk_score, 1.0)
 
-# --- API ROUTES ---
-
-@app.get("/api/v2/alerts/recent")
-def get_recent_alerts(db: Session = Depends(get_db)):
-    return db.query(FraudAlert).order_by(desc(FraudAlert.timestamp)).limit(50).all()
-
-@app.get("/api/v2/alerts/{alert_id}")
-def get_alert_details(alert_id: int, db: Session = Depends(get_db)):
-    alert = db.query(FraudAlert).filter(FraudAlert.id == alert_id).first()
-    if not alert:
-        raise HTTPException(status_code=404, detail="Case file not found")
-    return alert
-
-@app.patch("/api/v2/alerts/{alert_id}/review")
-async def review_alert(alert_id: int, db: Session = Depends(get_db)):
-    alert = db.query(FraudAlert).filter(FraudAlert.id == alert_id).first()
-    if not alert:
-        raise HTTPException(status_code=404, detail="Alert not found")
-    alert.acknowledged = True
-    db.commit()
-    return {"status": "SUCCESS"}
-
-@app.post("/api/mobile/profiles")
-async def receive_profile_sync(data: dict):
-    print(f"í³¡ Profile Sync for {data.get('userName')} successful")
-    return {"status": "SUCCESS"}
-
 @app.post("/api/mobile/transaction")
 async def mobile_transaction(transaction: dict, db: Session = Depends(get_db)):
     user_name = transaction.get("userName", "Demo User")
@@ -180,21 +73,17 @@ async def mobile_transaction(transaction: dict, db: Session = Depends(get_db)):
 
     if status == "BLOCKED":
         log_event(transaction, "BLOCKED", flags)
-        f_type = flags[0] if flags else "MULTIPLE_INDICATORS"
-        forensics = generate_forensics(f_type, recipient, location)
-        
         new_alert = FraudAlert(
             transaction_id=f"TXN-{random.randint(10000, 99999)}",
             user_name=user_name,
-            fraud_type=f_type,
-            fraud_name=f_type.replace("_", " ").title(),
+            fraud_type=flags[0] if flags else "ANOMALY",
+            fraud_name=(flags[0] if flags else "Anomaly").replace("_", " ").title(),
             risk_score=score,
             risk_level="CRITICAL",
             amount=amount,
             recipient=recipient,
             location=location,
-            timestamp=datetime.now(),
-            detection_signals=json.dumps({"reasons": flags, **forensics}),
+            detection_signals=json.dumps({"reasons": flags}),
             acknowledged=False
         )
         db.add(new_alert)
@@ -204,23 +93,9 @@ async def mobile_transaction(transaction: dict, db: Session = Depends(get_db)):
     log_event(transaction, "SUCCESS")
     return {"status": "SUCCESS", "message": "Authorized"}
 
-# --- PAGE ROUTES ---
-
-@app.get("/")
-async def serve_login():
-    return FileResponse("login.html")
-
-@app.get("/dashboard")
-async def serve_dashboard():
-    return FileResponse("dashboard.html")
-
-@app.get("/alerts")
-async def serve_alerts():
-    return FileResponse("alerts.html")
-
-@app.get("/analyze")
-async def serve_analyze():
-    return FileResponse("analyze.html")
+@app.get("/api/v2/alerts/recent")
+def get_recent_alerts(db: Session = Depends(get_db)):
+    return db.query(FraudAlert).order_by(desc(FraudAlert.timestamp)).limit(50).all()
 
 if __name__ == "__main__":
     import uvicorn
