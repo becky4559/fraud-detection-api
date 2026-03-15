@@ -40,7 +40,7 @@ def generate_forensics(fraud_type, recipient, location):
                 "Device_IMEI": f"356781-00-{random.randint(1000,9999)}-09"
             },
             "explanations": [
-                f"Critical: SIM replacement detected recently.",
+                "Critical: SIM replacement detected recently.",
                 f"Location Anomaly: Transaction initiated from {location}."
             ]
         }
@@ -55,7 +55,7 @@ def seed_demo_data():
     db = SessionLocal()
     try:
         if db.query(FraudAlert).count() == 0:
-            print("íº€ Seeding LogSense Forensic Demo Data...")
+            print("STARTING: Seeding LogSense Forensic Demo Data...")
             
             f1 = generate_forensics("RECURRING_FRAUD_PATTERN", "Mary Akinyi", "Nairobi")
             db.add(FraudAlert(
@@ -89,6 +89,7 @@ def seed_demo_data():
                 acknowledged=False
             ))
             db.commit()
+            print("SUCCESS: Demo data seeded.")
     finally:
         db.close()
 
