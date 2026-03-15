@@ -2,7 +2,7 @@ import os
 import json
 import random
 from datetime import datetime, timedelta
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
@@ -26,6 +26,13 @@ app.add_middleware(
 )
 
 Base.metadata.create_all(bind=engine)
+
+# --- DEBUG MIDDLEWARE (To track Mobile App connection attempts) ---
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    print(f"DEBUG: Incoming {request.method} request to {request.url.path}")
+    response = await call_next(request)
+    return response
 
 # --- FORENSIC DATA GENERATORS ---
 
@@ -145,6 +152,14 @@ async def serve_analyze():
 @app.get("/api/v2/alerts/recent")
 def get_recent_alerts(db: Session = Depends(get_db)):
     return db.query(FraudAlert).order_by(desc(FraudAlert.timestamp)).limit(50).all()
+
+@app.get("/api/v2/alerts/{alert_id}")
+def get_alert_details(alert_id: int, db: Session = Depends(get_db)):
+    alert = db.query(FraudAlert).filter(FraudAlert.id == alert_id).first()
+    if not alert:
+        print(f"DEBUG ERROR: Alert ID {alert_id} not found in DB")
+        raise HTTPException(status_code=404, detail="Alert not found")
+    return alert
 
 @app.post("/api/mobile/transaction")
 async def mobile_transaction(transaction: dict, db: Session = Depends(get_db)):
