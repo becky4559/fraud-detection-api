@@ -14,7 +14,6 @@ from database import SessionLocal, engine, get_db, FraudAlert, Base
 app = FastAPI(title="LogSense - Forensic Fraud Engine")
 
 # --- CONFIGURATION ---
-TRANSACTION_LOGS = "logs/transaction_forensics.json"
 os.makedirs("logs", exist_ok=True)
 
 app.add_middleware(
@@ -27,7 +26,7 @@ app.add_middleware(
 
 Base.metadata.create_all(bind=engine)
 
-# --- DEBUG MIDDLEWARE (To track Mobile App connection attempts) ---
+# --- DEBUG MIDDLEWARE ---
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     print(f"DEBUG: Incoming {request.method} request to {request.url.path}")
@@ -56,15 +55,16 @@ def generate_forensics(fraud_type, recipient, location):
         "explanations": ["Manual alert triggered by security engine."]
     }
 
-# --- SEEDING LOGIC (Alice & John) ---
+# --- SEEDING LOGIC ---
 
 def seed_demo_data():
     db = SessionLocal()
     try:
         if db.query(FraudAlert).count() == 0:
             print("STARTING: Seeding LogSense Forensic Demo Data...")
+            f1_raw = generate_forensics("RECURRING_FRAUD_PATTERN", "Mary Akinyi", "Nairobi")
+            f1_signals = {"explanations": f1_raw["explanations"], "signals": f1_raw["signals"], "reasons": ["RECURRING_FRAUD_PATTERN"]}
             
-            f1 = generate_forensics("RECURRING_FRAUD_PATTERN", "Mary Akinyi", "Nairobi")
             db.add(FraudAlert(
                 transaction_id="TXN-HIST-8821", 
                 user_name="John Kamau",
@@ -76,27 +76,11 @@ def seed_demo_data():
                 recipient="Mary Akinyi", 
                 location="Nairobi", 
                 timestamp=datetime.now() - timedelta(days=1),
-                detection_signals=json.dumps(f1), 
-                acknowledged=False
-            ))
-            
-            f2 = generate_forensics("SIM_SWAP", "Agent 442", "Mombasa")
-            db.add(FraudAlert(
-                transaction_id="TXN-EQUITY-9902", 
-                user_name="Alice Wambui",
-                fraud_type="SIM_SWAP", 
-                fraud_name="SIM Swap Detected",
-                risk_score=0.94, 
-                risk_level="CRITICAL", 
-                amount=12500.0,
-                recipient="Agent 442", 
-                location="Mombasa", 
-                timestamp=datetime.now() - timedelta(hours=4),
-                detection_signals=json.dumps(f2), 
+                detection_signals=json.dumps(f1_signals), 
                 acknowledged=False
             ))
             db.commit()
-            print("SUCCESS: Demo data seeded.")
+            print("SUCCESS: Demo data seeded with deep signals.")
     finally:
         db.close()
 
@@ -129,25 +113,16 @@ def evaluate_fraud(user_name, amount, recipient, location, hour, pin_attempt):
     status = "BLOCKED" if risk_score >= 0.8 else "SUCCESS"
     return status, reasons, min(risk_score, 1.0)
 
-# --- FRONTEND PAGE ROUTES ---
+# --- ROUTES ---
 
 @app.get("/")
-async def serve_login():
-    return FileResponse("login.html")
+async def serve_login(): return FileResponse("login.html")
 
 @app.get("/dashboard")
-async def serve_dashboard():
-    return FileResponse("dashboard.html")
-
-@app.get("/alerts")
-async def serve_alerts():
-    return FileResponse("alerts.html")
+async def serve_dashboard(): return FileResponse("dashboard.html")
 
 @app.get("/analyze")
-async def serve_analyze():
-    return FileResponse("analyze.html")
-
-# --- API ROUTES ---
+async def serve_analyze(): return FileResponse("analyze.html")
 
 @app.get("/api/v2/alerts/recent")
 def get_recent_alerts(db: Session = Depends(get_db)):
@@ -157,7 +132,6 @@ def get_recent_alerts(db: Session = Depends(get_db)):
 def get_alert_details(alert_id: int, db: Session = Depends(get_db)):
     alert = db.query(FraudAlert).filter(FraudAlert.id == alert_id).first()
     if not alert:
-        print(f"DEBUG ERROR: Alert ID {alert_id} not found in DB")
         raise HTTPException(status_code=404, detail="Alert not found")
     return alert
 
@@ -176,6 +150,13 @@ async def mobile_transaction(transaction: dict, db: Session = Depends(get_db)):
         f_type = flags[0] if flags else "MULTIPLE_INDICATORS"
         forensics = generate_forensics(f_type, recipient, location)
         
+        # KEY FIX: The frontend expects 'explanations' and 'signals'
+        combined_signals = {
+            "explanations": forensics.get("explanations", []),
+            "signals": forensics.get("signals", {}),
+            "reasons": flags
+        }
+        
         new_alert = FraudAlert(
             transaction_id=f"TXN-{random.randint(10000, 99999)}",
             user_name=user_name,
@@ -187,7 +168,7 @@ async def mobile_transaction(transaction: dict, db: Session = Depends(get_db)):
             recipient=recipient,
             location=location,
             timestamp=datetime.now(),
-            detection_signals=json.dumps({"reasons": flags, **forensics}),
+            detection_signals=json.dumps(combined_signals),
             acknowledged=False
         )
         db.add(new_alert)
