@@ -3,252 +3,145 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LogSense - Fraud Alerts</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>LogSense - All Alerts</title>
     <style>
-        .fraud-badge {
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 500;
-            display: inline-block;
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background: #0b0c10; display: flex; color: #c5c6c7; }
+        
+        .sidebar { 
+            width: 250px; 
+            background: #1f2833; 
+            height: 100vh; 
+            position: fixed; 
+            padding: 20px; 
+            border-right: 1px solid #45a29e;
         }
-        .fraud-critical {
-            background: #fee;
-            color: #c00;
+        
+        .sidebar h2 { color: #66fcf1; letter-spacing: 2px; margin-bottom: 30px; }
+        
+        .sidebar a { 
+            display: block; 
+            color: #8892b0; 
+            padding: 12px; 
+            text-decoration: none; 
+            margin-bottom: 10px; 
+            font-size: 14px;
+            transition: 0.3s;
         }
-        .fraud-high {
-            background: #fff3e0;
-            color: #f57c00;
+        
+        .sidebar a:hover, .sidebar a.active { 
+            background: rgba(102, 252, 241, 0.05); 
+            color: #66fcf1; 
+            border-left: 4px solid #66fcf1; 
         }
-        .fraud-medium {
-            background: #fff9c4;
-            color: #fbc02d;
+
+        .main { flex: 1; margin-left: 250px; padding: 40px; }
+        
+        .card { 
+            background: #1f2833; 
+            padding: 30px; 
+            border-radius: 4px; 
+            border: 1px solid #45a29e; 
         }
-        .fraud-low {
-            background: #e8f5e9;
-            color: #2e7d32;
+
+        h1 { font-size: 24px; color: #fff; margin-bottom: 20px; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        
+        th { 
+            text-align: left; 
+            padding: 15px; 
+            color: #66fcf1; 
+            font-size: 12px; 
+            text-transform: uppercase; 
+            border-bottom: 1px solid #45a29e; 
         }
+        
+        td { 
+            padding: 15px; 
+            border-bottom: 1px solid #0b0c10; 
+            font-size: 14px; 
+            color: #c5c6c7; 
+        }
+
+        .risk-CRITICAL { color: #ff4c4c; font-weight: bold; }
+        
+        .btn { 
+            padding: 6px 12px; 
+            border: 1px solid #66fcf1; 
+            color: #66fcf1; 
+            text-decoration: none; 
+            border-radius: 2px; 
+            font-size: 11px; 
+            transition: 0.3s;
+        }
+
+        .btn:hover { background: #66fcf1; color: #0b0c10; }
+
+        .empty-msg { text-align: center; padding: 40px; color: #8892b0; font-style: italic; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>LogSense</h1>
-            <p>Fraud Detection System - Real-time Alerts</p>
-        </div>
+    <div class="sidebar">
+        <h2>LOGSENSE</h2>
+        <a href="/dashboard">Surveillance Console</a>
+        <a href="/alerts" class="active">Incident Logs</a>
+        <a href="/" onclick="sessionStorage.clear()">Terminal Logout</a>
+    </div>
 
-        <div class="nav">
-            <a href="/dashboard">Dashboard</a>
-            <a href="/alerts" class="active">Alerts</a>
-            <a href="/analyze">Analyze</a>
-            <a href="/settings">Settings</a>
-        </div>
-
-        <div class="main-content">
-            <div class="stats-grid" id="statsGrid">
-                <div class="stat-card">
-                    <h3>Total Alerts</h3>
-                    <div class="number" id="totalAlerts">0</div>
-                    <div class="subtitle">All time</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Critical</h3>
-                    <div class="number" id="criticalCount">0</div>
-                    <div class="subtitle">Immediate action</div>
-                </div>
-                <div class="stat-card">
-                    <h3>High Risk</h3>
-                    <div class="number" id="highCount">0</div>
-                    <div class="subtitle">Needs review</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Unreviewed</h3>
-                    <div class="number" id="unreviewedCount">0</div>
-                    <div class="subtitle">Pending</div>
-                </div>
-            </div>
-
-            <div class="filter-section" id="filterSection">
-                <button class="filter-btn active" data-filter="all">All</button>
-                <button class="filter-btn" data-filter="SIM_SWAP">SIM Swap</button>
-                <button class="filter-btn" data-filter="IDENTITY_THEFT">Identity Theft</button>
-                <button class="filter-btn" data-filter="DEVICE_CLONING">Device Clone</button>
-                <button class="filter-btn" data-filter="MOBILE_MONEY_FRAUD">Mobile Fraud</button>
-                <button class="filter-btn" data-filter="AGENT_COLLUSION">Agent Collusion</button>
-                <button class="filter-btn" data-filter="SOCIAL_ENGINEERING">Social Engineering</button>
-                <button class="filter-btn" data-filter="REPAYMENT_FRAUD">Repayment Fraud</button>
-                <button class="filter-btn" data-filter="SYNTHETIC_IDENTITY">Synthetic Identity</button>
-            </div>
-
-            <div class="search-bar">
-                <input type="text" id="searchInput" placeholder="Search by user ID, transaction ID, or fraud type...">
-                <button onclick="searchAlerts()">Search</button>
-            </div>
-
-            <div class="table-container">
-                <table id="alertsTable">
-                    <thead>
-                        <tr>
-                            <th>Alert ID</th>
-                            <th>Transaction</th>
-                            <th>User ID</th>
-                            <th>Fraud Type</th>
-                            <th>Risk Score</th>
-                            <th>Risk Level</th>
-                            <th>Timestamp</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="alertsBody">
-                        <tr>
-                            <td colspan="8" class="loading">Loading alerts...</td>
-                        </tr>
+    <div class="main">
+        <div class="card">
+            <h1>Fraud Incident Archive</h1>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>User</th>
+                        <th>Type</th>
+                        <th>Amount</th>
+                        <th>Risk</th>
+                        <th>Forensics</th>
+                    </tr>
+                </thead>
+                <tbody id="alertsList">
                     </tbody>
-                </table>
-            </div>
-
-            <div class="footer">
-                <div class="total" id="footerTotal">Total: 0 alerts • 0 unreviewed</div>
-                <div class="email-info">Alerts sent to: rebeccabosibori589@gmail.com</div>
-            </div>
+            </table>
+            <div id="noData" class="empty-msg" style="display:none;">No security incidents logged.</div>
         </div>
     </div>
 
     <script>
-        let allAlerts = [];
-        let currentFilter = 'all';
-        let searchTerm = '';
-
-        const fraudTypeColors = {
-            'SIM_SWAP': 'fraud-critical',
-            'IDENTITY_THEFT': 'fraud-critical',
-            'DEVICE_CLONING': 'fraud-critical',
-            'MOBILE_MONEY_FRAUD': 'fraud-high',
-            'AGENT_COLLUSION': 'fraud-high',
-            'SOCIAL_ENGINEERING': 'fraud-medium',
-            'REPAYMENT_FRAUD': 'fraud-medium',
-            'SYNTHETIC_IDENTITY': 'fraud-critical',
-            'WRONG_PIN_ATTEMPT': 'fraud-high',
-            'BLOCKED_TRANSACTION': 'fraud-critical'
-        };
-
-        async function fetchAlerts() {
+        async function loadAlerts() {
             try {
-                const response = await fetch('/api/v2/alerts/recent?limit=50');
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const response = await fetch('/api/v2/alerts/recent');
+                const alerts = await response.json();
+                const list = document.getElementById('alertsList');
+                const noData = document.getElementById('noData');
                 
-                const data = await response.json();
-                allAlerts = Array.isArray(data) ? data : [];
-                updateDisplay();
-            } catch (error) {
-                console.error('Error fetching alerts:', error);
-                document.getElementById('alertsBody').innerHTML = 
-                    '<tr><td colspan="8" class="error">Failed to load alerts</td></tr>';
-            }
-        }
-
-        function updateDisplay() {
-            let filteredAlerts = allAlerts;
-            
-            if (currentFilter !== 'all') {
-                filteredAlerts = filteredAlerts.filter(a => a.fraud_type === currentFilter);
-            }
-            
-            if (searchTerm) {
-                const term = searchTerm.toLowerCase();
-                filteredAlerts = filteredAlerts.filter(a => 
-                    (a.user_id && a.user_id.toLowerCase().includes(term)) ||
-                    (a.transaction_id && a.transaction_id.toLowerCase().includes(term)) ||
-                    (a.fraud_name && a.fraud_name.toLowerCase().includes(term))
-                );
-            }
-
-            updateStats(filteredAlerts);
-            renderAlerts(filteredAlerts);
-            
-            const unreviewed = filteredAlerts.filter(a => !a.acknowledged).length;
-            document.getElementById('footerTotal').textContent = 
-                `Total: ${filteredAlerts.length} alerts • ${unreviewed} unreviewed`;
-        }
-
-        function updateStats(alerts) {
-            const total = alerts.length;
-            const critical = alerts.filter(a => a.risk_level === 'CRITICAL').length;
-            const high = alerts.filter(a => a.risk_level === 'HIGH').length;
-            const unreviewed = alerts.filter(a => !a.acknowledged).length;
-            
-            document.getElementById('totalAlerts').textContent = total;
-            document.getElementById('criticalCount').textContent = critical;
-            document.getElementById('highCount').textContent = high;
-            document.getElementById('unreviewedCount').textContent = unreviewed;
-        }
-
-        function renderAlerts(alerts) {
-            const tbody = document.getElementById('alertsBody');
-            
-            if (alerts.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="loading">No alerts found</td></tr>';
-                return;
-            }
-
-            let html = '';
-            alerts.forEach(alert => {
-                const fraudType = alert.fraud_name || alert.fraud_type.replace(/_/g, ' ');
-                const timestamp = new Date(alert.timestamp).toLocaleString();
-                const status = alert.acknowledged ? 
-                    '<span class="status-reviewed">Reviewed</span>' : 
-                    '<span class="status-new">New</span>';
-                const riskPercent = Math.round(alert.risk_score * 100);
-                const fraudClass = fraudTypeColors[alert.fraud_type] || 'fraud-medium';
-                
-                html += `
-                    <tr onclick="viewAlert(${alert.alert_id})" style="cursor: pointer;">
-                        <td>#${alert.alert_id}</td>
-                        <td>${alert.transaction_id}</td>
-                        <td>${alert.user_id}</td>
-                        <td><span class="fraud-badge ${fraudClass}">${fraudType}</span></td>
-                        <td>${riskPercent}%</td>
-                        <td><span class="risk-badge risk-${alert.risk_level.toLowerCase()}">${alert.risk_level}</span></td>
-                        <td>${timestamp}</td>
-                        <td>${status}</td>
-                    </tr>
-                `;
-            });
-            
-            tbody.innerHTML = html;
-        }
-
-        function viewAlert(alertId) {
-            window.location.href = `/analyze?id=${alertId}`;
-        }
-
-        function filterAlerts(type) {
-            currentFilter = type;
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.dataset.filter === type) {
-                    btn.classList.add('active');
+                if (alerts.length === 0) {
+                    noData.style.display = 'block';
+                    list.innerHTML = '';
+                    return;
                 }
-            });
-            updateDisplay();
+
+                noData.style.display = 'none';
+                list.innerHTML = alerts.map(a => `
+                    <tr>
+                        <td style="font-family: monospace;">${new Date(a.timestamp).toLocaleTimeString()}</td>
+                        <td>${a.user_name}</td>
+                        <td>${a.fraud_name}</td>
+                        <td style="font-weight: 600;">KES ${a.amount.toLocaleString()}</td>
+                        <td class="risk-${a.risk_level}">${a.risk_level}</td>
+                        <td><a href="/analyze?id=${a.id}" class="btn">ANALYZE CASE</a></td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error("Link Lost with API:", err);
+            }
         }
 
-        function searchAlerts() {
-            searchTerm = document.getElementById('searchInput').value;
-            updateDisplay();
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    filterAlerts(this.dataset.filter);
-                });
-            });
-            
-            fetchAlerts();
-            setInterval(fetchAlerts, 30000);
-        });
+        setInterval(loadAlerts, 3000);
+        window.onload = loadAlerts;
     </script>
 </body>
 </html>
