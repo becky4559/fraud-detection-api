@@ -1,35 +1,24 @@
-from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
-from sqlalchemy.orm import Session
-from typing import List, Optional
-from datetime import datetime
+import os
 import json
 import random
-import os
-import traceback
+import pandas as pd
+from datetime import datetime, timedelta
+from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
+from sqlalchemy import desc
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
-# Local imports
-from database import SessionLocal, engine, get_db, Transaction, FraudType, DeviceFingerprint, UserLocation, UserBehavior, FraudAlert, EmailConfig
-from models import (
-    TransactionResponse, FraudTypeResponse, StatsResponse,
-    SimSwapRequest, SimSwapResponse,
-    IdentityTheftRequest, IdentityTheftResponse,
-    DeviceCloningRequest, DeviceCloningResponse,
-    MobileFraudRequest, MobileFraudResponse,
-    EmailConfigResponse, EmailTestResponse, FraudAlertResponse, UserBehaviorProfile
-)
-from fraud_detection_rules import (
-    detect_sim_swap, detect_identity_theft, detect_device_cloning,
-    detect_mobile_money_fraud, get_risk_level, should_alert, FRAUD_THRESHOLDS
-)
-from mock_services import MockTelecomAPI, MockBiometricAPI, MockDeviceAPI, MockFraudDatabase
-from email_service import email_service
+# Ensure database.py and models are present in your directory
+from database import SessionLocal, engine, get_db, FraudAlert, Base
 
-# Initialize FastAPI
-app = FastAPI(title="Fraud Detection API", version="2.0.0")
+app = FastAPI(title="LogSense - Forensic Fraud Engine")
 
-# Configure CORS
+# --- CONFIGURATION ---
+TRANSACTION_LOGS = "logs/transaction_forensics.json"
+os.makedirs("logs", exist_ok=True)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -38,434 +27,202 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ============================================
-# CREATE DATABASE TABLES ON STARTUP
-# ============================================
-from sqlalchemy import MetaData, Table, Column, Integer, String, Float, Boolean, DateTime
+Base.metadata.create_all(bind=engine)
 
-metadata = MetaData()
-fraud_alerts = Table(
-    'fraud_alerts', metadata,
-    Column('id', Integer, primary_key=True),
-    Column('transaction_id', String),
-    Column('user_id', String),
-    Column('fraud_type', String),
-    Column('risk_score', Float),
-    Column('reconstruction_error', Float),
-    Column('detection_signals', String),
-    Column('email_sent', Boolean),
-    Column('email_recipient', String),
-    Column('timestamp', DateTime),
-    Column('acknowledged', Boolean)
-)
-metadata.create_all(engine)
-print("‚úÖ fraud_alerts table created/verified")
+# --- FORENSIC DATA GENERATORS ---
 
-# ============================================
-# STATIC FILE ROUTES
-# ============================================
-
-@app.get("/")
-async def read_root():
-    return FileResponse('static/index.html')
-
-@app.get("/alerts.html")
-async def read_alerts():
-    return FileResponse('static/alerts.html')
-
-@app.get("/dashboard.html")
-async def read_dashboard():
-    return FileResponse('static/dashboard.html')
-
-@app.get("/analyze.html")
-async def read_analyze():
-    return FileResponse('static/analyze.html')
-
-@app.get("/settings.html")
-async def read_settings():
-    return FileResponse('static/settings.html')
-
-@app.get("/login.html")
-async def read_login():
-    return FileResponse('static/login.html')
-
-# ============================================
-# EXISTING ENDPOINTS (PRESERVED)
-# ============================================
-
-@app.get("/health")
-def health():
-    return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
-
-@app.get("/fraud-types")
-def fraud_types():
-    """Return all 8 fraud types with enhanced descriptions"""
-    return {
-        "total": 8,
-        "types": [
-            {
-                "name": "sim_swap",
-                "description": "SIM card swapped and used from new device/location",
-                "severity": "CRITICAL",
-                "threshold": FRAUD_THRESHOLDS.get("sim_swap", 0.67),
-                "enabled": True
-            },
-            {
-                "name": "agent_collusion",
-                "description": "Fraudulent collaboration between agents and customers",
-                "severity": "HIGH",
-                "threshold": FRAUD_THRESHOLDS.get("agent_collusion", 0.73),
-                "enabled": True
-            },
-            {
-                "name": "social_engineering",
-                "description": "Customer manipulated into authorizing fraudulent transactions",
-                "severity": "HIGH",
-                "threshold": FRAUD_THRESHOLDS.get("social_engineering", 0.69),
-                "enabled": True
-            },
-            {
-                "name": "identity_theft",
-                "description": "Stolen personal information used for transactions",
-                "severity": "CRITICAL",
-                "threshold": FRAUD_THRESHOLDS.get("identity_theft", 0.71),
-                "enabled": True
-            },
-            {
-                "name": "mobile_money_fraud",
-                "description": "Rapid transactions to multiple recipients from compromised device",
-                "severity": "HIGH",
-                "threshold": FRAUD_THRESHOLDS.get("mobile_money_fraud", 0.65),
-                "enabled": True
-            },
-            {
-                "name": "repayment_fraud",
-                "description": "False repayment claims or circular transactions",
-                "severity": "MEDIUM",
-                "threshold": FRAUD_THRESHOLDS.get("repayment_fraud", 0.62),
-                "enabled": True
-            },
-            {
-                "name": "synthetic_identity",
-                "description": "Fake identity created from real and fabricated information",
-                "severity": "HIGH",
-                "threshold": FRAUD_THRESHOLDS.get("synthetic_identity", 0.78),
-                "enabled": True
-            },
-            {
-                "name": "device_cloning",
-                "description": "Same device ID active in multiple locations simultaneously",
-                "severity": "CRITICAL",
-                "threshold": FRAUD_THRESHOLDS.get("device_cloning", 0.82),
-                "enabled": True
-            }
-        ]
-    }
-
-@app.get("/stats", response_model=StatsResponse)
-def get_stats():
-    """Get dashboard statistics with monthly data (350+ transactions)"""
-    return {
-        "total_transactions": 356,
-        "high_risk_transactions": 22,
-        "fraud_types_configured": 8,
-        "users_affected": 18,
-        "fraud_amount": 1248500,
-        "timestamp": datetime.utcnow().isoformat()
-    }
-
-# ============================================
-# MOBILE APP ENDPOINT
-# ============================================
-
-@app.post("/api/mobile/transaction")
-async def mobile_transaction(
-    transaction: dict,
-    background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db)
-):
-    # Extract data from mobile app
-    user_id = transaction.get("userId", transaction.get("user_id", "U78901"))
-    amount = transaction.get("amount", 0)
-    transaction_type = transaction.get("transactionType", transaction.get("type", "transfer"))
-    recipient = transaction.get("recipient", "Unknown")
-    device_id = transaction.get("deviceId", transaction.get("device_id", f"DEV-{random.randint(1000, 9999)}"))
-    location = transaction.get("location", "Nairobi")
-    is_end_month = transaction.get("isEndMonth", False)
-    
-    transaction_id = transaction.get("transactionId", f"TXN-{random.randint(10000, 99999)}")
-    
-    # Check for WRONG_PIN events
-    if transaction.get("event") == "WRONG_PIN":
-        alert = FraudAlert(
-            transaction_id=transaction_id,
-            user_id=user_id,
-            fraud_type="wrong_pin_attempt",
-            risk_score=0.85,
-            reconstruction_error=0.82,
-            detection_signals=json.dumps({
-                "event": "WRONG_PIN",
-                "attempt_number": transaction.get("attempt", 1),
-                "device_id": device_id[-4:],
-                "location": location,
-                "amount": amount
-            }),
-            email_sent=False
-        )
-        db.add(alert)
-        db.commit()
-        
-        return {
-            "status": "LOGGED",
-            "transactionId": transaction_id,
-            "riskScore": 0.85,
-            "riskLevel": "HIGH",
-            "message": f"Wrong PIN attempt {transaction.get('attempt', 1)} recorded"
-        }
-    
-    # Risk calculation
-    risk_score = 0.2
-    risk_level = "LOW"
-    status = "APPROVED"
-    
-    if amount > 45000:
-        risk_score = 0.85
-        risk_level = "HIGH"
-        status = "PIN_REQUIRED"
-    elif amount > 25000:
-        if is_end_month:
-            risk_score = 0.4
-            risk_level = "MEDIUM"
-            status = "APPROVED"
-        else:
-            risk_score = 0.75
-            risk_level = "HIGH"
-            status = "PIN_REQUIRED"
-    
-    signals = {
-        "amount": f"KES {amount:,.0f}",
-        "type": transaction_type,
-        "location": location,
-        "end_month": is_end_month,
-        "recipient": recipient,
-        "device_id": device_id[-8:],
-        "risk_score": risk_score
-    }
-    
-    reconstruction_error = round(risk_score * 0.85 + 0.12, 2)
-    
-    # Save to database
-    alert = FraudAlert(
-        transaction_id=transaction_id,
-        user_id=user_id,
-        fraud_type="suspicious_transaction" if risk_score >= 0.65 else "normal_transaction",
-        risk_score=risk_score,
-        reconstruction_error=reconstruction_error,
-        detection_signals=json.dumps(signals),
-        email_sent=False
-    )
-    db.add(alert)
-    db.commit()
-    
-    print(f"‚úÖ Alert saved for transaction {transaction_id} (risk: {risk_score})")
-    
-    return {
+def log_event(data, status, flags=[]):
+    """Saves the forensic payload for later research analysis."""
+    log_entry = {
+        **data,
+        "server_timestamp": datetime.now().isoformat(),
         "status": status,
-        "transactionId": transaction_id,
-        "riskScore": round(risk_score, 2),
-        "riskLevel": risk_level,
-        "message": f"Transaction {status.lower()}",
-        "requiresPin": status == "PIN_REQUIRED"
+        "detection_flags": flags
+    }
+    with open(TRANSACTION_LOGS, "a") as f:
+        f.write(json.dumps(log_entry) + "\n")
+
+def generate_forensics(fraud_type, recipient, location):
+    """Generates deep technical metadata for investigations"""
+    now = datetime.now()
+    if fraud_type == "SIM_SWAP" or "RECURRING" in fraud_type:
+        return {
+            "signals": {
+                "SIM_Serial_New": f"89254-{random.randint(1000,9999)}-001",
+                "Last_Swap_Time": (now - timedelta(minutes=42)).strftime("%H:%M EAT"),
+                "Provisioning_Point": f"Agent_{random.randint(100,999)} ({location})",
+                "Device_IMEI": f"356781-00-{random.randint(1000,9999)}-09"
+            },
+            "explanations": [
+                f"Critical: SIM replacement detected recently.",
+                f"Location Anomaly: Transaction initiated from {location}."
+            ]
+        }
+    return {
+        "signals": {"Auth_Attempts": 1, "Origin_IP": "192.168.1.45"}, 
+        "explanations": ["Manual alert triggered by security engine."]
     }
 
-# ============================================
-# OTHER ENDPOINTS (SIM SWAP, IDENTITY THEFT, ETC.)
-# ============================================
+# --- SEEDING LOGIC FOR DEMO ---
 
-@app.post("/api/v2/detect/sim-swap")
-async def detect_sim_swap_endpoint(request: dict):
-    return {"fraud_type": "sim_swap", "risk_score": 0.75, "risk_level": "HIGH"}
+def seed_demo_data():
+    db = SessionLocal()
+    try:
+        if db.query(FraudAlert).count() == 0:
+            print("Ì∫Ä Seeding LogSense Forensic Demo Data...")
+            
+            # Case 1: Mary Akinyi (Historical Blacklist Match)
+            f1 = generate_forensics("RECURRING_FRAUD_PATTERN", "Mary Akinyi", "Nairobi")
+            db.add(FraudAlert(
+                transaction_id="TXN-HIST-8821", 
+                user_name="John Kamau",
+                fraud_type="RECURRING_FRAUD_PATTERN", 
+                fraud_name="Blacklisted Recipient",
+                risk_score=0.99, 
+                risk_level="CRITICAL", 
+                amount=45000.0,
+                recipient="Mary Akinyi", 
+                location="Nairobi", 
+                timestamp=datetime.now() - timedelta(days=1),
+                detection_signals=json.dumps(f1), 
+                acknowledged=False
+            ))
+            
+            # Case 2: Alice Wambui (SIM Swap Anomaly)
+            f2 = generate_forensics("SIM_SWAP", "Agent 442", "Mombasa")
+            db.add(FraudAlert(
+                transaction_id="TXN-EQUITY-9902", 
+                user_name="Alice Wambui",
+                fraud_type="SIM_SWAP", 
+                fraud_name="SIM Swap Detected",
+                risk_score=0.94, 
+                risk_level="CRITICAL", 
+                amount=12500.0,
+                recipient="Agent 442", 
+                location="Mombasa", 
+                timestamp=datetime.now() - timedelta(hours=4),
+                detection_signals=json.dumps(f2), 
+                acknowledged=False
+            ))
+            db.commit()
+    finally:
+        db.close()
 
-@app.post("/api/v2/detect/identity-theft")
-async def detect_identity_theft_endpoint(request: dict):
-    return {"fraud_type": "identity_theft", "risk_score": 0.82, "risk_level": "CRITICAL"}
+seed_demo_data()
 
-@app.post("/api/v2/detect/device-cloning")
-async def detect_device_cloning_endpoint(request: dict):
-    return {"fraud_type": "device_cloning", "risk_score": 0.68, "risk_level": "HIGH"}
+# --- FRAUD EVALUATION ENGINE ---
 
-@app.post("/api/v2/detect/mobile-fraud")
-async def detect_mobile_fraud_endpoint(request: dict):
-    return {"fraud_type": "mobile_money_fraud", "risk_score": 0.71, "risk_level": "HIGH"}
+def evaluate_fraud(user_name, amount, recipient, location, hour, pin_attempt):
+    profiles = {
+        "John Kamau": {"limit": 20000, "home": "Nairobi", "hours": range(7, 23)},
+        "Alice Wangari": {"limit": 15000, "home": "Mombasa", "hours": range(7, 23)},
+    }
+    profile = profiles.get(user_name, {"limit": 50000, "home": "Nairobi", "hours": range(7, 23)})
+    reasons = []
+    risk_score = 0.1 
+    
+    if "mary" in recipient.lower() or "akinyi" in recipient.lower():
+        reasons.append("RECURRING_FRAUD_PATTERN")
+        risk_score = 1.0
+    if amount > profile["limit"]:
+        reasons.append("HIGH_VALUE_ANOMALY")
+        risk_score += 0.4
+    if hour not in profile["hours"] or hour < 5 or hour > 23:
+        reasons.append("TEMPORAL_OUTLIER")
+        risk_score += 0.5
+    if location != profile["home"]:
+        reasons.append("LOCATION_ANOMALY")
+        risk_score += 0.3
+    if pin_attempt != "4250":
+        reasons.append("SECURITY_VIOLATION")
+        risk_score = 1.0
 
-# ============================================
-# ALERTS ENDPOINTS - FIXED WITH ERROR HANDLING
-# ============================================
+    status = "BLOCKED" if risk_score >= 0.8 else "SUCCESS"
+    return status, reasons, min(risk_score, 1.0)
+
+# --- API ROUTES ---
 
 @app.get("/api/v2/alerts/recent")
-def get_recent_alerts(limit: int = 10):
-    try:
-        from sqlalchemy import desc
-        from database import FraudAlert
-        
-        db = SessionLocal()
-        alerts = db.query(FraudAlert).order_by(desc(FraudAlert.timestamp)).limit(limit).all()
-        db.close()
-        
-        result = []
-        for alert in alerts:
-            # Handle potential None values safely
-            signals = {}
-            if alert.detection_signals:
-                try:
-                    signals = json.loads(alert.detection_signals)
-                except:
-                    signals = {"raw": alert.detection_signals}
-            
-            timestamp = None
-            if alert.timestamp:
-                try:
-                    timestamp = alert.timestamp.isoformat()
-                except:
-                    timestamp = str(alert.timestamp)
-            
-            # Calculate risk level
-            risk_score = alert.risk_score or 0
-            if risk_score > 0.65:
-                risk_level = "CRITICAL" if risk_score > 0.8 else "HIGH"
-            elif risk_score > 0.4:
-                risk_level = "MEDIUM"
-            else:
-                risk_level = "LOW"
-            
-            result.append({
-                "alert_id": alert.id,
-                "transaction_id": alert.transaction_id or "N/A",
-                "user_id": alert.user_id or "N/A",
-                "fraud_type": alert.fraud_type or "unknown",
-                "risk_score": risk_score,
-                "risk_level": risk_level,
-                "detection_signals": signals,
-                "email_sent": alert.email_sent or False,
-                "timestamp": timestamp,
-                "acknowledged": alert.acknowledged or False
-            })
-        
-        return result
-    except Exception as e:
-        print(f"‚ùå Error in get_recent_alerts: {str(e)}")
-        traceback.print_exc()
-        # Return empty list with error info
-        return {"error": str(e), "alerts": []}
+def get_recent_alerts(db: Session = Depends(get_db)):
+    return db.query(FraudAlert).order_by(desc(FraudAlert.timestamp)).limit(50).all()
 
 @app.get("/api/v2/alerts/{alert_id}")
-def get_alert_details(alert_id: int):
-    try:
-        from database import FraudAlert
+def get_alert_details(alert_id: int, db: Session = Depends(get_db)):
+    alert = db.query(FraudAlert).filter(FraudAlert.id == alert_id).first()
+    if not alert:
+        raise HTTPException(status_code=404, detail="Case file not found")
+    return alert
 
-        db = SessionLocal()
-        alert = db.query(FraudAlert).filter(FraudAlert.id == alert_id).first()
-        db.close()
+@app.patch("/api/v2/alerts/{alert_id}/review")
+async def review_alert(alert_id: int, db: Session = Depends(get_db)):
+    alert = db.query(FraudAlert).filter(FraudAlert.id == alert_id).first()
+    if not alert:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    alert.acknowledged = True
+    db.commit()
+    return {"status": "SUCCESS"}
+
+@app.post("/api/mobile/profiles")
+async def receive_profile_sync(data: dict):
+    print(f"Ì≥° Profile Sync for {data.get('userName')} successful")
+    return {"status": "SUCCESS"}
+
+@app.post("/api/mobile/transaction")
+async def mobile_transaction(transaction: dict, db: Session = Depends(get_db)):
+    user_name = transaction.get("userName", "Demo User")
+    amount = float(transaction.get("amount", 0))
+    recipient = transaction.get("recipient", "")
+    location = transaction.get("location", "Unknown")
+    hour = int(transaction.get("hr", 12)) 
+    pin = transaction.get("pin_attempt", "")
+
+    status, flags, score = evaluate_fraud(user_name, amount, recipient, location, hour, pin)
+
+    if status == "BLOCKED":
+        log_event(transaction, "BLOCKED", flags)
+        f_type = flags[0] if flags else "MULTIPLE_INDICATORS"
+        forensics = generate_forensics(f_type, recipient, location)
         
-        if not alert:
-            raise HTTPException(status_code=404, detail="Alert not found")
-        
-        # Handle potential None values safely
-        signals = {}
-        if alert.detection_signals:
-            try:
-                signals = json.loads(alert.detection_signals)
-            except:
-                signals = {"raw": alert.detection_signals}
-        
-        timestamp = None
-        if alert.timestamp:
-            try:
-                timestamp = alert.timestamp.isoformat()
-            except:
-                timestamp = str(alert.timestamp)
-        
-        # Calculate risk level
-        risk_score = alert.risk_score or 0
-        if risk_score > 0.65:
-            risk_level = "CRITICAL" if risk_score > 0.8 else "HIGH"
-        elif risk_score > 0.4:
-            risk_level = "MEDIUM"
-        else:
-            risk_level = "LOW"
+        new_alert = FraudAlert(
+            transaction_id=f"TXN-{random.randint(10000, 99999)}",
+            user_name=user_name,
+            fraud_type=f_type,
+            fraud_name=f_type.replace("_", " ").title(),
+            risk_score=score,
+            risk_level="CRITICAL",
+            amount=amount,
+            recipient=recipient,
+            location=location,
+            timestamp=datetime.now(),
+            detection_signals=json.dumps({"reasons": flags, **forensics}),
+            acknowledged=False
+        )
+        db.add(new_alert)
+        db.commit()
+        return {"status": "BLOCKED", "message": "Anomaly Detected", "flags": flags}
 
-        return {
-            "alert_id": alert.id,
-            "transaction_id": alert.transaction_id or "N/A",
-            "user_id": alert.user_id or "N/A",
-            "fraud_type": alert.fraud_type or "unknown",
-            "risk_score": risk_score,
-            "risk_level": risk_level,
-            "detection_signals": signals,
-            "email_sent": alert.email_sent or False,
-            "timestamp": timestamp,
-            "acknowledged": alert.acknowledged or False
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"‚ùå Error in get_alert_details: {str(e)}")
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+    log_event(transaction, "SUCCESS")
+    return {"status": "SUCCESS", "message": "Authorized"}
 
-@app.post("/api/v2/alerts/{alert_id}/acknowledge")
-def acknowledge_alert(alert_id: int):
-    try:
-        from database import FraudAlert
+# --- PAGE ROUTES ---
 
-        db = SessionLocal()
-        alert = db.query(FraudAlert).filter(FraudAlert.id == alert_id).first()
-        if alert:
-            alert.acknowledged = True
-            db.commit()
-        db.close()
+@app.get("/")
+async def serve_login():
+    return FileResponse("login.html")
 
-        return {"success": True, "alert_id": alert_id, "acknowledged": True}
-    except Exception as e:
-        print(f"‚ùå Error in acknowledge_alert: {str(e)}")
-        traceback.print_exc()
-        return {"success": False, "error": str(e)}
+@app.get("/dashboard")
+async def serve_dashboard():
+    return FileResponse("dashboard.html")
 
-@app.post("/api/analyze")
-async def analyze_transaction(transaction: dict):
-    return {"status": "analyzed", "risk_score": 0.45, "risk_level": "MEDIUM"}
+@app.get("/alerts")
+async def serve_alerts():
+    return FileResponse("alerts.html")
 
-# ============================================
-# EMAIL ALERT ENDPOINTS
-# ============================================
-
-@app.get("/api/v2/alerts/email/config")
-def get_email_config():
-    return {
-        "recipient_email": email_service.recipient_email,
-        "alerts_enabled": email_service.alerts_enabled,
-        "last_updated": datetime.utcnow().isoformat()
-    }
-
-@app.post("/api/v2/alerts/email/update")
-def update_email_recipient(data: dict):
-    new_email = data.get("new_email")
-    if new_email:
-        email_service.update_recipient(new_email)
-        return {"success": True, "recipient": new_email}
-    return {"success": False, "error": "No email provided"}
-
-@app.post("/api/v2/alerts/email/toggle")
-def toggle_email_alerts(data: dict):
-    enabled = data.get("enabled", True)
-    email_service.alerts_enabled = enabled
-    return {"success": True, "alerts_enabled": enabled}
-
-@app.post("/api/v2/alerts/email/test")
-def test_email_alert():
-    result = email_service.test_alert()
-    return result
+@app.get("/analyze")
+async def serve_analyze():
+    return FileResponse("analyze.html")
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=10000)
+    port = int(os.environ.get("PORT", 10000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
