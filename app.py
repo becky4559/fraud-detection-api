@@ -55,17 +55,19 @@ def generate_signals(threat, data):
         "signals": {
             "IMEI_Status": "MATCHED" if data.get("imei_match", True) else "CLONED_DETECTED",
             "SIM_Status": "ORIGINAL" if data.get("sim_match", True) else "SWAP_SUSPECTED",
-            "Trace_ID": f"LOG-{random.randint(1000,9999)}"
+            "Trace_ID": f"LOG-{random.randint(1000,9999)}",
+            "Network_Node": data.get("location", "Nairobi Central")
         }
     }
 
 # --- ROUTES ---
+
 @app.post("/api/mobile/transaction")
 async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
     try:
         data = await request.json()
         threat = evaluate_logsense_forensics(data)
-        
+
         if threat:
             signals = generate_signals(threat, data)
             new_alert = FraudAlert(
@@ -85,20 +87,31 @@ async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
             db.add(new_alert)
             db.commit()
             return {"status": "BLOCKED", "reason": threat["type"]}
-        
+
         return {"status": "SUCCESS", "message": "Authorized"}
     except Exception as e:
         return JSONResponse(status_code=400, content={"error": str(e)})
 
 @app.get("/")
 async def serve_login(): return FileResponse("login.html")
+
 @app.get("/dashboard")
 async def serve_dashboard(): return FileResponse("dashboard.html")
+
 @app.get("/analyze")
 async def serve_analyze(): return FileResponse("analyze.html")
+
 @app.get("/api/v2/alerts/recent")
 def get_recent_alerts(db: Session = Depends(get_db)):
     return db.query(FraudAlert).order_by(desc(FraudAlert.timestamp)).limit(50).all()
+
+@app.get("/api/v2/alerts/{alert_id}")
+def get_alert_details(alert_id: int, db: Session = Depends(get_db)):
+    # Corrected SQLAlchemy lookup
+    alert = db.query(FraudAlert).filter(FraudAlert.id == alert_id).first()
+    if not alert:
+        raise HTTPException(status_code=404, detail="Alert not found in Database")
+    return alert
 
 if __name__ == "__main__":
     import uvicorn
