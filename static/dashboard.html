@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | LogSense</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Times+New+Roman&display=swap');
+        * { font-family: 'Times New Roman', Times, serif !important; }
+        :root {
+            --primary: #6366f1; --dark-bg: #0f172a; --sidebar-bg: #1e293b;
+            --card-bg: #1e293b; --card-border: #334155; --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8; --danger: #ef4444; --warning: #f59e0b;
+            --success: #10b981; --info: #3b82f6; --purple: #a855f7; --pink: #ec4899;
+        }
+        body {<div style="position: fixed; top: 10px; right: 10px; background: white; padding: 8px 15px; border-radius: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000;">
+    <span id="currentUserDisplay">Loading...</span>
+    <button onclick="logout()" style="margin-left: 10px; padding: 2px 8px; background: #dc2626; color: white; border: none; border-radius: 4px; cursor: pointer;">Logout</button>
+</div>
+            font-family: 'Times New Roman', Times, serif; background: var(--dark-bg);
+            color: var(--text-primary); display: flex; min-height: 100vh; margin: 0; padding: 0;
+        }
+        .sidebar {
+            width: 250px; background: var(--sidebar-bg); border-right: 1px solid var(--card-border);
+            padding: 30px 0; position: fixed; height: 100vh; overflow-y: auto;
+        }
+        .logo { padding: 0 25px 30px; border-bottom: 1px solid var(--card-border); margin-bottom: 30px; }
+        .logo h2 { font-size: 1.8rem; background: linear-gradient(135deg, var(--primary) 0%, #8b5cf6 100%); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 5px; }
+        .logo p { color: var(--text-secondary); font-size: 0.9rem; margin: 0; }
+        .nav-item { margin-bottom: 5px; }
+        .nav-link {
+            display: flex; align-items: center; padding: 12px 25px; color: var(--text-secondary);
+            text-decoration: none; transition: all 0.3s; border-left: 4px solid transparent;
+        }
+        .nav-link:hover, .nav-link.active {
+            background: rgba(99, 102, 241, 0.1); color: var(--text-primary);
+            border-left-color: var(--primary);
+        }
+        .nav-icon { width: 24px; margin-right: 12px; font-size: 1.1rem; }
+        .nav-badge {
+            margin-left: auto; background: var(--danger); color: white;
+            font-size: 0.7rem; padding: 2px 8px; border-radius: 10px;
+        }
+        .main-content { flex: 1; margin-left: 250px; padding: 0; }
+        .topbar {
+            background: var(--card-bg); border-bottom: 1px solid var(--card-border);
+            padding: 20px 30px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .page-title h1 { font-size: 1.8rem; margin: 0; font-weight: bold; }
+        .topbar-actions { display: flex; align-items: center; gap: 20px; }
+        .search-box { position: relative; }
+        .search-input {
+            padding: 8px 15px 8px 35px; background: rgba(30, 41, 59, 0.8);
+            border: 1px solid var(--card-border); border-radius: 6px;
+            color: var(--text-primary); width: 220px; font-size: 0.9rem;
+        }
+        .search-icon {
+            position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+            color: var(--text-secondary); font-size: 0.9rem;
+        }
+        .notification-btn {
+            background: none; border: none; color: var(--text-secondary);
+            font-size: 1.1rem; cursor: pointer; position: relative;
+        }
+        .notification-badge {
+            position: absolute; top: -5px; right: -5px; background: var(--danger);
+            color: white; font-size: 0.65rem; width: 16px; height: 16px;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        }
+        .content-wrapper { padding: 20px; }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;
+        }
+        .stat-card {
+            background: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 8px; padding: 15px;
+        }
+        .stat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .stat-icon {
+            width: 40px; height: 40px; border-radius: 8px; display: flex;
+            align-items: center; justify-content: center; font-size: 1.2rem;
+        }
+        .stat-icon.users { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+        .stat-icon.transactions { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+        .stat-icon.fraud { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+        .stat-icon.saved { background: rgba(168, 85, 247, 0.2); color: var(--purple); }
+        .stat-value { font-size: 1.6rem; font-weight: 700; margin-bottom: 2px; }
+        .stat-label { color: var(--text-secondary); font-size: 0.8rem; }
+
+        /* Charts Row */
+        .charts-row {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;
+        }
+        .chart-card {
+            background: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 8px; padding: 15px;
+        }
+        .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .chart-header h3 { margin: 0; font-size: 1rem; }
+        canvas { height: 180px !important; width: 100% !important; }
+
+        /* Bottom Grid */
+        .bottom-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 15px;
+        }
+        .fraud-card, .risk-card {
+            background: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 8px; padding: 15px;
+        }
+        .fraud-list { margin-top: 10px; }
+        .fraud-item {
+            display: flex; align-items: center; padding: 6px 0;
+            border-bottom: 1px solid var(--card-border); font-size: 0.9rem;
+        }
+        .fraud-color { width: 10px; height: 10px; border-radius: 3px; margin-right: 8px; }
+        .fraud-name { flex: 1; }
+        .fraud-count { margin-right: 10px; color: var(--text-secondary); }
+        .fraud-percent { font-weight: 600; width: 40px; text-align: right; }
+
+        /* Tables */
+        .table-card {
+            background: var(--card-bg); border: 1px solid var(--card-border);
+            border-radius: 8px; padding: 15px; margin-top: 15px;
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th { text-align: left; padding: 8px; color: var(--text-secondary); border-bottom: 1px solid var(--card-border); }
+        td { padding: 8px; border-bottom: 1px solid var(--card-border); }
+        .risk-badge {
+            display: inline-block; padding: 3px 8px; border-radius: 12px;
+            font-size: 0.7rem; font-weight: 600;
+        }
+        .risk-critical { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+        .risk-high { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+
+        /* Recent Alerts */
+        .alert-list { margin-top: 10px; }
+        .alert-item {
+            display: flex; align-items: center; padding: 8px 0;
+            border-bottom: 1px solid var(--card-border); font-size: 0.9rem;
+            cursor: pointer;
+        }
+        .alert-item:hover { background: rgba(99, 102, 241, 0.1); }
+        .alert-icon {
+            width: 30px; height: 30px; border-radius: 6px; display: flex;
+            align-items: center; justify-content: center; margin-right: 10px; font-size: 0.9rem;
+        }
+
+        @media (max-width: 1024px) {
+            .sidebar { width: 70px; }
+            .main-content { margin-left: 70px; }
+            .nav-text, .logo h2, .logo p { display: none; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .charts-row { grid-template-columns: 1fr; }
+            .bottom-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo"><h2>LogSense</h2><p>Fraud Detection</p></div>
+        <nav class="sidebar-menu">
+            <div class="nav-item"><a href="dashboard.html" class="nav-link active"><i class="fas fa-tachometer-alt nav-icon"></i><span class="nav-text">Dashboard</span></a></div>
+            <div class="nav-item"><a href="alerts.html" class="nav-link"><i class="fas fa-bell nav-icon"></i><span class="nav-text">Alerts</span><span class="nav-badge" id="alertBadge">3</span></a></div>
+            <div class="nav-item"><a href="analyze.html" class="nav-link"><i class="fas fa-search nav-icon"></i><span class="nav-text">Analyze</span></a></div>
+            <div class="nav-item"><a href="settings.html" class="nav-link"><i class="fas fa-cog nav-icon"></i><span class="nav-text">Settings</span></a></div>
+            <div class="nav-item" style="margin-top: 50px;"><a href="login.html" class="nav-link"><i class="fas fa-sign-out-alt nav-icon"></i><span class="nav-text">Logout</span></a></div>
+        </nav>
+    </div>
+    
+    <div class="main-content">
+        <div class="topbar">
+            <div class="page-title"><h1>Dashboard</h1></div>
+            <div class="topbar-actions">
+                <div class="search-box"><i class="fas fa-search search-icon"></i><input type="text" class="search-input" placeholder="Search..."></div>
+                <button class="notification-btn" onclick="window.location.href='alerts.html'"><i class="fas fa-bell"></i><span class="notification-badge" id="notificationBadge">3</span></button>
+            </div>
+        </div>
+        
+        <div class="content-wrapper">
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header"><div class="stat-icon users"><i class="fas fa-users"></i></div></div>
+                    <div class="stat-value">52</div>
+                    <div class="stat-label">Total Users</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header"><div class="stat-icon transactions"><i class="fas fa-exchange-alt"></i></div></div>
+                    <div class="stat-value">356</div>
+                    <div class="stat-label">Transactions</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header"><div class="stat-icon fraud"><i class="fas fa-exclamation-triangle"></i></div></div>
+                    <div class="stat-value">22</div>
+                    <div class="stat-label">Fraud Cases</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header"><div class="stat-icon saved"><i class="fas fa-shield-alt"></i></div></div>
+                    <div class="stat-value">KES 1.25M</div>
+                    <div class="stat-label">Amount Saved</div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="charts-row">
+                <div class="chart-card">
+                    <div class="chart-header"><h3><i class="fas fa-chart-line" style="color: var(--primary);"></i> Fraud Trend</h3></div>
+                    <canvas id="fraudTrendChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-header"><h3><i class="fas fa-pie-chart" style="color: var(--primary);"></i> Fraud by Type</h3></div>
+                    <canvas id="fraudTypeChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Bottom Two Columns -->
+            <div class="bottom-grid">
+                <!-- Fraud Breakdown -->
+                <div class="fraud-card">
+                    <h3 style="margin-top:0; font-size:1rem;">Fraud Type Breakdown</h3>
+                    <div class="fraud-list" id="fraudBreakdown"></div>
+                </div>
+                <!-- Risk Distribution -->
+                <div class="risk-card">
+                    <h3 style="margin-top:0; font-size:1rem;">Risk Distribution</h3>
+                    <div class="fraud-list" id="riskBreakdown"></div>
+                </div>
+            </div>
+
+            <!-- High Risk Users Table -->
+            <div class="table-card">
+                <h3 style="margin-top:0; font-size:1rem;">High Risk Users</h3>
+                <table>
+                    <thead><tr><th>User</th><th>Score</th><th>Level</th><th>Type</th><th>Last Active</th></tr></thead>
+                    <tbody id="highRiskTable"></tbody>
+                </table>
+            </div>
+
+            <!-- Recent Alerts -->
+            <div class="table-card">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin-top:0; font-size:1rem;">Recent Alerts</h3>
+                    <a href="alerts.html" style="color: var(--primary); font-size:0.85rem;">View All →</a>
+                </div>
+                <div class="alert-list" id="recentAlerts"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Different colors for each fraud type
+        const demoFraudTypes = [
+            { name: 'SIM Swap', count: 7, color: '#ef4444' },      // Red
+            { name: 'Identity Theft', count: 5, color: '#ec4899' }, // Pink
+            { name: 'Device Cloning', count: 4, color: '#f59e0b' }, // Orange
+            { name: 'Mobile Fraud', count: 3, color: '#a855f7' },   // Purple
+            { name: 'Other', count: 3, color: '#3b82f6' }           // Blue
+        ];
+
+        const demoHighRiskUsers = [
+            { id: 'U78901', score: 98, level: 'CRITICAL', type: 'SIM Swap', lastActive: '2 min ago' },
+            { id: 'U45678', score: 92, level: 'CRITICAL', type: 'Identity Theft', lastActive: '15 min ago' },
+            { id: 'U34567', score: 82, level: 'HIGH', type: 'Device Cloning', lastActive: '32 min ago' }
+        ];
+
+        const demoAlerts = [
+            { type: 'SIM Swap', userId: 'U78901', risk: 98, level: 'CRITICAL', time: '2 min ago', icon: 'fa-sim-card', color: '#ef4444' },
+            { type: 'Identity Theft', userId: 'U45678', risk: 92, level: 'CRITICAL', time: '15 min ago', icon: 'fa-id-card', color: '#ec4899' },
+            { type: 'Device Cloning', userId: 'U34567', risk: 82, level: 'HIGH', time: '32 min ago', icon: 'fa-clone', color: '#f59e0b' }
+        ];
+
+        function loadDashboard() {
+            // Fraud breakdown
+            const breakdown = document.getElementById('fraudBreakdown');
+            breakdown.innerHTML = '';
+            demoFraudTypes.forEach(f => {
+                if (f.count > 0) {
+                    const percent = ((f.count / 22) * 100).toFixed(0);
+                    breakdown.innerHTML += `
+                        <div class="fraud-item">
+                            <span class="fraud-color" style="background: ${f.color};"></span>
+                            <span class="fraud-name">${f.name}</span>
+                            <span class="fraud-count">${f.count}</span>
+                            <span class="fraud-percent">${percent}%</span>
+                        </div>
+                    `;
+                }
+            });
+
+            // Risk distribution
+            document.getElementById('riskBreakdown').innerHTML = `
+                <div class="fraud-item"><span class="fraud-color" style="background: #ef4444;"></span><span class="fraud-name">Critical</span><span class="fraud-count">12</span><span class="fraud-percent">55%</span></div>
+                <div class="fraud-item"><span class="fraud-color" style="background: #f59e0b;"></span><span class="fraud-name">High</span><span class="fraud-count">6</span><span class="fraud-percent">27%</span></div>
+                <div class="fraud-item"><span class="fraud-color" style="background: #3b82f6;"></span><span class="fraud-name">Medium</span><span class="fraud-count">3</span><span class="fraud-percent">14%</span></div>
+                <div class="fraud-item"><span class="fraud-color" style="background: #10b981;"></span><span class="fraud-name">Low</span><span class="fraud-count">1</span><span class="fraud-percent">4%</span></div>
+            `;
+
+            // High risk table
+            const table = document.getElementById('highRiskTable');
+            table.innerHTML = '';
+            demoHighRiskUsers.forEach(u => {
+                table.innerHTML += `
+                    <tr onclick="window.location.href='analyze.html?alert=${u.id}'" style="cursor: pointer;">
+                        <td>${u.id}</td>
+                        <td>${u.score}%</td>
+                        <td><span class="risk-badge risk-${u.level.toLowerCase()}">${u.level}</span></td>
+                        <td>${u.type}</td>
+                        <td>${u.lastActive}</td>
+                    </tr>
+                `;
+            });
+
+            // Recent alerts
+            const alerts = document.getElementById('recentAlerts');
+            alerts.innerHTML = '';
+            demoAlerts.forEach(a => {
+                alerts.innerHTML += `
+                    <div class="alert-item" onclick="window.location.href='analyze.html?alert=${a.userId}'">
+                        <div class="alert-icon" style="background: ${a.color}20; color: ${a.color};"><i class="fas ${a.icon}"></i></div>
+                        <div style="flex:1;">${a.type} - ${a.userId}</div>
+                        <div style="color: ${a.color};">${a.risk}%</div>
+                    </div>
+                `;
+            });
+
+            // Charts
+            new Chart(document.getElementById('fraudTrendChart'), {
+                type: 'line',
+                data: {
+                    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                    datasets: [{
+                        data: [5, 7, 6, 8],
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99,102,241,0.1)',
+                        tension: 0.3,
+                        fill: true,
+                        pointRadius: 3
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            new Chart(document.getElementById('fraudTypeChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: demoFraudTypes.filter(t => t.count > 0).map(t => t.name),
+                    datasets: [{
+                        data: demoFraudTypes.filter(t => t.count > 0).map(t => t.count),
+                        backgroundColor: demoFraudTypes.filter(t => t.count > 0).map(t => t.color + '80'),
+                        borderColor: demoFraudTypes.filter(t => t.count > 0).map(t => t.color),
+                        borderWidth: 1
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { 
+                            position: 'bottom', 
+                            labels: { 
+                                boxWidth: 10, 
+                                font: { size: 9 },
+                                color: '#94a3b8'
+                            } 
+                        } 
+                    }
+                }
+            });
+        }
+
+        loadDashboard();
+    </script>
+</body>
+</html>

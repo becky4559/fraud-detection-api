@@ -1,24 +1,18 @@
-from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, RedirectResponse
-from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
+import os
 import json
 import random
-import os
-import traceback
+from datetime import datetime, timedelta
+from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
+from sqlalchemy import desc
+from database import SessionLocal, engine, get_db, FraudAlert, Base
 
-# Local imports
-from database import SessionLocal, engine, get_db, FraudAlert
-from fraud_detection_engine import FraudDetectionEngine
+app = FastAPI(title="LogSense - Forensic Fraud Engine")
 
-# Initialize FastAPI
-app = FastAPI(title="Fraud Detection API", version="2.0.0")
+# File for Isolation Forest Research
+TRANSACTION_LOGS = "logs/transaction_forensics.json"
 
-# Initialize fraud detection engine
-detection_engine = FraudDetectionEngine()
-
-# Configure CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -27,432 +21,83 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ============================================
-# DATABASE INITIALIZATION
-# ============================================
-from database import Base
-Base.metadata.create_all(bind=engine)
-print("Database ready")
-
-# ============================================
-# FRONTEND ROUTES
-# ============================================
-
-@app.get("/")
-async def root():
-    if os.path.exists("frontend/login.html"):
-        return FileResponse('frontend/login.html')
-    return RedirectResponse(url="/login")
-
-@app.get("/login")
-async def login_page():
-    return FileResponse('frontend/login.html')
-
-@app.get("/dashboard")
-async def dashboard_page():
-    return FileResponse('frontend/dashboard.html')
-
-@app.get("/alerts")
-async def alerts_page():
-    return FileResponse('frontend/alerts.html')
-
-@app.get("/analyze")
-async def analyze_page():
-    return FileResponse('frontend/analyze.html')
-
-@app.get("/settings")
-async def settings_page():
-    return FileResponse('frontend/settings.html')
-
-# ============================================
-# FRAUD DETECTION - 8 TYPES
-# ============================================
-
-# The 8 fraud types we discussed
-FRAUD_TYPES = [
-    {
-        "type": "SIM_SWAP",
-        "name": "SIM Swap",
-        "risk_score_range": (0.85, 0.95),
-        "risk_level": "CRITICAL"
-    },
-    {
-        "type": "IDENTITY_THEFT",
-        "name": "Identity Theft",
-        "risk_score_range": (0.80, 0.92),
-        "risk_level": "CRITICAL"
-    },
-    {
-        "type": "DEVICE_CLONING",
-        "name": "Device Cloning",
-        "risk_score_range": (0.75, 0.88),
-        "risk_level": "CRITICAL"
-    },
-    {
-        "type": "MOBILE_MONEY_FRAUD",
-        "name": "Mobile Money Fraud",
-        "risk_score_range": (0.70, 0.85),
-        "risk_level": "HIGH"
-    },
-    {
-        "type": "AGENT_COLLUSION",
-        "name": "Agent Collusion",
-        "risk_score_range": (0.72, 0.86),
-        "risk_level": "HIGH"
-    },
-    {
-        "type": "SOCIAL_ENGINEERING",
-        "name": "Social Engineering",
-        "risk_score_range": (0.65, 0.80),
-        "risk_level": "MEDIUM"
-    },
-    {
-        "type": "REPAYMENT_FRAUD",
-        "name": "Repayment Fraud",
-        "risk_score_range": (0.60, 0.75),
-        "risk_level": "MEDIUM"
-    },
-    {
-        "type": "SYNTHETIC_IDENTITY",
-        "name": "Synthetic Identity",
-        "risk_score_range": (0.82, 0.94),
-        "risk_level": "CRITICAL"
+def log_event(data, status, flags=[]):
+    """Writes raw logs for unsupervised machine learning research."""
+    log_entry = {
+        **data,
+        "server_timestamp": datetime.now().isoformat(),
+        "status": status,
+        "detection_flags": flags
     }
-]
+    with open(TRANSACTION_LOGS, "a") as f:
+        f.write(json.dumps(log_entry) + "\n")
 
-def get_random_fraud_type():
-    """Return a random fraud type from the 8 types"""
-    return random.choice(FRAUD_TYPES)
+def evaluate_fraud(user_name, amount, recipient, location, hour, pin_attempt):
+    profiles = {
+        "John Kamau": {"limit": 20000, "home": "Nairobi", "hours": range(7, 23)},
+        "Alice Wangari": {"limit": 15000, "home": "Mombasa", "hours": range(7, 23)},
+    }
+    profile = profiles.get(user_name, {"limit": 50000, "home": "Nairobi", "hours": range(7, 23)})
+    reasons = []
+    risk_score = 0.1 
 
-def generate_explanations(fraud_type, amount, location):
-    """Generate explanations based on fraud type"""
-    explanations = []
-    signals = {}
-    
-    if fraud_type["type"] == "SIM_SWAP":
-        explanations = [
-            "New SIM card registered on different device",
-            f"Transaction from new location ({location} vs Nairobi)",
-            "Impossible travel time between locations"
-        ]
-        signals = {
-            "new_sim": "SIM card changed 5 minutes before transaction",
-            "device_change": "New device detected",
-            "location_change": f"Location changed from Nairobi to {location}"
-        }
-        
-    elif fraud_type["type"] == "IDENTITY_THEFT":
-        ratio = round(amount / 25000, 1)
-        explanations = [
-            f"Amount is {ratio}x higher than normal",
-            "Sending to new recipient (first time)",
-            "Transaction at unusual hour"
-        ]
-        signals = {
-            "amount_ratio": f"{ratio}x higher than normal",
-            "new_recipient": "First time sending to this recipient",
-            "unusual_time": "Transaction at unusual hour (3:00 AM)"
-        }
-        
-    elif fraud_type["type"] == "DEVICE_CLONING":
-        explanations = [
-            "Same device active in multiple locations simultaneously",
-            "Device appears to be rooted/jailbroken"
-        ]
-        signals = {
-            "multiple_locations": f"Same device active in Nairobi and {location}",
-            "device_rooted": "Device appears to be rooted/jailbroken"
-        }
-        
-    elif fraud_type["type"] == "MOBILE_MONEY_FRAUD":
-        explanations = [
-            "Multiple rapid transactions detected",
-            "Sending to multiple different recipients"
-        ]
-        signals = {
-            "high_velocity": "5 transactions in last 5 minutes",
-            "multiple_recipients": "Sending to 3 different people"
-        }
-        
-    elif fraud_type["type"] == "AGENT_COLLUSION":
-        explanations = [
-            "Transaction involves agent - possible collusion",
-            "Large cash out amount"
-        ]
-        signals = {
-            "agent_involved": "Transaction involves agent",
-            "large_cash_out": f"Large cash out amount: KES {amount}"
-        }
-        
-    elif fraud_type["type"] == "SOCIAL_ENGINEERING":
-        ratio = round(amount / 25000, 1)
-        explanations = [
-            "Sending to new beneficiary",
-            f"Amount {ratio}x higher than normal",
-            "Urgent language detected"
-        ]
-        signals = {
-            "new_beneficiary": "Sending to new beneficiary",
-            "amount_ratio": f"{ratio}x higher than normal",
-            "urgent_keyword": "Message contains 'urgent'"
-        }
-        
-    elif fraud_type["type"] == "REPAYMENT_FRAUD":
-        explanations = [
-            "Circular transaction pattern detected",
-            "Repayment amount doesn't match loan"
-        ]
-        signals = {
-            "circular_pattern": "Circular transaction pattern detected",
-            "amount_mismatch": "Repayment amount doesn't match loan"
-        }
-        
-    elif fraud_type["type"] == "SYNTHETIC_IDENTITY":
-        explanations = [
-            "Account created recently (2 days ago)",
-            "First transaction is unusually large"
-        ]
-        signals = {
-            "new_account": "Account created 2 days ago",
-            "large_first_tx": f"First transaction large amount: KES {amount}"
-        }
-        
-    return explanations, signals
+    if "mary" in recipient.lower() or "akinyi" in recipient.lower():
+        reasons.append("RECURRING_FRAUD_PATTERN")
+        risk_score = 1.0
+    if amount > profile["limit"]:
+        reasons.append("HIGH_VALUE_ANOMALY")
+        risk_score += 0.4
+    if hour not in profile["hours"] or hour < 5 or hour > 23:
+        reasons.append("TEMPORAL_OUTLIER")
+        risk_score += 0.5
+    if location != profile["home"]:
+        reasons.append("LOCATION_ANOMALY")
+        risk_score += 0.3
+    if pin_attempt != "4250":
+        reasons.append("SECURITY_VIOLATION")
+        risk_score = 1.0
 
-# ============================================
-# MOBILE APP ENDPOINT
-# ============================================
+    status = "BLOCKED" if risk_score >= 0.8 else "SUCCESS"
+    return status, reasons, min(risk_score, 1.0)
 
 @app.post("/api/mobile/transaction")
-async def mobile_transaction(
-    transaction: dict,
-    background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db)
-):
-    try:
-        user_id = transaction.get("userId", "U78901")
-        user_name = transaction.get("userName", "Unknown")
-        amount = transaction.get("amount", 0)
-        recipient = transaction.get("recipient", "Unknown")
-        location = transaction.get("location", "Nairobi")
-        device_id = transaction.get("deviceId", f"DEV-{random.randint(1000, 9999)}")
-        timestamp = transaction.get("timestamp", datetime.now().isoformat())
-        
-        transaction_id = f"TXN-{random.randint(10000, 99999)}"
-        
-        # Handle WRONG_PIN events
-        if transaction.get("event") == "WRONG_PIN":
-            alert = FraudAlert(
-                transaction_id=transaction_id,
-                user_id=user_id,
-                user_name=user_name,
-                fraud_type="WRONG_PIN_ATTEMPT",
-                fraud_name="Wrong PIN Attempt",
-                risk_score=0.85,
-                risk_level="HIGH",
-                detection_signals=json.dumps({
-                    "event": "WRONG_PIN",
-                    "attempt": transaction.get("attempt", 1),
-                    "device_id": device_id[-4:],
-                    "location": location,
-                    "amount": amount,
-                    "explanations": ["Wrong PIN entered - transaction blocked"]
-                }),
-                amount=amount,
-                recipient=recipient,
-                location=location,
-                timestamp=datetime.now(),
-                acknowledged=False
-            )
-            db.add(alert)
-            db.commit()
-            print("Alert created: Wrong PIN Attempt for " + user_name)
-            
-            return {
-                "status": "BLOCKED",
-                "transactionId": transaction_id,
-                "alertId": alert.id,
-                "message": "Transaction blocked - wrong PIN"
-            }
-        
-        # Handle BLOCKED transactions
-        if transaction.get("event") == "TRANSACTION_BLOCKED":
-            alert = FraudAlert(
-                transaction_id=transaction_id,
-                user_id=user_id,
-                user_name=user_name,
-                fraud_type="BLOCKED_TRANSACTION",
-                fraud_name="Blocked Transaction",
-                risk_score=0.95,
-                risk_level="CRITICAL",
-                detection_signals=json.dumps({
-                    "reason": transaction.get("reason", "Wrong PIN"),
-                    "amount": amount,
-                    "location": location,
-                    "explanations": ["Transaction blocked due to security concerns"]
-                }),
-                amount=amount,
-                recipient=recipient,
-                location=location,
-                timestamp=datetime.now(),
-                acknowledged=False
-            )
-            db.add(alert)
-            db.commit()
-            print("Alert created: Blocked Transaction for " + user_name)
-            
-            return {"status": "BLOCKED", "message": "Transaction blocked"}
-        
-        # For normal transactions, use one of the 8 fraud types
-        fraud_type = get_random_fraud_type()
-        risk_score = random.uniform(fraud_type["risk_score_range"][0], fraud_type["risk_score_range"][1])
-        explanations, signals = generate_explanations(fraud_type, amount, location)
-        
-        # Add amount and recipient to signals
-        signals["amount"] = amount
-        signals["recipient"] = recipient
-        signals["location"] = location
-        
-        alert = FraudAlert(
-            transaction_id=transaction_id,
-            user_id=user_id,
+async def mobile_transaction(transaction: dict, db: Session = Depends(get_db)):
+    user_name = transaction.get("userName", "Demo User")
+    amount = float(transaction.get("amount", 0))
+    recipient = transaction.get("recipient", "")
+    location = transaction.get("location", "Unknown")
+    hour = int(transaction.get("hr", 12)) 
+    pin = transaction.get("pin_attempt", "")
+
+    status, flags, score = evaluate_fraud(user_name, amount, recipient, location, hour, pin)
+
+    if status == "BLOCKED":
+        log_event(transaction, "BLOCKED", flags)
+        new_alert = FraudAlert(
+            transaction_id=f"TXN-{random.randint(10000, 99999)}",
             user_name=user_name,
-            fraud_type=fraud_type["type"],
-            fraud_name=fraud_type["name"],
-            risk_score=round(risk_score, 2),
-            risk_level=fraud_type["risk_level"],
-            detection_signals=json.dumps({
-                "signals": signals,
-                "explanations": explanations
-            }),
+            fraud_type=flags[0] if flags else "ANOMALY",
+            fraud_name=(flags[0] if flags else "Anomaly").replace("_", " ").title(),
+            risk_score=score,
+            risk_level="CRITICAL",
             amount=amount,
             recipient=recipient,
             location=location,
-            timestamp=datetime.now(),
+            detection_signals=json.dumps({"reasons": flags}),
             acknowledged=False
         )
-        db.add(alert)
+        db.add(new_alert)
         db.commit()
-        print("Alert created: " + fraud_type["name"] + " for " + user_name)
-        
-        return {
-            "status": "SUCCESS",
-            "transactionId": transaction_id,
-            "alertId": alert.id,
-            "message": "Transaction processed"
-        }
-        
-    except Exception as e:
-        print("Error in mobile_transaction: " + str(e))
-        traceback.print_exc()
-        return {"status": "ERROR", "message": str(e)}
+        return {"status": "BLOCKED", "message": "Anomaly Detected", "flags": flags}
 
-# ============================================
-# ALERTS ENDPOINTS
-# ============================================
+    log_event(transaction, "SUCCESS")
+    return {"status": "SUCCESS", "message": "Authorized"}
 
 @app.get("/api/v2/alerts/recent")
-def get_recent_alerts(limit: int = 50):
-    try:
-        from sqlalchemy import desc
-        
-        db = SessionLocal()
-        alerts = db.query(FraudAlert).order_by(desc(FraudAlert.timestamp)).limit(limit).all()
-        
-        result = []
-        for alert in alerts:
-            signals = {}
-            if alert.detection_signals:
-                try:
-                    signals = json.loads(alert.detection_signals)
-                except:
-                    signals = {"raw": alert.detection_signals}
-            
-            result.append({
-                "alert_id": alert.id,
-                "transaction_id": alert.transaction_id,
-                "user_id": alert.user_id,
-                "user_name": alert.user_name or alert.user_id,
-                "fraud_type": alert.fraud_type,
-                "fraud_name": alert.fraud_name,
-                "risk_score": alert.risk_score or 0,
-                "risk_level": alert.risk_level or "MEDIUM",
-                "detection_signals": signals,
-                "amount": alert.amount or 0,
-                "recipient": alert.recipient or "Unknown",
-                "location": alert.location or "Unknown",
-                "timestamp": alert.timestamp.isoformat() if alert.timestamp else None,
-                "acknowledged": alert.acknowledged or False
-            })
-        
-        db.close()
-        print("Returning " + str(len(result)) + " alerts")
-        return result
-        
-    except Exception as e:
-        print("Error in get_recent_alerts: " + str(e))
-        return []
-
-@app.get("/api/v2/alerts/{alert_id}")
-def get_alert_details(alert_id: int):
-    try:
-        db = SessionLocal()
-        alert = db.query(FraudAlert).filter(FraudAlert.id == alert_id).first()
-        db.close()
-        
-        if not alert:
-            raise HTTPException(status_code=404, detail="Alert not found")
-        
-        signals = {}
-        if alert.detection_signals:
-            try:
-                signals = json.loads(alert.detection_signals)
-            except:
-                signals = {"raw": alert.detection_signals}
-
-        return {
-            "alert_id": alert.id,
-            "transaction_id": alert.transaction_id,
-            "user_id": alert.user_id,
-            "user_name": alert.user_name or alert.user_id,
-            "fraud_type": alert.fraud_type,
-            "fraud_name": alert.fraud_name,
-            "risk_score": alert.risk_score or 0,
-            "risk_level": alert.risk_level or "MEDIUM",
-            "detection_signals": signals,
-            "amount": alert.amount or 0,
-            "recipient": alert.recipient or "Unknown",
-            "location": alert.location or "Unknown",
-            "timestamp": alert.timestamp.isoformat() if alert.timestamp else None,
-            "acknowledged": alert.acknowledged or False
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        print("Error in get_alert_details: " + str(e))
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/api/v2/alerts/{alert_id}/acknowledge")
-def acknowledge_alert(alert_id: int):
-    try:
-        db = SessionLocal()
-        alert = db.query(FraudAlert).filter(FraudAlert.id == alert_id).first()
-        if alert:
-            alert.acknowledged = True
-            db.commit()
-        db.close()
-        return {"success": True}
-    except Exception as e:
-        return {"success": False, "error": str(e)}
-
-# ============================================
-# HEALTH CHECK
-# ============================================
-
-@app.get("/health")
-def health():
-    return {"status": "healthy", "timestamp": datetime.now().isoformat()}
+def get_recent_alerts(db: Session = Depends(get_db)):
+    return db.query(FraudAlert).order_by(desc(FraudAlert.timestamp)).limit(50).all()
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=10000)
+    port = int(os.environ.get("PORT", 10000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
