@@ -20,11 +20,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Initialize database tables
 Base.metadata.create_all(bind=engine)
 
 # --- DETAILED DETECTION ENGINE ---
 def evaluate_logsense_forensics(data):
-    # Get user profile constraints (defaults for new/custom profiles)
+    # Get user profile constraints
     user_name = data.get("userName", "New User")
     
     # Defaults for simulation
@@ -47,12 +48,11 @@ def evaluate_logsense_forensics(data):
     if not sim_match:
         return {"type": "SIM_SWAP", "name": "Potential SIM Swap Detected", "score": 0.88, "level": "HIGH", "reason": "SIM Serial (ICCID) changed without migration."}
 
-    # 3. GEOGRAPHIC ANOMALY (Logic for custom profiles)
+    # 3. GEOGRAPHIC ANOMALY
     if location != home_location and location != "Unknown":
          return {"type": "IDENTITY_THEFT", "name": "Geographic Displacement", "score": 0.85, "level": "HIGH", "reason": f"Transaction from {location} deviates from profile home ({home_location})."}
 
     # 4. IDENTITY THEFT / PIN VIOLATION
-    # Accepts both the specific 4250 PIN and the 1234 demo PIN
     if "mary" in recipient or "akinyi" in recipient or location_score < 0.3 or (pin != "" and pin != "1234" and pin != "4250"):
         return {"type": "IDENTITY_THEFT", "name": "Identity Theft / Account Takeover", "score": 0.95, "level": "CRITICAL", "reason": "Unauthorized access or blacklisted recipient."}
 
@@ -126,6 +126,10 @@ async def serve_login():
 async def serve_dashboard(): 
     return FileResponse("dashboard.html")
 
+@app.get("/alerts")
+async def serve_alerts(): 
+    return FileResponse("alerts.html")
+
 @app.get("/analyze")
 async def serve_analyze(): 
     return FileResponse("analyze.html")
@@ -136,12 +140,26 @@ def get_recent_alerts(db: Session = Depends(get_db)):
 
 @app.get("/api/v2/alerts/{alert_id}")
 def get_alert_details(alert_id: int, db: Session = Depends(get_db)):
-    # Look for the alert by its primary key ID
     alert = db.query(FraudAlert).filter(FraudAlert.id == alert_id).first()
     if not alert:
-        return JSONResponse(status_code=404, content={"error": "Alert not found in database"})
-    return alert
+        return JSONResponse(status_code=404, content={"error": "Alert not found"})
+    
+    # Explicitly mapping to dictionary ensures JSON serialization works perfectly for the frontend
+    alert_data = {
+        "id": alert.id,
+        "transaction_id": alert.transaction_id,
+        "user_name": alert.user_name,
+        "fraud_name": alert.fraud_name,
+        "risk_level": alert.risk_level,
+        "amount": alert.amount,
+        "recipient": alert.recipient,
+        "location": alert.location,
+        "timestamp": alert.timestamp.isoformat() if alert.timestamp else None,
+        "detection_signals": alert.detection_signals 
+    }
+    return alert_data
 
 if __name__ == "__main__":
     import uvicorn
+    # Port is set for Render compatibility
     uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
