@@ -1,7 +1,7 @@
 import os
 import json
 import random
-from datetime import datetime, timedelta
+from datetime import datetime
 from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -95,7 +95,7 @@ async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
                 recipient=data.get("recipient", "Unknown"),
                 location=data.get("location", "Nairobi"),
                 timestamp=datetime.now(),
-                detection_signals=json.dumps(signals), # Saved as String
+                detection_signals=json.dumps(signals),
                 acknowledged=False
             )
             db.add(new_alert)
@@ -106,6 +106,7 @@ async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
     except Exception as e:
         return JSONResponse(status_code=400, content={"error": str(e)})
 
+# --- HTML SERVERS ---
 @app.get("/")
 async def serve_login(): 
     return FileResponse("login.html")
@@ -122,18 +123,19 @@ async def serve_alerts():
 async def serve_analyze(): 
     return FileResponse("analyze.html")
 
+# --- DATA API V2 ---
+
 @app.get("/api/v2/alerts/recent")
 def get_recent_alerts(db: Session = Depends(get_db)):
     alerts = db.query(FraudAlert).order_by(desc(FraudAlert.timestamp)).limit(50).all()
     
-    # NEW: Formatted loop to ensure detection_signals is a JSON object
     formatted_alerts = []
     for a in alerts:
         try:
-            # Convert string back to Python Dict for clean JSON transmission
+            # Safely parse the stringified JSON from the database into an object
             signals = json.loads(a.detection_signals) if isinstance(a.detection_signals, str) else a.detection_signals
-        except:
-            signals = {"explanations": ["Log format error"], "signals": {}}
+        except Exception:
+            signals = {"explanations": ["Format error"], "signals": {}}
 
         formatted_alerts.append({
             "id": a.id,
@@ -145,7 +147,7 @@ def get_recent_alerts(db: Session = Depends(get_db)):
             "recipient": a.recipient,
             "location": a.location,
             "timestamp": a.timestamp.isoformat() if a.timestamp else None,
-            "detection_signals": signals  # This is now a real JSON object
+            "detection_signals": signals
         })
     return formatted_alerts
 
@@ -157,8 +159,8 @@ def get_alert_details(alert_id: int, db: Session = Depends(get_db)):
     
     try:
         signals = json.loads(alert.detection_signals) if isinstance(alert.detection_signals, str) else alert.detection_signals
-    except:
-        signals = {"explanations": ["Log format error"], "signals": {}}
+    except Exception:
+        signals = {"explanations": ["Format error"], "signals": {}}
 
     return {
         "id": alert.id,
