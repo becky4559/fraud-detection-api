@@ -36,6 +36,7 @@
     <div class="sidebar">
         <h2>LOGSENSE AI</h2>
         <a href="/dashboard">← Back to Console</a>
+        <a href="/alerts">View Incident Logs</a>
         <a href="#" onclick="window.print()">Print Case File</a>
     </div>
 
@@ -86,33 +87,63 @@
                 if (!response.ok) throw new Error(`Alert ID ${id} not found in database.`);
                 
                 const data = await response.json();
-                const forensics = JSON.parse(data.detection_signals);
 
-                document.getElementById('txnId').innerText = `ID: ${data.transaction_id}`;
-                document.getElementById('fraudName').innerText = data.fraud_name;
-                document.getElementById('userName').innerText = data.user_name;
-                document.getElementById('amount').innerText = "KES " + data.amount.toLocaleString();
-                document.getElementById('recipient').innerText = data.recipient;
-                document.getElementById('location').innerText = data.location;
-                document.getElementById('timestamp').innerText = new Date(data.timestamp).toLocaleString();
+                // Robust Forensic Parsing Logic
+                let forensics;
+                try {
+                    // Check if it's already an object or needs parsing
+                    forensics = typeof data.detection_signals === 'string' 
+                        ? JSON.parse(data.detection_signals) 
+                        : data.detection_signals;
+                    
+                    // Fallback for empty/null signals
+                    if (!forensics) {
+                        forensics = { explanations: ["No reasoning provided"], signals: {} };
+                    }
+                } catch (e) {
+                    console.error("Forensic Parse Error:", e);
+                    forensics = { explanations: ["Data format error in log record"], signals: {} };
+                }
+
+                // Update UI Elements
+                document.getElementById('txnId').innerText = `ID: ${data.transaction_id || 'N/A'}`;
+                document.getElementById('fraudName').innerText = data.fraud_name || 'Anomalous Transaction';
+                document.getElementById('userName').innerText = data.user_name || 'Unknown';
+                document.getElementById('amount').innerText = "KES " + (data.amount ? data.amount.toLocaleString() : '0');
+                document.getElementById('recipient').innerText = data.recipient || 'N/A';
+                document.getElementById('location').innerText = data.location || 'Nairobi';
+                document.getElementById('timestamp').innerText = data.timestamp ? new Date(data.timestamp).toLocaleString() : '--';
                 document.getElementById('riskLevel').innerHTML = `<span class="badge ${data.risk_level}">${data.risk_level} RISK</span>`;
 
+                // Render Technical Logs
                 const signals = forensics.signals || {};
                 const techContainer = document.getElementById('techData');
-                techContainer.innerHTML = Object.entries(signals).map(([key, val]) => `
-                    <div class="data-row">
-                        <span class="label">${key.toUpperCase().replace(/_/g, ' ')}</span>
-                        <span class="value">${val}</span>
-                    </div>
-                `).join('');
+                const techRows = Object.entries(signals);
+                
+                if (techRows.length === 0) {
+                    techContainer.innerHTML = "<p style='font-size:12px; color:#8892b0;'>No technical metadata captured for this event.</p>";
+                } else {
+                    techContainer.innerHTML = techRows.map(([key, val]) => `
+                        <div class="data-row">
+                            <span class="label">${key.toUpperCase().replace(/_/g, ' ')}</span>
+                            <span class="value">${val}</span>
+                        </div>
+                    `).join('');
+                }
 
+                // Render AI Evidence
                 const explanations = forensics.explanations || [];
                 const evidenceContainer = document.getElementById('evidenceList');
-                evidenceContainer.innerHTML = explanations.map(text => `
-                    <div class="evidence-box">
-                        <p class="evidence-text">● ${text}</p>
-                    </div>
-                `).join('');
+                
+                if (explanations.length === 0) {
+                    evidenceContainer.innerHTML = "<p style='font-size:12px; color:#8892b0;'>No AI reasoning logs available.</p>";
+                } else {
+                    evidenceContainer.innerHTML = explanations.map(text => `
+                        <div class="evidence-box">
+                            <p class="evidence-text">● ${text}</p>
+                        </div>
+                    `).join('');
+                }
 
             } catch (err) {
                 document.getElementById('main-content').innerHTML = `
