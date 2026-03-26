@@ -6,68 +6,39 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body { background: #0b0c10; color: #c5c6c7; display: flex; min-height: 100vh; }
-        
-        /* Neon Sidebar */
-        .sidebar { width: 260px; background: #1f2833; height: 100vh; position: fixed; padding: 25px; border-right: 1px solid #45a29e; box-shadow: 5px 0 15px rgba(0,0,0,0.5); }
-        .sidebar h2 { color: #66fcf1; letter-spacing: 3px; margin-bottom: 40px; font-size: 20px; text-shadow: 0 0 10px rgba(102, 252, 241, 0.3); }
+        .sidebar { width: 260px; background: #1f2833; height: 100vh; position: fixed; padding: 25px; border-right: 1px solid #45a29e; }
+        .sidebar h2 { color: #66fcf1; letter-spacing: 3px; margin-bottom: 40px; font-size: 20px; }
         .sidebar a { display: block; color: #8892b0; padding: 12px; text-decoration: none; font-size: 14px; margin-bottom: 10px; border-left: 3px solid transparent; transition: 0.3s; }
         .sidebar a:hover { color: #66fcf1; background: rgba(102, 252, 241, 0.05); border-left: 3px solid #66fcf1; }
-
         .main { flex: 1; margin-left: 260px; padding: 40px; }
         .header { margin-bottom: 30px; border-bottom: 1px solid #45a29e; padding-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-        
-        /* Incident Cards */
-        .incident-card { background: #1f2833; border: 1px solid #45a29e; padding: 25px; border-radius: 4px; margin-bottom: 25px; transition: 0.4s; position: relative; overflow: hidden; }
-        .incident-card.reviewed { opacity: 0.4; filter: grayscale(1); border-color: #444; }
-        .incident-card:hover { box-shadow: 0 0 20px rgba(102, 252, 241, 0.1); }
-
-        .incident-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
-        .incident-type { color: #66fcf1; font-weight: bold; font-size: 20px; text-transform: uppercase; letter-spacing: 1px; }
-        .timestamp { color: #45a29e; font-size: 12px; font-family: 'JetBrains Mono', monospace; margin-top: 5px; }
-        
-        .badge { padding: 6px 12px; border-radius: 2px; font-size: 11px; font-weight: bold; letter-spacing: 1px; }
+        .incident-card { background: #1f2833; border: 1px solid #45a29e; padding: 25px; border-radius: 4px; margin-bottom: 25px; }
+        .incident-header { display: flex; justify-content: space-between; margin-bottom: 20px; }
+        .incident-type { color: #66fcf1; font-weight: bold; font-size: 20px; text-transform: uppercase; }
+        .badge { padding: 6px 12px; border-radius: 2px; font-size: 11px; font-weight: bold; }
         .CRITICAL { background: rgba(255, 76, 76, 0.1); color: #ff4c4c; border: 1px solid #ff4c4c; }
         .HIGH { background: rgba(255, 165, 0, 0.1); color: #ffa500; border: 1px solid #ffa500; }
-
-        .details-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 30px; margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(69, 162, 158, 0.2); }
-        
-        .reasoning-box h4 { color: #8892b0; font-size: 11px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
-        .reasoning-text { color: #66fcf1; font-size: 13px; line-height: 1.6; margin-bottom: 8px; }
-
-        /* Action Buttons */
-        .actions { margin-top: 25px; display: flex; gap: 15px; border-top: 1px solid rgba(69, 162, 158, 0.1); pt: 20px; }
-        .btn { padding: 10px 20px; font-size: 12px; font-weight: bold; cursor: pointer; text-decoration: none; transition: 0.3s; text-transform: uppercase; border-radius: 2px; }
-        .btn-investigate { background: transparent; border: 1px solid #66fcf1; color: #66fcf1; }
-        .btn-investigate:hover { background: #66fcf1; color: #0b0c10; box-shadow: 0 0 15px rgba(102, 252, 241, 0.4); }
-        .btn-review { background: rgba(136, 146, 176, 0.1); border: 1px solid #8892b0; color: #8892b0; }
-        .btn-review:hover { background: #8892b0; color: #0b0c10; }
-
+        .details-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 30px; margin-top: 20px; border-top: 1px solid rgba(69, 162, 158, 0.2); padding-top: 20px; }
+        .reasoning-text { color: #66fcf1; font-size: 13px; margin-bottom: 8px; }
+        .btn { padding: 10px 20px; font-size: 12px; font-weight: bold; cursor: pointer; text-decoration: none; border-radius: 2px; display: inline-block; }
+        .btn-investigate { border: 1px solid #66fcf1; color: #66fcf1; }
         .metadata-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #0b0c10; font-size: 13px; }
-        .m-label { color: #8892b0; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
-        .m-value { color: #fff; font-weight: bold; }
+        .m-label { color: #8892b0; font-size: 11px; }
     </style>
 </head>
 <body>
     <div class="sidebar">
         <h2>LOGSENSE AI</h2>
         <a href="/dashboard">Console Home</a>
-        <a href="/alerts" style="color: #66fcf1; border-left: 3px solid #66fcf1; background: rgba(102,252,241,0.05);">Forensic Logs</a>
+        <a href="/alerts" style="color: #66fcf1; border-left: 3px solid #66fcf1;">Forensic Logs</a>
     </div>
-
     <div class="main">
         <div class="header">
-            <div>
-                <h1 style="color: #fff; font-size: 26px;">Incident Forensic Archive</h1>
-                <p style="color: #45a29e; font-size: 14px;">Reviewing system-intercepted anomalies</p>
-            </div>
+            <div><h1>Incident Forensic Archive</h1></div>
             <div id="logCount" class="badge CRITICAL">0 INCIDENTS</div>
         </div>
-
-        <div id="logsContainer">
-            <p style="text-align: center; color: #45a29e; margin-top: 50px;">Initializing secure connection to database...</p>
-        </div>
+        <div id="logsContainer"></div>
     </div>
-
     <script>
         async function loadLogs() {
             try {
@@ -76,59 +47,40 @@
                 const container = document.getElementById('logsContainer');
                 document.getElementById('logCount').innerText = `${alerts.length} INCIDENTS`;
                 
-                if (alerts.length === 0) {
-                    container.innerHTML = "<div class='incident-card' style='text-align:center;'>No anomalies detected in current session.</div>";
-                    return;
-                }
-
                 container.innerHTML = alerts.map(a => {
-                    let forensics = { explanations: [], signals: {} };
+                    let forensics = { explanations: ["Analysis pending..."], signals: {} };
                     try {
-                        forensics = JSON.parse(a.detection_signals);
-                    } catch(e) { console.error("Forensic Parse Error", e); }
+                        forensics = typeof a.detection_signals === 'string' ? JSON.parse(a.detection_signals) : a.detection_signals;
+                    } catch(e) { console.error("Parse error", e); }
 
                     return `
-                        <div class="incident-card" id="card-${a.id}">
+                        <div class="incident-card">
                             <div class="incident-header">
                                 <div>
-                                    <span class="incident-type">${a.fraud_name}</span>
-                                    <p class="timestamp">NODE_TXN_ID: ${a.transaction_id} | ${new Date(a.timestamp).toLocaleString()}</p>
+                                    <span class="incident-type">${a.fraud_name || 'System Anomaly'}</span>
+                                    <p style="font-size:12px; color:#45a29e;">TXN: ${a.transaction_id} | ${new Date(a.timestamp).toLocaleString()}</p>
                                 </div>
                                 <span class="badge ${a.risk_level}">${a.risk_level} RISK</span>
                             </div>
-
                             <div class="details-grid">
-                                <div class="reasoning-box">
-                                    <h4>AI Logic Reasoning</h4>
+                                <div>
+                                    <h4 style="color:#8892b0; font-size:11px; margin-bottom:10px;">AI REASONING</h4>
                                     ${forensics.explanations.map(exp => `<p class="reasoning-text">>> ${exp}</p>`).join('')}
                                 </div>
-                                
-                                <div class="metadata-list">
-                                    <div class="metadata-item"><span class="m-label">Subject</span><span class="m-value">${a.user_name}</span></div>
-                                    <div class="metadata-item"><span class="m-label">Volume</span><span class="m-value">KES ${a.amount.toLocaleString()}</span></div>
-                                    <div class="metadata-item"><span class="m-label">Target</span><span class="m-value">${a.recipient}</span></div>
+                                <div>
+                                    <div class="metadata-item"><span class="m-label">USER</span><span>${a.user_name}</span></div>
+                                    <div class="metadata-item"><span class="m-label">AMOUNT</span><span>KES ${a.amount}</span></div>
+                                    <div class="metadata-item"><span class="m-label">TARGET</span><span>${a.recipient}</span></div>
                                 </div>
                             </div>
-
-                            <div class="actions">
+                            <div style="margin-top:20px;">
                                 <a href="/analyze?id=${a.id}" class="btn btn-investigate">Open Forensic Lab</a>
-                                <button onclick="markReviewed(${a.id})" class="btn btn-review">Mark as Reviewed</button>
                             </div>
                         </div>
                     `;
                 }).join('');
-            } catch (err) {
-                document.getElementById('logsContainer').innerHTML = `<p style="color: #ff4c4c;">[ERROR] Connection to API failed: ${err.message}</p>`;
-            }
+            } catch (err) { console.error(err); }
         }
-
-        function markReviewed(id) {
-            const card = document.getElementById(`card-${id}`);
-            card.classList.add('reviewed');
-            card.querySelector('.btn-review').innerText = 'Archived';
-            card.querySelector('.btn-review').disabled = true;
-        }
-
         window.onload = loadLogs;
     </script>
 </body>

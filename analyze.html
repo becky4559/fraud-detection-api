@@ -5,126 +5,72 @@
     <title>LogSense - Forensic Lab</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-        body { background: #0b0c10; color: #c5c6c7; display: flex; min-height: 100vh; }
-        
-        .sidebar { width: 260px; background: #1f2833; height: 100vh; position: fixed; padding: 25px; border-right: 1px solid #45a29e; }
-        .sidebar h2 { color: #66fcf1; letter-spacing: 2px; margin-bottom: 40px; font-size: 20px; }
-        .sidebar a { display: block; color: #8892b0; padding: 12px; text-decoration: none; font-size: 14px; margin-bottom: 10px; border-left: 3px solid transparent; transition: 0.3s; }
-        .sidebar a:hover { color: #66fcf1; background: rgba(102, 252, 241, 0.05); border-left: 3px solid #66fcf1; }
-        
-        .main { flex: 1; margin-left: 260px; padding: 40px; }
-        .report-header { border-bottom: 2px solid #45a29e; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
-        
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
-        .card { background: #1f2833; border-radius: 4px; padding: 25px; border: 1px solid #45a29e; height: 100%; }
-        .card h3 { color: #66fcf1; font-size: 14px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px solid rgba(102, 252, 241, 0.1); padding-bottom: 10px; }
-
-        .data-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #0b0c10; font-size: 14px; }
-        .label { color: #8892b0; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
-        .value { color: #fff; font-weight: bold; }
-
-        .evidence-box { background: #0b0c10; border-left: 4px solid #66fcf1; padding: 15px; margin-bottom: 15px; border-radius: 0 4px 4px 0; }
-        .evidence-text { font-size: 13px; line-height: 1.6; color: #66fcf1; }
-        
-        .badge { padding: 6px 15px; border-radius: 2px; font-weight: bold; font-size: 11px; letter-spacing: 1px; }
-        .CRITICAL { background: rgba(255, 76, 76, 0.2); color: #ff4c4c; border: 1px solid #ff4c4c; }
-        .HIGH { background: rgba(255, 165, 0, 0.2); color: #ffa500; border: 1px solid #ffa500; }
-        .MEDIUM { background: rgba(255, 255, 0, 0.2); color: #ffff00; border: 1px solid #ffff00; }
+        body { background: #0b0c10; color: #c5c6c7; padding: 40px; }
+        .container { max-width: 1000px; margin: auto; }
+        .card { background: #1f2833; border: 1px solid #45a29e; padding: 30px; border-radius: 4px; margin-bottom: 20px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        h2 { color: #66fcf1; margin-bottom: 20px; text-transform: uppercase; }
+        .signal-box { background: #0b0c10; padding: 15px; border-left: 3px solid #66fcf1; margin-bottom: 10px; font-family: monospace; }
+        .label { color: #8892b0; font-size: 12px; }
+        .value { color: #fff; font-weight: bold; display: block; margin-top: 5px; }
     </style>
 </head>
 <body>
-    <div class="sidebar">
-        <h2>LOGSENSE AI</h2>
-        <a href="/dashboard">← Back to Console</a>
-        <a href="#" onclick="window.print()">Print Case File</a>
-    </div>
-
-    <div class="main" id="main-content">
-        <div class="report-header">
-            <div>
-                <h1 style="color: #fff; font-size: 28px;">Forensic Case File</h1>
-                <p id="txnId" style="color: #45a29e; font-family: monospace;"></p>
-                <h2 id="fraudName" style="color: #66fcf1; font-size: 18px; margin-top: 10px;"></h2>
-            </div>
-            <div id="riskLevel"></div>
-        </div>
-
+    <div class="container">
+        <a href="/alerts" style="color:#45a29e; text-decoration:none;"><< Return to Logs</a>
+        <h1 style="color:#fff; margin: 20px 0;">Forensic Investigation: <span id="incidentId">...</span></h1>
+        
         <div class="grid">
             <div class="card">
-                <h3>Transaction Profile</h3>
-                <div class="data-row"><span class="label">USER_ACCOUNT</span><span class="value" id="userName">--</span></div>
-                <div class="data-row"><span class="label">AMOUNT_KES</span><span class="value" id="amount">--</span></div>
-                <div class="data-row"><span class="label">TARGET_RECIPIENT</span><span class="value" id="recipient">--</span></div>
-                <div class="data-row"><span class="label">NETWORK_NODE</span><span class="value" id="location">--</span></div>
-                <div class="data-row"><span class="label">TIMESTAMP_EAT</span><span class="value" id="timestamp">--</span></div>
+                <h2>Technical Metadata</h2>
+                <div id="metadataLogs">Loading system logs...</div>
             </div>
-
             <div class="card">
-                <h3>Technical Metadata Logs</h3>
-                <div id="techData"></div>
+                <h2>AI Detection Evidence</h2>
+                <div id="aiReasoning">Analyzing signals...</div>
             </div>
-        </div>
-
-        <div class="card" style="margin-top: 30px;">
-            <h3>AI Detection Evidence & Reasoning</h3>
-            <div id="evidenceList"></div>
         </div>
     </div>
 
     <script>
-        async function loadInvestigation() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const id = urlParams.get('id');
-
-            if (!id) {
-                document.getElementById('main-content').innerHTML = "<h1>Error</h1><p>No Case ID provided in URL.</p>";
-                return;
-            }
+        async function fetchDetails() {
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get('id');
+            document.getElementById('incidentId').innerText = `ID-${id}`;
 
             try {
-                const response = await fetch(`/api/v2/alerts/${id}`);
-                if (!response.ok) throw new Error(`Alert ID ${id} not found in database.`);
+                const res = await fetch(`/api/v2/alerts/${id}`);
+                const data = await res.json();
                 
-                const data = await response.json();
-                const forensics = JSON.parse(data.detection_signals);
+                if (data.error) {
+                    document.body.innerHTML = "<h1>Alert Not Found</h1>";
+                    return;
+                }
 
-                document.getElementById('txnId').innerText = `ID: ${data.transaction_id}`;
-                document.getElementById('fraudName').innerText = data.fraud_name;
-                document.getElementById('userName').innerText = data.user_name;
-                document.getElementById('amount').innerText = "KES " + data.amount.toLocaleString();
-                document.getElementById('recipient').innerText = data.recipient;
-                document.getElementById('location').innerText = data.location;
-                document.getElementById('timestamp').innerText = new Date(data.timestamp).toLocaleString();
-                document.getElementById('riskLevel').innerHTML = `<span class="badge ${data.risk_level}">${data.risk_level} RISK</span>`;
+                let forensics = typeof data.detection_signals === 'string' ? JSON.parse(data.detection_signals) : data.detection_signals;
 
-                const signals = forensics.signals || {};
-                const techContainer = document.getElementById('techData');
-                techContainer.innerHTML = Object.entries(signals).map(([key, val]) => `
-                    <div class="data-row">
-                        <span class="label">${key.toUpperCase().replace(/_/g, ' ')}</span>
-                        <span class="value">${val}</span>
-                    </div>
-                `).join('');
+                // Populate Technical Metadata
+                const metaContainer = document.getElementById('metadataLogs');
+                metaContainer.innerHTML = `
+                    <div class="signal-box"><span class="label">IMEI STATUS</span><span class="value">${forensics.signals.IMEI_Status || 'UNKNOWN'}</span></div>
+                    <div class="signal-box"><span class="label">SIM STATUS</span><span class="value">${forensics.signals.SIM_Status || 'UNKNOWN'}</span></div>
+                    <div class="signal-box"><span class="label">NETWORK NODE</span><span class="value">${forensics.signals.Node_Location || 'KE-NBO-01'}</span></div>
+                    <div class="signal-box"><span class="label">TRACE ID</span><span class="value">${forensics.signals.Trace_ID || 'N/A'}</span></div>
+                `;
 
-                const explanations = forensics.explanations || [];
-                const evidenceContainer = document.getElementById('evidenceList');
-                evidenceContainer.innerHTML = explanations.map(text => `
-                    <div class="evidence-box">
-                        <p class="evidence-text">● ${text}</p>
-                    </div>
+                // Populate AI Reasoning
+                const reasonContainer = document.getElementById('aiReasoning');
+                reasonContainer.innerHTML = forensics.explanations.map(e => `
+                    <p style="color:#66fcf1; margin-bottom:15px; border-bottom:1px solid #0b0c10; padding-bottom:10px;">
+                        <span style="color:#8892b0;">DETECTED:</span><br>${e}
+                    </p>
                 `).join('');
 
             } catch (err) {
-                document.getElementById('main-content').innerHTML = `
-                    <div style="padding: 50px; text-align: center;">
-                        <h1 style="color: #ff4c4c;">Forensic Load Failed</h1>
-                        <p style="margin-top: 20px;">Reason: ${err.message}</p>
-                        <a href="/dashboard" style="color: #66fcf1; display: block; margin-top: 20px;">Return to Dashboard</a>
-                    </div>
-                `;
+                console.error(err);
             }
         }
-        window.onload = loadInvestigation;
+        window.onload = fetchDetails;
     </script>
 </body>
 </html>
