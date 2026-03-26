@@ -6,80 +6,104 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body { background: #0b0c10; color: #c5c6c7; display: flex; min-height: 100vh; }
-        .sidebar { width: 260px; background: #1f2833; height: 100vh; position: fixed; padding: 25px; border-right: 1px solid #45a29e; }
-        .sidebar h2 { color: #66fcf1; letter-spacing: 3px; margin-bottom: 40px; font-size: 20px; }
+        
+        .sidebar { width: 250px; background: #1f2833; height: 100vh; position: fixed; padding: 25px; border-right: 1px solid #45a29e; }
+        .sidebar h2 { color: #66fcf1; letter-spacing: 2px; margin-bottom: 40px; font-size: 20px; }
         .sidebar a { display: block; color: #8892b0; padding: 12px; text-decoration: none; font-size: 14px; margin-bottom: 10px; border-left: 3px solid transparent; transition: 0.3s; }
         .sidebar a:hover { color: #66fcf1; background: rgba(102, 252, 241, 0.05); border-left: 3px solid #66fcf1; }
-        .main { flex: 1; margin-left: 260px; padding: 40px; }
-        .header { margin-bottom: 30px; border-bottom: 1px solid #45a29e; padding-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-        .incident-card { background: #1f2833; border: 1px solid #45a29e; padding: 25px; border-radius: 4px; margin-bottom: 25px; }
-        .incident-header { display: flex; justify-content: space-between; margin-bottom: 20px; }
-        .incident-type { color: #66fcf1; font-weight: bold; font-size: 20px; text-transform: uppercase; }
-        .badge { padding: 6px 12px; border-radius: 2px; font-size: 11px; font-weight: bold; }
-        .CRITICAL { background: rgba(255, 76, 76, 0.1); color: #ff4c4c; border: 1px solid #ff4c4c; }
-        .HIGH { background: rgba(255, 165, 0, 0.1); color: #ffa500; border: 1px solid #ffa500; }
-        .details-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 30px; margin-top: 20px; border-top: 1px solid rgba(69, 162, 158, 0.2); padding-top: 20px; }
-        .reasoning-text { color: #66fcf1; font-size: 13px; margin-bottom: 8px; }
-        .btn { padding: 10px 20px; font-size: 12px; font-weight: bold; cursor: pointer; text-decoration: none; border-radius: 2px; display: inline-block; }
-        .btn-investigate { border: 1px solid #66fcf1; color: #66fcf1; }
-        .metadata-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #0b0c10; font-size: 13px; }
-        .m-label { color: #8892b0; font-size: 11px; }
+
+        .main { flex: 1; margin-left: 250px; padding: 40px; }
+        .header { margin-bottom: 30px; border-bottom: 1px solid #45a29e; padding-bottom: 20px; }
+        
+        .incident-card { background: #1f2833; border: 1px solid #45a29e; padding: 20px; border-radius: 4px; margin-bottom: 20px; }
+        .incident-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
+        .incident-type { color: #66fcf1; font-weight: bold; font-size: 18px; }
+        .timestamp { color: #8892b0; font-size: 12px; font-family: monospace; }
+        
+        .badge { padding: 4px 10px; border-radius: 2px; font-size: 10px; font-weight: bold; }
+        .CRITICAL { background: rgba(255, 76, 76, 0.2); color: #ff4c4c; border: 1px solid #ff4c4c; }
+
+        .details-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; margin-top: 15px; border-top: 1px solid #0b0c10; pt: 15px; }
+        .reasoning-box { background: #0b0c10; padding: 15px; border-radius: 4px; }
+        .reasoning-box h4 { color: #45a29e; font-size: 11px; margin-bottom: 10px; text-transform: uppercase; }
+        .reasoning-text { color: #66fcf1; font-size: 13px; line-height: 1.5; }
+
+        .metadata-list { font-size: 12px; }
+        .metadata-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #0b0c10; }
+        .m-label { color: #8892b0; }
+        .m-value { color: #fff; font-weight: 500; }
     </style>
 </head>
 <body>
     <div class="sidebar">
-        <h2>LOGSENSE AI</h2>
-        <a href="/dashboard">Console Home</a>
-        <a href="/alerts" style="color: #66fcf1; border-left: 3px solid #66fcf1;">Forensic Logs</a>
+        <h2>LOGSENSE</h2>
+        <a href="/dashboard">Dashboard</a>
+        <a href="/alerts" style="color: #66fcf1; border-left: 3px solid #66fcf1; background: rgba(102,252,241,0.05);">Incident Logs</a>
     </div>
+
     <div class="main">
         <div class="header">
-            <div><h1>Incident Forensic Archive</h1></div>
-            <div id="logCount" class="badge CRITICAL">0 INCIDENTS</div>
+            <h1>Incident Forensic Archive</h1>
+            <p style="color: #8892b0; margin-top: 5px;">Historical log of all blocked anomalies.</p>
         </div>
-        <div id="logsContainer"></div>
+
+        <div id="logsContainer">
+            <p style="text-align: center; margin-top: 50px;">Loading historical logs...</p>
+        </div>
     </div>
+
     <script>
         async function loadLogs() {
             try {
                 const response = await fetch('/api/v2/alerts/recent');
                 const alerts = await response.json();
                 const container = document.getElementById('logsContainer');
-                document.getElementById('logCount').innerText = `${alerts.length} INCIDENTS`;
                 
+                if (alerts.length === 0) {
+                    container.innerHTML = "<p>No incidents recorded in the database.</p>";
+                    return;
+                }
+
                 container.innerHTML = alerts.map(a => {
-                    let forensics = { explanations: ["Analysis pending..."], signals: {} };
+                    let forensics = { explanations: [], signals: {} };
                     try {
-                        forensics = typeof a.detection_signals === 'string' ? JSON.parse(a.detection_signals) : a.detection_signals;
-                    } catch(e) { console.error("Parse error", e); }
+                        forensics = JSON.parse(a.detection_signals);
+                    } catch(e) { console.error("Parse Error", e); }
 
                     return `
                         <div class="incident-card">
                             <div class="incident-header">
                                 <div>
-                                    <span class="incident-type">${a.fraud_name || 'System Anomaly'}</span>
-                                    <p style="font-size:12px; color:#45a29e;">TXN: ${a.transaction_id} | ${new Date(a.timestamp).toLocaleString()}</p>
+                                    <span class="incident-type">${a.fraud_name}</span>
+                                    <p class="timestamp">ID: ${a.transaction_id} | ${new Date(a.timestamp).toLocaleString()}</p>
                                 </div>
-                                <span class="badge ${a.risk_level}">${a.risk_level} RISK</span>
+                                <span class="badge ${a.risk_level}">${a.risk_level}</span>
                             </div>
+
                             <div class="details-grid">
-                                <div>
-                                    <h4 style="color:#8892b0; font-size:11px; margin-bottom:10px;">AI REASONING</h4>
-                                    ${forensics.explanations.map(exp => `<p class="reasoning-text">>> ${exp}</p>`).join('')}
+                                <div class="reasoning-box">
+                                    <h4>Detection Reasoning</h4>
+                                    ${forensics.explanations.map(exp => `<p class="reasoning-text">● ${exp}</p>`).join('')}
                                 </div>
-                                <div>
-                                    <div class="metadata-item"><span class="m-label">USER</span><span>${a.user_name}</span></div>
-                                    <div class="metadata-item"><span class="m-label">AMOUNT</span><span>KES ${a.amount}</span></div>
-                                    <div class="metadata-item"><span class="m-label">TARGET</span><span>${a.recipient}</span></div>
+                                
+                                <div class="metadata-list">
+                                    <div class="metadata-item"><span class="m-label">User</span><span class="m-value">${a.user_name}</span></div>
+                                    <div class="metadata-item"><span class="m-label">Amount</span><span class="m-value">KES ${a.amount}</span></div>
+                                    <div class="metadata-item"><span class="m-label">Recipient</span><span class="m-value">${a.recipient}</span></div>
+                                    ${Object.entries(forensics.signals).map(([key, val]) => `
+                                        <div class="metadata-item">
+                                            <span class="m-label">${key.replace(/_/g, ' ')}</span>
+                                            <span class="m-value">${val}</span>
+                                        </div>
+                                    `).join('')}
                                 </div>
-                            </div>
-                            <div style="margin-top:20px;">
-                                <a href="/analyze?id=${a.id}" class="btn btn-investigate">Open Forensic Lab</a>
                             </div>
                         </div>
                     `;
                 }).join('');
-            } catch (err) { console.error(err); }
+            } catch (err) {
+                document.getElementById('logsContainer').innerHTML = `<p style="color: #ff4c4c;">Failed to fetch logs: ${err.message}</p>`;
+            }
         }
         window.onload = loadLogs;
     </script>
