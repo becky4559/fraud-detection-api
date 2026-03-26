@@ -24,10 +24,18 @@ Base.metadata.create_all(bind=engine)
 
 # --- DETAILED DETECTION ENGINE ---
 def evaluate_logsense_forensics(data):
+    # Get user profile constraints (defaults for new/custom profiles)
+    user_name = data.get("userName", "New User")
+    
+    # Defaults for simulation
+    limit = 30000 
+    home_location = "Nairobi"
+    
     amount = float(data.get("amount", 0))
     recipient = data.get("recipient", "").lower()
     imei_match = data.get("imei_match", True)
     sim_match = data.get("sim_match", True)
+    location = data.get("location", "Nairobi")
     location_score = data.get("location_score", 1.0)
     pin = data.get("pin_attempt", "")
 
@@ -39,13 +47,18 @@ def evaluate_logsense_forensics(data):
     if not sim_match:
         return {"type": "SIM_SWAP", "name": "Potential SIM Swap Detected", "score": 0.88, "level": "HIGH", "reason": "SIM Serial (ICCID) changed without migration."}
 
-    # 3. IDENTITY THEFT
-    if "mary" in recipient or "akinyi" in recipient or location_score < 0.3 or (pin != "" and pin != "4250"):
+    # 3. GEOGRAPHIC ANOMALY (Logic for custom profiles)
+    if location != home_location and location != "Unknown":
+         return {"type": "IDENTITY_THEFT", "name": "Geographic Displacement", "score": 0.85, "level": "HIGH", "reason": f"Transaction from {location} deviates from profile home ({home_location})."}
+
+    # 4. IDENTITY THEFT / PIN VIOLATION
+    # Accepts both the specific 4250 PIN and the 1234 demo PIN
+    if "mary" in recipient or "akinyi" in recipient or location_score < 0.3 or (pin != "" and pin != "1234" and pin != "4250"):
         return {"type": "IDENTITY_THEFT", "name": "Identity Theft / Account Takeover", "score": 0.95, "level": "CRITICAL", "reason": "Unauthorized access or blacklisted recipient."}
 
-    # 4. MOBILE MONEY FRAUD
-    if amount > 30000:
-        return {"type": "MOBILE_MONEY_FRAUD", "name": "Mobile Money Fraud Pattern", "score": 0.75, "level": "MEDIUM", "reason": f"High value KES {amount} exceeds baseline."}
+    # 5. MOBILE MONEY FRAUD
+    if amount > limit:
+        return {"type": "MOBILE_MONEY_FRAUD", "name": "Mobile Money Fraud Pattern", "score": 0.75, "level": "MEDIUM", "reason": f"High value KES {amount} exceeds baseline for {user_name}."}
 
     return None
 
@@ -56,18 +69,31 @@ def generate_signals(threat, data):
             "IMEI_Status": "MATCHED" if data.get("imei_match", True) else "CLONED_DETECTED",
             "SIM_Status": "ORIGINAL" if data.get("sim_match", True) else "SWAP_SUSPECTED",
             "Trace_ID": f"LOG-{random.randint(1000,9999)}",
-            "Network_Node": data.get("location", "Nairobi Central")
+            "Node_Location": data.get("location", "Nairobi Central")
         }
     }
 
 # --- ROUTES ---
+
+@app.post("/api/mobile/profiles")
+async def create_profile(request: Request, db: Session = Depends(get_db)):
+    try:
+        data = await request.json()
+        user_name = data.get("userName")
+        print(f"LOGSENSE_ENGINE: New Profile Created/Synced for {user_name}")
+        return {
+            "status": "SUCCESS", 
+            "message": f"Profile for {user_name} initialized on forensic node."
+        }
+    except Exception as e:
+        return JSONResponse(status_code=400, content={"error": str(e)})
 
 @app.post("/api/mobile/transaction")
 async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
     try:
         data = await request.json()
         threat = evaluate_logsense_forensics(data)
-
+        
         if threat:
             signals = generate_signals(threat, data)
             new_alert = FraudAlert(
@@ -87,19 +113,22 @@ async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
             db.add(new_alert)
             db.commit()
             return {"status": "BLOCKED", "reason": threat["type"]}
-
+        
         return {"status": "SUCCESS", "message": "Authorized"}
     except Exception as e:
         return JSONResponse(status_code=400, content={"error": str(e)})
 
 @app.get("/")
-async def serve_login(): return FileResponse("login.html")
+async def serve_login(): 
+    return FileResponse("login.html")
 
 @app.get("/dashboard")
-async def serve_dashboard(): return FileResponse("dashboard.html")
+async def serve_dashboard(): 
+    return FileResponse("dashboard.html")
 
 @app.get("/analyze")
-async def serve_analyze(): return FileResponse("analyze.html")
+async def serve_analyze(): 
+    return FileResponse("analyze.html")
 
 @app.get("/api/v2/alerts/recent")
 def get_recent_alerts(db: Session = Depends(get_db)):
@@ -107,10 +136,10 @@ def get_recent_alerts(db: Session = Depends(get_db)):
 
 @app.get("/api/v2/alerts/{alert_id}")
 def get_alert_details(alert_id: int, db: Session = Depends(get_db)):
-    # Corrected SQLAlchemy lookup
+    # Look for the alert by its primary key ID
     alert = db.query(FraudAlert).filter(FraudAlert.id == alert_id).first()
     if not alert:
-        raise HTTPException(status_code=404, detail="Alert not found in Database")
+        return JSONResponse(status_code=404, content={"error": "Alert not found in database"})
     return alert
 
 if __name__ == "__main__":
