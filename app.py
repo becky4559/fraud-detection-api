@@ -25,10 +25,7 @@ Base.metadata.create_all(bind=engine)
 
 # --- DETAILED DETECTION ENGINE ---
 def evaluate_logsense_forensics(data):
-    # Get user profile constraints
     user_name = data.get("userName", "New User")
-    
-    # Defaults for simulation
     limit = 30000 
     home_location = "Nairobi"
     
@@ -40,23 +37,18 @@ def evaluate_logsense_forensics(data):
     location_score = data.get("location_score", 1.0)
     pin = data.get("pin_attempt", "")
 
-    # 1. DEVICE CLONING
     if not imei_match:
         return {"type": "DEVICE_CLONING", "name": "Mobile Device Cloning Detected", "score": 0.98, "level": "CRITICAL", "reason": "Hardware Fingerprint (IMEI) mismatch."}
 
-    # 2. SIM SWAP
     if not sim_match:
         return {"type": "SIM_SWAP", "name": "Potential SIM Swap Detected", "score": 0.88, "level": "HIGH", "reason": "SIM Serial (ICCID) changed without migration."}
 
-    # 3. GEOGRAPHIC ANOMALY
     if location != home_location and location != "Unknown":
          return {"type": "IDENTITY_THEFT", "name": "Geographic Displacement", "score": 0.85, "level": "HIGH", "reason": f"Transaction from {location} deviates from profile home ({home_location})."}
 
-    # 4. IDENTITY THEFT / PIN VIOLATION
     if "mary" in recipient or "akinyi" in recipient or location_score < 0.3 or (pin != "" and pin != "1234" and pin != "4250"):
         return {"type": "IDENTITY_THEFT", "name": "Identity Theft / Account Takeover", "score": 0.95, "level": "CRITICAL", "reason": "Unauthorized access or blacklisted recipient."}
 
-    # 5. MOBILE MONEY FRAUD
     if amount > limit:
         return {"type": "MOBILE_MONEY_FRAUD", "name": "Mobile Money Fraud Pattern", "score": 0.75, "level": "MEDIUM", "reason": f"High value KES {amount} exceeds baseline for {user_name}."}
 
@@ -80,11 +72,7 @@ async def create_profile(request: Request, db: Session = Depends(get_db)):
     try:
         data = await request.json()
         user_name = data.get("userName")
-        print(f"LOGSENSE_ENGINE: New Profile Created/Synced for {user_name}")
-        return {
-            "status": "SUCCESS", 
-            "message": f"Profile for {user_name} initialized on forensic node."
-        }
+        return {"status": "SUCCESS", "message": f"Profile for {user_name} initialized."}
     except Exception as e:
         return JSONResponse(status_code=400, content={"error": str(e)})
 
@@ -107,7 +95,7 @@ async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
                 recipient=data.get("recipient", "Unknown"),
                 location=data.get("location", "Nairobi"),
                 timestamp=datetime.now(),
-                detection_signals=json.dumps(signals),
+                detection_signals=json.dumps(signals), # Saved as String
                 acknowledged=False
             )
             db.add(new_alert)
@@ -136,7 +124,30 @@ async def serve_analyze():
 
 @app.get("/api/v2/alerts/recent")
 def get_recent_alerts(db: Session = Depends(get_db)):
-    return db.query(FraudAlert).order_by(desc(FraudAlert.timestamp)).limit(50).all()
+    alerts = db.query(FraudAlert).order_by(desc(FraudAlert.timestamp)).limit(50).all()
+    
+    # NEW: Formatted loop to ensure detection_signals is a JSON object
+    formatted_alerts = []
+    for a in alerts:
+        try:
+            # Convert string back to Python Dict for clean JSON transmission
+            signals = json.loads(a.detection_signals) if isinstance(a.detection_signals, str) else a.detection_signals
+        except:
+            signals = {"explanations": ["Log format error"], "signals": {}}
+
+        formatted_alerts.append({
+            "id": a.id,
+            "transaction_id": a.transaction_id,
+            "user_name": a.user_name,
+            "fraud_name": a.fraud_name,
+            "risk_level": a.risk_level,
+            "amount": a.amount,
+            "recipient": a.recipient,
+            "location": a.location,
+            "timestamp": a.timestamp.isoformat() if a.timestamp else None,
+            "detection_signals": signals  # This is now a real JSON object
+        })
+    return formatted_alerts
 
 @app.get("/api/v2/alerts/{alert_id}")
 def get_alert_details(alert_id: int, db: Session = Depends(get_db)):
@@ -144,8 +155,12 @@ def get_alert_details(alert_id: int, db: Session = Depends(get_db)):
     if not alert:
         return JSONResponse(status_code=404, content={"error": "Alert not found"})
     
-    # Explicitly mapping to dictionary ensures JSON serialization works perfectly for the frontend
-    alert_data = {
+    try:
+        signals = json.loads(alert.detection_signals) if isinstance(alert.detection_signals, str) else alert.detection_signals
+    except:
+        signals = {"explanations": ["Log format error"], "signals": {}}
+
+    return {
         "id": alert.id,
         "transaction_id": alert.transaction_id,
         "user_name": alert.user_name,
@@ -155,11 +170,9 @@ def get_alert_details(alert_id: int, db: Session = Depends(get_db)):
         "recipient": alert.recipient,
         "location": alert.location,
         "timestamp": alert.timestamp.isoformat() if alert.timestamp else None,
-        "detection_signals": alert.detection_signals 
+        "detection_signals": signals
     }
-    return alert_data
 
 if __name__ == "__main__":
     import uvicorn
-    # Port is set for Render compatibility
     uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
