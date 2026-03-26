@@ -23,7 +23,7 @@
         .badge { padding: 4px 10px; border-radius: 2px; font-size: 10px; font-weight: bold; }
         .CRITICAL { background: rgba(255, 76, 76, 0.2); color: #ff4c4c; border: 1px solid #ff4c4c; }
 
-        .details-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; margin-top: 15px; border-top: 1px solid #0b0c10; pt: 15px; }
+        .details-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; margin-top: 15px; border-top: 1px solid #0b0c10; padding-top: 15px; }
         .reasoning-box { background: #0b0c10; padding: 15px; border-radius: 4px; }
         .reasoning-box h4 { color: #45a29e; font-size: 11px; margin-bottom: 10px; text-transform: uppercase; }
         .reasoning-text { color: #66fcf1; font-size: 13px; line-height: 1.5; }
@@ -32,6 +32,10 @@
         .metadata-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #0b0c10; }
         .m-label { color: #8892b0; }
         .m-value { color: #fff; font-weight: 500; }
+
+        .actions { margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(102, 252, 241, 0.1); }
+        .btn-lab { color: #66fcf1; text-decoration: none; border: 1px solid #66fcf1; padding: 6px 15px; font-size: 12px; display: inline-block; transition: 0.3s; }
+        .btn-lab:hover { background: #66fcf1; color: #0b0c10; }
     </style>
 </head>
 <body>
@@ -67,7 +71,7 @@
                 container.innerHTML = alerts.map(a => {
                     let forensics = { explanations: [], signals: {} };
                     try {
-                        forensics = JSON.parse(a.detection_signals);
+                        forensics = typeof a.detection_signals === 'string' ? JSON.parse(a.detection_signals) : a.detection_signals;
                     } catch(e) { console.error("Parse Error", e); }
 
                     return `
@@ -90,13 +94,17 @@
                                     <div class="metadata-item"><span class="m-label">User</span><span class="m-value">${a.user_name}</span></div>
                                     <div class="metadata-item"><span class="m-label">Amount</span><span class="m-value">KES ${a.amount}</span></div>
                                     <div class="metadata-item"><span class="m-label">Recipient</span><span class="m-value">${a.recipient}</span></div>
-                                    ${Object.entries(forensics.signals).map(([key, val]) => `
+                                    ${Object.entries(forensics.signals).slice(0, 3).map(([key, val]) => `
                                         <div class="metadata-item">
                                             <span class="m-label">${key.replace(/_/g, ' ')}</span>
                                             <span class="m-value">${val}</span>
                                         </div>
                                     `).join('')}
                                 </div>
+                            </div>
+
+                            <div class="actions">
+                                <a href="/analyze?id=${a.id}" class="btn-lab">Open Forensic Lab</a>
                             </div>
                         </div>
                     `;
