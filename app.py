@@ -131,11 +131,25 @@ def get_recent_alerts(db: Session = Depends(get_db)):
     
     formatted_alerts = []
     for a in alerts:
-        try:
-            # Safely parse the stringified JSON from the database into an object
-            signals = json.loads(a.detection_signals) if isinstance(a.detection_signals, str) else a.detection_signals
-        except Exception:
-            signals = {"explanations": ["Format error"], "signals": {}}
+        raw_signals = a.detection_signals
+        signals = {"explanations": [], "signals": {}} # Default empty fallback
+        
+        if raw_signals:
+            try:
+                # Handle both string and dict types from DB
+                if isinstance(raw_signals, str):
+                    signals = json.loads(raw_signals)
+                else:
+                    signals = raw_signals
+                
+                # Ensure structure is exactly what Frontend needs
+                if not isinstance(signals.get("explanations"), list):
+                    signals["explanations"] = [str(signals.get("explanations", "Anomaly detected"))]
+                if not isinstance(signals.get("signals"), dict):
+                    signals["signals"] = {}
+            except Exception as e:
+                print(f"Error parsing signals for alert {a.id}: {e}")
+                signals = {"explanations": ["Forensic format mismatch"], "signals": {}}
 
         formatted_alerts.append({
             "id": a.id,
@@ -157,10 +171,18 @@ def get_alert_details(alert_id: int, db: Session = Depends(get_db)):
     if not alert:
         return JSONResponse(status_code=404, content={"error": "Alert not found"})
     
+    raw_signals = alert.detection_signals
+    signals = {"explanations": [], "signals": {}}
+    
     try:
-        signals = json.loads(alert.detection_signals) if isinstance(alert.detection_signals, str) else alert.detection_signals
+        if isinstance(raw_signals, str):
+            signals = json.loads(raw_signals)
+        else:
+            signals = raw_signals
+        if not isinstance(signals.get("explanations"), list):
+            signals["explanations"] = []
     except Exception:
-        signals = {"explanations": ["Format error"], "signals": {}}
+        signals = {"explanations": ["Data format error"], "signals": {}}
 
     return {
         "id": alert.id,
