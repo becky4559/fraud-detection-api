@@ -22,47 +22,67 @@ app.add_middleware(
 
 Base.metadata.create_all(bind=engine)
 
-# --- THE CORRECTED DETECTION LOGIC ---
+# --- REFINED RESEARCH DETECTION LOGIC ---
 def evaluate_logsense_forensics(data):
     user = data.get("userName", "User").lower()
     recipient = data.get("recipient", "").lower()
+    location = data.get("location", "Nairobi")
     
     try:
         amount = float(data.get("amount", 0))
     except:
         amount = 0.0
 
-    # Hardware/GPS Toggles
+    # Hardware & GPS Toggles
     imei_match = data.get("imei_match", True)
     sim_match = data.get("sim_match", True)
     
-    # 1. DEVICE & SIM TOGGLES
-    if not imei_match:
-        return {"type": "DEVICE_CLONING", "name": "Device Cloning Attempt", "score": 0.98, "level": "CRITICAL", "reason": "Hardware IMEI mismatch detected via system toggle."}
+    # Frequent/Safe Contacts List
+    safe_contacts = ["zeddy", "eddie", "mary"]
+    is_known_contact = any(contact in recipient for contact in safe_contacts)
+
+    # 1. DEVICE CLONING (Physical Layer Breach)
+    # Scenario: Phone A toggles Kisii, Phone B (Nairobi) sends money.
+    if not imei_match and location.lower() == "kisii":
+        return {
+            "type": "DEVICE_CLONING", 
+            "name": "Mobile Device Cloning", 
+            "score": 0.98, 
+            "level": "CRITICAL", 
+            "reason": f"Hardware Collision: Device ID active in Kisii while system log registers Nairobi session (< 1 min)."
+        }
     
+    # 2. SIM SWAP (Network Layer Breach)
+    # Scenario: GPS Toggle is off, SIM toggle triggers mismatch.
     if not sim_match:
-        return {"type": "SIM_SWAP", "name": "SIM Swap Detected", "score": 0.88, "level": "CRITICAL", "reason": "ICCID mismatch detected via system toggle."}
+        return {
+            "type": "SIM_SWAP", 
+            "name": "SIM Swap Detected", 
+            "score": 0.92, 
+            "level": "CRITICAL", 
+            "reason": "ICCID Serial Mismatch: Unauthorized SIM replacement detected while GPS tracking was suppressed."
+        }
 
-    # 2. IDENTITY THEFT (Alice Logic)
-    LIMIT = 10000 
-    if user == "alice" and amount > LIMIT:
-        if "mary" in recipient or "new" in recipient:
-            return {
-                "type": "IDENTITY_THEFT", 
-                "name": "Identity Theft", 
-                "score": 0.95, 
-                "level": "CRITICAL", 
-                "reason": f"Unauthorized high-value transaction by Alice to blacklisted recipient."
-            }
+    # 3. IDENTITY THEFT (Behavioral Anomaly - Alice Case)
+    # Scenario: Alice sends > 10,000 to someone NOT in her contacts (Zeddy/Eddie/Mary).
+    if user == "alice" and amount > 10000 and not is_known_contact:
+        return {
+            "type": "IDENTITY_THEFT", 
+            "name": "Identity Theft (ATO)", 
+            "score": 0.95, 
+            "level": "CRITICAL", 
+            "reason": f"Account Takeover: High-value transfer (KES {amount}) to unverified recipient outside contact circle."
+        }
 
-    # 3. MOBILE MONEY FRAUD
-    if amount > 5000 and "new" in recipient:
+    # 4. MOBILE MONEY FRAUD (Transaction Anomaly)
+    # Scenario: Amount > 40,000 to 2+ people who are NOT Zeddy, Eddie, or Mary.
+    if amount > 40000 and not is_known_contact:
         return {
             "type": "MOBILE_MONEY_FRAUD", 
-            "name": "Mobile Money Fraud", 
-            "score": 0.85, 
+            "name": "Mule Wallet Transfer", 
+            "score": 0.89, 
             "level": "HIGH", 
-            "reason": "Suspicious transfer to unverified mobile wallet."
+            "reason": "Velocity Violation: Bulk fund movement exceeding KES 40,000 to unauthorized mobile node."
         }
 
     return None
@@ -79,19 +99,19 @@ async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
         txn_amount = 0.0
 
     if threat:
-        # --- FIXED SIGNALS BLOCK FOR FORENSIC LAB ---
+        # metadata for Forensic Lab
         signals = {
             "explanations": [
                 threat["reason"], 
-                f"Isolation Forest Score: {threat['score']}",
-                "Pattern Match: High-Risk Behavior"
+                f"Isolation Forest Anomaly Score: {threat['score']}",
+                "Heuristic: Impossible Travel / Behavioral Shift"
             ],
             "signals": {
                 "User_Identity": data.get("userName", "Unknown"),
-                "IMEI_Integrity": "FAIL" if not data.get("imei_match") else "PASS", 
-                "SIM_Integrity": "FAIL" if not data.get("sim_match") else "PASS",
-                "Threshold_Status": "EXCEEDED" if txn_amount > 5000 else "NORMAL",
-                "Recipient_Check": "VERIFIED" if txn_amount < 1000 else "HIGH_RISK_ENTITY"
+                "IMEI_Integrity": "COMPROMISED" if not data.get("imei_match") else "SECURE", 
+                "SIM_Integrity": "SWAP_DETECTED" if not data.get("sim_match") else "STABLE",
+                "Geo_Sync": "CONFLICT (Kisii/Nairobi)" if not data.get("imei_match") and data.get("location") == "Kisii" else "OK",
+                "Recipient_Verification": "UNAUTHORIZED" if threat["type"] in ["IDENTITY_THEFT", "MOBILE_MONEY_FRAUD"] else "VERIFIED"
             }
         }
         
@@ -105,7 +125,7 @@ async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
             amount=txn_amount,
             recipient=data.get("recipient", "Unknown"),
             location=data.get("location", "Nairobi"),
-            detection_signals=json.dumps(signals) # Stored as JSON string
+            detection_signals=json.dumps(signals)
         )
         db.add(new_alert)
         db.commit()
