@@ -5,7 +5,7 @@ from datetime import datetime
 from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, func
+from sqlalchemy import desc
 from fastapi.responses import FileResponse, JSONResponse
 
 from database import SessionLocal, engine, get_db, FraudAlert, Base
@@ -22,82 +22,76 @@ app.add_middleware(
 
 Base.metadata.create_all(bind=engine)
 
-# --- HARDWARE PAIRING CONFIG ---
-# This represents your "Married" Device (Phone A)
+# --- HARDWARE PAIRING (The "Marriage") ---
 PHONE_A_SIGNATURE = "778899" 
 
-# --- REFINED RESEARCH DETECTION LOGIC ---
 def evaluate_logsense_forensics(data, db: Session):
     user = data.get("userName", "User").lower()
     recipient = data.get("recipient", "").lower()
-    location = data.get("location", "Nairobi")
+    location = data.get("location", "Nairobi").lower()
     
-    # Identify if the request is coming from the "married" device or "Phone B"
+    # Toggles from Mobile App
+    imei_match = data.get("imei_match", True)
+    sim_match = data.get("sim_match", True)
+    gps_active = data.get("gps_active", True) 
     device_sig = data.get("deviceSignature", "UNKNOWN_B")
-    
+
     try:
         amount = float(data.get("amount", 0))
     except:
         amount = 0.0
 
-    # Hardware & GPS Toggles from Mobile App
-    imei_match = data.get("imei_match", True)
-    sim_match = data.get("sim_match", True)
-    
-    # Frequent/Safe Contacts List
     safe_contacts = ["zeddy", "eddie", "mary"]
-    is_known_contact = any(contact in recipient for contact in safe_contacts)
+    is_known = any(contact in recipient for contact in safe_contacts)
 
-    # Velocity Check: Count non-contact transfers in the last 30 minutes
-    # This is what triggers the "3rd transaction" block
-    recent_mule_attempts = db.query(FraudAlert).filter(
-        FraudAlert.user_name == data.get("userName", "User"),
-        FraudAlert.fraud_type == "MOBILE_MONEY_FRAUD"
-    ).count()
-
-    # 1. DEVICE CLONING (Phone A vs Phone B Scenario)
-    # Trigger: IMEI Mismatch OR Unknown Signature + Location Shift
-    if not imei_match or (device_sig != PHONE_A_SIGNATURE and user == "alice"):
-        if location.lower() == "kisii":
-            return {
-                "type": "DEVICE_CLONING", 
-                "name": "Hardware Collision", 
-                "score": 0.98, 
-                "level": "CRITICAL", 
-                "reason": f"Identity Conflict: Account accessed via Phone B in Kisii while Phone A is registered in Nairobi."
-            }
+    # --- 1. DEVICE CLONING (Hardware + Geo Conflict) ---
+    # Trigger: Phone B (mismatch) + Kisii location + IMEI Fail
+    if not imei_match and location == "kisii":
+        return {
+            "type": "DEVICE_CLONING", 
+            "name": "Impossible Travel (Cloning)", 
+            "score": 0.99, 
+            "level": "CRITICAL", 
+            "reason": "Hardware/Geo Conflict: Account active in Kisii & Nairobi simultaneously via Phone B."
+        }
     
-    # 2. SIM SWAP (Network Layer Breach)
-    if not sim_match:
+    # --- 2. SIM SWAPPING (Network + Privacy Mode) ---
+    # Trigger: SIM Fail + GPS turned OFF (to hide location)
+    if not sim_match and not gps_active:
         return {
             "type": "SIM_SWAP", 
-            "name": "SIM Swap Detected", 
-            "score": 0.92, 
+            "name": "SIM Swap (Dark Session)", 
+            "score": 0.94, 
             "level": "CRITICAL", 
-            "reason": "ICCID Serial Mismatch: Unauthorized SIM replacement detected."
+            "reason": "Network Anomaly: ICCID mismatch detected during a GPS-suppressed session."
         }
 
-    # 3. IDENTITY THEFT (Alice Case)
-    if user == "alice" and amount > 10000 and not is_known_contact:
+    # --- 3. IDENTITY THEFT (Behavioral Anomaly) ---
+    # Trigger: Alice (Phone A) + High Amount + Unknown Recipient
+    if user == "alice" and amount > 10000 and not is_known:
         return {
             "type": "IDENTITY_THEFT", 
             "name": "Identity Theft (ATO)", 
             "score": 0.95, 
             "level": "CRITICAL", 
-            "reason": f"Behavioral Anomaly: High-value transfer to unverified recipient outside Alice's social circle."
+            "reason": "Unauthorized high-value transaction by Alice to unverified recipient."
         }
 
-    # 4. MOBILE MONEY FRAUD (The 3rd Transaction / Sequential Attack)
-    # Trigger: 3rd transaction to a stranger OR single transaction > 40k
-    if not is_known_contact:
-        if amount > 40000 or recent_mule_attempts >= 2:
-            return {
-                "type": "MOBILE_MONEY_FRAUD", 
-                "name": "Sequential Velocity Attack", 
-                "score": 0.91, 
-                "level": "HIGH", 
-                "reason": f"Anomaly Detected: Transaction #3 in a rapid sequence to non-contacts (Mule Activity)."
-            }
+    # --- 4. MOBILE MONEY FRAUD (The 3rd Transaction Rule) ---
+    # Logic: Counts existing fraud alerts for this user to detect a "burst"
+    recent_mule_attempts = db.query(FraudAlert).filter(
+        FraudAlert.user_name == data.get("userName", "User"),
+        FraudAlert.fraud_type == "MOBILE_MONEY_FRAUD"
+    ).count()
+
+    if not is_known and (amount > 40000 or recent_mule_attempts >= 2):
+        return {
+            "type": "MOBILE_MONEY_FRAUD", 
+            "name": "Sequential Mule Attack", 
+            "score": 0.89, 
+            "level": "HIGH", 
+            "reason": "Velocity Violation: 3rd sequential transfer to an unverified recipient detected."
+        }
 
     return None
 
@@ -105,8 +99,6 @@ def evaluate_logsense_forensics(data, db: Session):
 @app.post("/api/mobile/transaction")
 async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
     data = await request.json()
-    
-    # Pass the database session to check velocity
     threat = evaluate_logsense_forensics(data, db)
     
     try:
@@ -115,20 +107,19 @@ async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
         txn_amount = 0.0
 
     if threat:
-        # metadata for Forensic Lab
+        # Build Forensic Signals for analyze.html
         signals = {
             "explanations": [
                 threat["reason"], 
-                f"Isolation Forest Anomaly Score: {threat['score']}",
-                "Heuristic: Sequential Burst / Impossible Travel"
+                f"Isolation Forest Score: {threat['score']}",
+                "Forensic Log: Heuristic Pattern Match"
             ],
             "signals": {
-                "User_Identity": data.get("userName", "Unknown"),
-                "Device_Source": "Phone A (Married)" if data.get("deviceSignature") == PHONE_A_SIGNATURE else "Phone B (Intruder)",
-                "IMEI_Integrity": "COMPROMISED" if not data.get("imei_match") else "SECURE", 
-                "SIM_Integrity": "SWAP_DETECTED" if not data.get("sim_match") else "STABLE",
-                "Geo_Sync": "CONFLICT (Kisii/Nairobi)" if not data.get("imei_match") and data.get("location").lower() == "kisii" else "OK",
-                "Velocity_Index": f"Transaction #{ (db.query(FraudAlert).count()) + 1}"
+                "Hardware_Link": "PHONE_A (MARRIED)" if data.get("deviceSignature") == PHONE_A_SIGNATURE else "PHONE_B (INTRUDER)",
+                "IMEI_Integrity": "FAIL (CONFLICT)" if not data.get("imei_match") else "PASS", 
+                "SIM_Integrity": "FAIL (SWAP)" if not data.get("sim_match") else "PASS",
+                "GPS_Status": "MASKED/OFF" if not data.get("gps_active") else "BROADCASTING",
+                "Velocity_Counter": f"Attempt {(db.query(FraudAlert).count()) + 1} in Sequence"
             }
         }
         
@@ -150,7 +141,7 @@ async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
     
     return {"status": "SUCCESS"}
 
-# --- ROUTES ---
+# --- SYSTEM ROUTES ---
 @app.get("/")
 @app.get("/dashboard")
 async def serve_dash(): return FileResponse("dashboard.html")
