@@ -5,7 +5,7 @@ from datetime import datetime
 from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from sqlalchemy import desc
+from sqlalchemy import desc, func
 from fastapi.responses import FileResponse, JSONResponse
 
 from database import SessionLocal, engine, get_db, FraudAlert, Base
@@ -22,18 +22,25 @@ app.add_middleware(
 
 Base.metadata.create_all(bind=engine)
 
+# --- HARDWARE PAIRING CONFIG ---
+# This represents your "Married" Device (Phone A)
+PHONE_A_SIGNATURE = "778899" 
+
 # --- REFINED RESEARCH DETECTION LOGIC ---
-def evaluate_logsense_forensics(data):
+def evaluate_logsense_forensics(data, db: Session):
     user = data.get("userName", "User").lower()
     recipient = data.get("recipient", "").lower()
     location = data.get("location", "Nairobi")
+    
+    # Identify if the request is coming from the "married" device or "Phone B"
+    device_sig = data.get("deviceSignature", "UNKNOWN_B")
     
     try:
         amount = float(data.get("amount", 0))
     except:
         amount = 0.0
 
-    # Hardware & GPS Toggles
+    # Hardware & GPS Toggles from Mobile App
     imei_match = data.get("imei_match", True)
     sim_match = data.get("sim_match", True)
     
@@ -41,49 +48,56 @@ def evaluate_logsense_forensics(data):
     safe_contacts = ["zeddy", "eddie", "mary"]
     is_known_contact = any(contact in recipient for contact in safe_contacts)
 
-    # 1. DEVICE CLONING (Physical Layer Breach)
-    # Scenario: Phone A toggles Kisii, Phone B (Nairobi) sends money.
-    if not imei_match and location.lower() == "kisii":
-        return {
-            "type": "DEVICE_CLONING", 
-            "name": "Mobile Device Cloning", 
-            "score": 0.98, 
-            "level": "CRITICAL", 
-            "reason": f"Hardware Collision: Device ID active in Kisii while system log registers Nairobi session (< 1 min)."
-        }
+    # Velocity Check: Count non-contact transfers in the last 30 minutes
+    # This is what triggers the "3rd transaction" block
+    recent_mule_attempts = db.query(FraudAlert).filter(
+        FraudAlert.user_name == data.get("userName", "User"),
+        FraudAlert.fraud_type == "MOBILE_MONEY_FRAUD"
+    ).count()
+
+    # 1. DEVICE CLONING (Phone A vs Phone B Scenario)
+    # Trigger: IMEI Mismatch OR Unknown Signature + Location Shift
+    if not imei_match or (device_sig != PHONE_A_SIGNATURE and user == "alice"):
+        if location.lower() == "kisii":
+            return {
+                "type": "DEVICE_CLONING", 
+                "name": "Hardware Collision", 
+                "score": 0.98, 
+                "level": "CRITICAL", 
+                "reason": f"Identity Conflict: Account accessed via Phone B in Kisii while Phone A is registered in Nairobi."
+            }
     
     # 2. SIM SWAP (Network Layer Breach)
-    # Scenario: GPS Toggle is off, SIM toggle triggers mismatch.
     if not sim_match:
         return {
             "type": "SIM_SWAP", 
             "name": "SIM Swap Detected", 
             "score": 0.92, 
             "level": "CRITICAL", 
-            "reason": "ICCID Serial Mismatch: Unauthorized SIM replacement detected while GPS tracking was suppressed."
+            "reason": "ICCID Serial Mismatch: Unauthorized SIM replacement detected."
         }
 
-    # 3. IDENTITY THEFT (Behavioral Anomaly - Alice Case)
-    # Scenario: Alice sends > 10,000 to someone NOT in her contacts (Zeddy/Eddie/Mary).
+    # 3. IDENTITY THEFT (Alice Case)
     if user == "alice" and amount > 10000 and not is_known_contact:
         return {
             "type": "IDENTITY_THEFT", 
             "name": "Identity Theft (ATO)", 
             "score": 0.95, 
             "level": "CRITICAL", 
-            "reason": f"Account Takeover: High-value transfer (KES {amount}) to unverified recipient outside contact circle."
+            "reason": f"Behavioral Anomaly: High-value transfer to unverified recipient outside Alice's social circle."
         }
 
-    # 4. MOBILE MONEY FRAUD (Transaction Anomaly)
-    # Scenario: Amount > 40,000 to 2+ people who are NOT Zeddy, Eddie, or Mary.
-    if amount > 40000 and not is_known_contact:
-        return {
-            "type": "MOBILE_MONEY_FRAUD", 
-            "name": "Mule Wallet Transfer", 
-            "score": 0.89, 
-            "level": "HIGH", 
-            "reason": "Velocity Violation: Bulk fund movement exceeding KES 40,000 to unauthorized mobile node."
-        }
+    # 4. MOBILE MONEY FRAUD (The 3rd Transaction / Sequential Attack)
+    # Trigger: 3rd transaction to a stranger OR single transaction > 40k
+    if not is_known_contact:
+        if amount > 40000 or recent_mule_attempts >= 2:
+            return {
+                "type": "MOBILE_MONEY_FRAUD", 
+                "name": "Sequential Velocity Attack", 
+                "score": 0.91, 
+                "level": "HIGH", 
+                "reason": f"Anomaly Detected: Transaction #3 in a rapid sequence to non-contacts (Mule Activity)."
+            }
 
     return None
 
@@ -91,7 +105,9 @@ def evaluate_logsense_forensics(data):
 @app.post("/api/mobile/transaction")
 async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
     data = await request.json()
-    threat = evaluate_logsense_forensics(data)
+    
+    # Pass the database session to check velocity
+    threat = evaluate_logsense_forensics(data, db)
     
     try:
         txn_amount = float(data.get("amount", 0))
@@ -104,14 +120,15 @@ async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
             "explanations": [
                 threat["reason"], 
                 f"Isolation Forest Anomaly Score: {threat['score']}",
-                "Heuristic: Impossible Travel / Behavioral Shift"
+                "Heuristic: Sequential Burst / Impossible Travel"
             ],
             "signals": {
                 "User_Identity": data.get("userName", "Unknown"),
+                "Device_Source": "Phone A (Married)" if data.get("deviceSignature") == PHONE_A_SIGNATURE else "Phone B (Intruder)",
                 "IMEI_Integrity": "COMPROMISED" if not data.get("imei_match") else "SECURE", 
                 "SIM_Integrity": "SWAP_DETECTED" if not data.get("sim_match") else "STABLE",
-                "Geo_Sync": "CONFLICT (Kisii/Nairobi)" if not data.get("imei_match") and data.get("location") == "Kisii" else "OK",
-                "Recipient_Verification": "UNAUTHORIZED" if threat["type"] in ["IDENTITY_THEFT", "MOBILE_MONEY_FRAUD"] else "VERIFIED"
+                "Geo_Sync": "CONFLICT (Kisii/Nairobi)" if not data.get("imei_match") and data.get("location").lower() == "kisii" else "OK",
+                "Velocity_Index": f"Transaction #{ (db.query(FraudAlert).count()) + 1}"
             }
         }
         
