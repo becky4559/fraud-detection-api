@@ -6,3 +6,4 @@ sqlalchemy==2.0.40
 python-multipart==0.0.20
 typing-extensions==4.13.2
 numpy==1.26.4
+requests==2.31.0
