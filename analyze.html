@@ -25,8 +25,13 @@
         <a href="/alerts">Alerts</a>
         <a href="/analyze-view" class="active">Forensic Lab</a>
     </nav>
+
     <main class="main">
-        <header style="margin-bottom: 30px;"><h1 style="color: #fff;">Forensic Reconstruction</h1><p id="caseId" style="color: #45a29e; font-family: 'JetBrains Mono';">CASE_ID: Loading...</p></header>
+        <header style="margin-bottom: 30px;">
+            <h1 style="color: #fff;">Forensic Reconstruction</h1>
+            <p id="caseId" style="color: #45a29e; font-family: 'JetBrains Mono';">AWAITING SELECTION...</p>
+        </header>
+
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
             <div class="card">
                 <h3 style="color: #66fcf1; font-size: 13px; margin-bottom: 15px;">TRANSACTION CONTEXT</h3>
@@ -35,23 +40,28 @@
                 <div class="data-row"><span class="label">RECIPIENT</span><span id="recipient">--</span></div>
                 <div class="data-row"><span class="label">LOCATION</span><span id="location">--</span></div>
             </div>
+
             <div class="card">
                 <h3 style="color: #66fcf1; font-size: 13px; margin-bottom: 15px;">TECHNICAL METADATA</h3>
-                <div id="techData">Loading logs...</div>
+                <div id="techData" style="font-size: 13px;">No session data loaded.</div>
             </div>
         </div>
+
         <div class="card">
             <h3 style="color: #66fcf1; font-size: 13px; margin-bottom: 15px;">AI DETECTION EVIDENCE (ISOLATION FOREST XAI)</h3>
-            <div id="evidenceList">Analyzing signals...</div>
+            <div id="evidenceList" style="font-size: 13px;">Waiting for incident selection from the Alerts tab.</div>
         </div>
     </main>
+
     <script>
         async function loadCase() {
             const id = new URLSearchParams(window.location.search).get('id');
             if (!id) return;
+
             try {
                 const res = await fetch(`/api/v2/alerts/${id}`);
                 const data = await res.json();
+
                 document.getElementById('caseId').innerText = `CASE_ID: ${data.transaction_id}`;
                 document.getElementById('userName').innerText = data.user_name;
                 document.getElementById('amount').innerText = `KES ${data.amount.toLocaleString()}`;
@@ -63,13 +73,20 @@
 
                 const techBox = document.getElementById('techData');
                 if (forensics.signals) {
-                    techBox.innerHTML = Object.entries(forensics.signals).map(([k, v]) => `<div class="data-row"><span class="label">${k}</span><span>${v}</span></div>`).join('');
+                    techBox.innerHTML = Object.entries(forensics.signals).map(([k, v]) => `
+                        <div class="data-row"><span class="label">${k}</span><span>${v}</span></div>
+                    `).join('');
                 }
+
                 const evidenceBox = document.getElementById('evidenceList');
                 if (forensics.explanations) {
-                    evidenceBox.innerHTML = forensics.explanations.map(e => `<div class="evidence-box"><p style="color:#66fcf1;">● ${e}</p></div>`).join('');
+                    evidenceBox.innerHTML = forensics.explanations.map(e => `
+                        <div class="evidence-box"><p style="color:#66fcf1;">● ${e}</p></div>
+                    `).join('');
                 }
-            } catch (e) { console.error(e); }
+            } catch (e) {
+                console.error("Load Error:", e);
+            }
         }
         window.onload = loadCase;
     </script>
