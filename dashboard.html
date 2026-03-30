@@ -1,39 +1,86 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>LogSense Dashboard</title>
+    <title>LogSense - AI Monitor</title>
     <style>
-        body { background: #0b0c10; color: #fff; font-family: sans-serif; padding: 50px; }
-        .card { background: #1f2833; padding: 20px; border-radius: 10px; border: 1px solid #45a29e; margin-bottom: 20px; }
-        .btn { display: inline-block; background: #66fcf1; color: #000; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; }
-        .feed-item { border-bottom: 1px solid #0b0c10; padding: 10px 0; display: flex; justify-content: space-between; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background: #0b0c10; color: #fff; padding: 50px; }
+        .sidebar { width: 260px; background: #1f2833; height: 100vh; position: fixed; top:0; left:0; padding: 25px; border-right: 1px solid #45a29e; }
+        .sidebar h2 { color: #66fcf1; letter-spacing: 2px; margin-bottom: 40px; font-size: 20px; }
+        .sidebar a { display: block; color: #8892b0; padding: 12px; text-decoration: none; font-size: 14px; margin-bottom: 10px; border-left: 3px solid transparent; }
+        .sidebar a:hover { color: #66fcf1; background: rgba(102, 252, 241, 0.05); border-left: 3px solid #66fcf1; }
+        
+        .content { margin-left: 280px; }
+        .card { background: #1f2833; padding: 30px; border-radius: 10px; border: 1px solid #45a29e; margin-bottom: 20px; transition: 0.3s; }
+        .card:hover { border-color: #66fcf1; }
+        
+        .stat-value { font-size: 48px; color: #66fcf1; font-weight: bold; margin-top: 10px; }
+        .btn { display: inline-block; background: #66fcf1; color: #0b0c10; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 14px; cursor: pointer; border: none; }
+        .btn-outline { background: transparent; border: 1px solid #ff4c4c; color: #ff4c4c; margin-left: 10px; }
+        .btn-outline:hover { background: #ff4c4c; color: #fff; }
+
+        .feed-item { border-bottom: 1px solid #0b0c10; padding: 15px 0; display: flex; justify-content: space-between; align-items: center; }
+        .empty-text { color: #45a29e; font-style: italic; padding: 20px 0; }
     </style>
 </head>
 <body>
-    <h1>LogSense AI Monitor</h1>
-    <div style="display: flex; gap: 20px;">
-        <div class="card" style="flex: 1;"><h3>Total Alerts</h3><p id="count" style="font-size: 40px; color: #66fcf1;">0</p></div>
-        <div class="card" style="flex: 1;"><h3>System Health</h3><p style="font-size: 40px; color: #27ae60;">Active</p></div>
+    <div class="sidebar">
+        <h2>LOGSENSE AI</h2>
+        <a href="/dashboard" style="color: #66fcf1; border-left: 3px solid #66fcf1;">Dashboard</a>
+        <a href="/alerts">Alerts</a>
+        <a href="/analyze-view">Forensic Lab</a>
     </div>
-    <div class="card">
-        <h3>Live Alerts Stream</h3>
-        <div id="latest">Monitoring for anomalies...</div>
+
+    <div class="content">
+        <h1 style="margin-bottom: 30px;">System Integrity Overview</h1>
+        
+        <div style="display: flex; gap: 20px;">
+            <div class="card" style="flex: 1;"><h3>Total Anomalies</h3><p id="count" class="stat-value">0</p></div>
+            <div class="card" style="flex: 1;"><h3>Engine Status</h3><p class="stat-value" style="color: #27ae60;">Active</p></div>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-bottom: 20px;">Recent Forensic Detections</h3>
+            <div id="latest" class="empty-text">Awaiting network traffic... (No fraud detected)</div>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <a href="/alerts" class="btn">View Forensic History</a>
+            <button onclick="clearLogs()" class="btn btn-outline">Clear All Logs</button>
+        </div>
     </div>
-    <a href="/alerts" class="btn">View All History</a>
+
     <script>
         async function update() {
-            const res = await fetch('/api/v2/alerts');
-            const data = await res.json();
-            document.getElementById('count').innerText = data.length;
-            if(data.length > 0) {
-                document.getElementById('latest').innerHTML = data.slice(0, 3).map(a => `
-                    <div class="feed-item">
-                        <span><b>${a.fraud_name}</b> - ${a.user_name}</span>
-                        <a href="/analyze-view?id=${a.id}" style="color:#66fcf1;">Analyze →</a>
-                    </div>
-                `).join('');
+            try {
+                const res = await fetch('/api/v2/alerts');
+                const data = await res.json();
+                document.getElementById('count').innerText = data.length;
+                
+                const container = document.getElementById('latest');
+                if(data.length > 0) {
+                    container.innerHTML = data.slice(0, 3).map(a => `
+                        <div class="feed-item">
+                            <div>
+                                <b style="color:#66fcf1;">${a.fraud_name}</b> 
+                                <span style="color:#8892b0; margin-left: 10px;">User: ${a.user_name}</span>
+                            </div>
+                            <a href="/analyze-view?id=${a.id}" style="color:#66fcf1; font-size: 13px; text-decoration: none;">Analyze →</a>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = "Awaiting network traffic... (No fraud detected)";
+                }
+            } catch (err) { console.error("Update failed", err); }
+        }
+
+        async function clearLogs() {
+            if(confirm("Permanently wipe all forensic logs for the new demo?")) {
+                await fetch('/api/v2/alerts/clear', { method: 'POST' });
+                update();
             }
         }
+
         setInterval(update, 3000);
         window.onload = update;
     </script>
