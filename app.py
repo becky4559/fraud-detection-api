@@ -9,8 +9,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
-# Import database & models - Ensure these files exist in your directory
+# Import database & models
 from database import SessionLocal, engine, get_db, FraudAlert, Base
 
 app = FastAPI(title="LogSense - Intelligent Forensic Engine")
@@ -36,13 +37,11 @@ def evaluate_logsense_forensics(data: dict, db: Session):
     Analyzes 'Digital Exhaust' signals using rule-based forensics and 
     ML-simulated scoring to detect Identity Theft and Hardware Anomaly.
     """
-    # Normalize inputs for robust matching
     user = str(data.get("userName", "User")).strip().lower()
     recipient = str(data.get("recipient", "")).strip().lower()
     location = str(data.get("location", "Nairobi")).strip().lower()
     device_sig = data.get("deviceSignature", "UNKNOWN")
 
-    # Extract Hardware & Network signals
     imei_match = data.get("imei_match", True)
     sim_match = data.get("sim_match", True)
     gps_active = data.get("gps_active", True) 
@@ -52,12 +51,10 @@ def evaluate_logsense_forensics(data: dict, db: Session):
     except (ValueError, TypeError):
         amount = 0.0
 
-    # Social Graph validation
     safe_contacts = ["zeddy", "eddie", "mary", "john"]
     is_known = any(contact in recipient for contact in safe_contacts)
 
-    # 1. IDENTITY THEFT (Behavioral & ID Anomaly - The Alice vs. John Rule)
-    # Scenario: Alice attempts to use credentials tied to John Kamau's identity.
+    # 1. IDENTITY THEFT (The Alice vs. John Rule)
     if user == "alice":
         return {
             "type": "IDENTITY_THEFT", 
@@ -68,7 +65,6 @@ def evaluate_logsense_forensics(data: dict, db: Session):
         }
 
     # 2. DEVICE CLONING (Hardware Conflict + Geographic Anomaly)
-    # Scenario: User claims to be John, but device signature is wrong and location is Kisii.
     if device_sig != PHONE_A_SIGNATURE and location == "kisii":
         return {
             "type": "DEVICE_CLONING", 
@@ -102,6 +98,16 @@ def evaluate_logsense_forensics(data: dict, db: Session):
 
 # --- API ENDPOINTS ---
 
+@app.get("/")
+@app.get("/dashboard")
+async def serve_dash():
+    # Ensures the dashboard loads even at the root URL
+    return FileResponse("dashboard.html")
+
+@app.get("/health")
+async def health():
+    return {"status": "healthy", "service": "LogSense Engine", "node": "Render-Live"}
+
 @app.post("/api/mobile/transaction")
 async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
     data = await request.json()
@@ -113,7 +119,6 @@ async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
         txn_amount = 0.0
 
     if threat:
-        # Build Explainable AI (XAI) signals for the Dashboard
         signals = {
             "explanations": [
                 threat["reason"], 
@@ -149,12 +154,21 @@ async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
     
     return {"status": "SUCCESS"}
 
-@app.get("/dashboard")
-async def serve_dash(): return FileResponse("dashboard.html")
+@app.get("/analyze-view")
+async def serve_analyze():
+    return FileResponse("analyze.html")
+
+@app.get("/alerts")
+async def serve_alerts():
+    return FileResponse("alerts.html")
 
 @app.get("/api/v2/alerts")
 def get_alerts(db: Session = Depends(get_db)):
     return db.query(FraudAlert).order_by(desc(FraudAlert.timestamp)).all()
+
+@app.get("/api/v2/alerts/{id}")
+def get_alert(id: int, db: Session = Depends(get_db)):
+    return db.query(FraudAlert).filter(FraudAlert.id == id).first()
 
 @app.post("/api/v2/alerts/clear")
 def clear_alerts(db: Session = Depends(get_db)):
@@ -164,7 +178,5 @@ def clear_alerts(db: Session = Depends(get_db)):
 
 if __name__ == "__main__":
     import uvicorn
-    # Use 0.0.0.0 to listen for Phone A and Phone B over Wi-Fi
     port = int(os.environ.get("PORT", 10000))
-    print(f"LogSense Engine starting on http://172.17.88.224:{port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
