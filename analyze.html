@@ -19,15 +19,15 @@
         .main { flex: 1; margin-left: 260px; padding: 40px; }
         .card { background: #1f2833; border-radius: 8px; padding: 25px; border: 1px solid rgba(69, 162, 158, 0.2); margin-bottom: 20px; position: relative; overflow: hidden; }
         
-        .header-meta { margin-bottom: 30px; border-bottom: 1px solid rgba(69, 162, 158, 0.2); padding-bottom: 20px; }
+        .header-meta { margin-bottom: 30px; border-bottom: 1px solid rgba(69, 162, 158, 0.2); padding-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end; }
         .case-id { color: #45a29e; font-family: 'JetBrains Mono'; font-size: 14px; margin-top: 5px; text-transform: uppercase; }
 
         /* Data Rows */
         .data-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(11, 12, 16, 0.5); }
         .label { color: #45a29e; font-size: 11px; font-family: 'JetBrains Mono'; text-transform: uppercase; letter-spacing: 1px; }
         .value { color: #fff; font-size: 14px; font-weight: 400; }
-        .critical-value { color: #ff4c4c; font-weight: 700; } /* For Failures */
-        .success-value { color: #66fcf1; } /* For Passes */
+        .critical-value { color: #ff4c4c; font-weight: 700; } 
+        .success-value { color: #66fcf1; }
 
         /* AI Evidence Box */
         .evidence-box { border-left: 3px solid #66fcf1; background: #0b0c10; padding: 18px; margin-top: 12px; border-radius: 0 4px 4px 0; }
@@ -38,6 +38,11 @@
         /* Status Badge */
         .badge { position: absolute; top: 15px; right: 15px; padding: 4px 10px; border-radius: 4px; font-size: 10px; font-weight: 700; font-family: 'JetBrains Mono'; }
         .badge-danger { background: rgba(255, 76, 76, 0.2); color: #ff4c4c; border: 1px solid #ff4c4c; }
+
+        /* Score Meter */
+        .score-container { text-align: right; }
+        .score-label { font-size: 10px; color: #45a29e; font-family: 'JetBrains Mono'; }
+        .score-value { font-size: 24px; color: #ff4c4c; font-weight: 800; font-family: 'JetBrains Mono'; }
 
         @media (max-width: 1000px) { .grid-container { grid-template-columns: 1fr; } }
     </style>
@@ -52,32 +57,38 @@
 
     <main class="main">
         <div class="header-meta">
-            <h1 style="color: #fff; font-size: 28px; font-weight: 700;">Forensic Reconstruction</h1>
-            <p id="caseId" class="case-id">SYSTEM STANDBY // AWAITING INPUT...</p>
+            <div>
+                <h1 style="color: #fff; font-size: 28px; font-weight: 700;">Forensic Reconstruction</h1>
+                <p id="caseId" class="case-id">SYSTEM STANDBY // AWAITING INPUT...</p>
+            </div>
+            <div class="score-container">
+                <p class="score-label">ANOMALY_SCORE</p>
+                <p id="riskScore" class="score-value">0.00</p>
+            </div>
         </div>
 
         <div class="grid-container">
             <div class="card">
-                <h3 style="color: #66fcf1; font-size: 12px; margin-bottom: 20px; letter-spacing: 2px;">TRANSACTION CONTEXT</h3>
-                <div class="data-row"><span class="label">Subject (Sender)</span><span id="userName" class="value">--</span></div>
-                <div class="data-row"><span class="label">Amount</span><span id="amount" class="value" style="color: #66fcf1; font-weight: bold;">--</span></div>
-                <div class="data-row"><span class="label">Target Recipient</span><span id="recipient" class="value">--</span></div>
-                <div class="data-row"><span class="label">Transaction Origin</span><span id="location" class="value">--</span></div>
+                <h3 style="color: #66fcf1; font-size: 12px; margin-bottom: 20px; letter-spacing: 2px;">IDENTITY CONTEXT</h3>
+                <div class="data-row"><span class="label">Reported User</span><span id="userName" class="value">--</span></div>
+                <div class="data-row"><span class="label">Amount (KES)</span><span id="amount" class="value" style="color: #66fcf1; font-weight: bold;">--</span></div>
+                <div class="data-row"><span class="label">Target Node</span><span id="recipient" class="value">--</span></div>
+                <div class="data-row"><span class="label">Origin City</span><span id="location" class="value">--</span></div>
             </div>
 
             <div class="card">
-                <h3 style="color: #66fcf1; font-size: 12px; margin-bottom: 20px; letter-spacing: 2px;">TECHNICAL METADATA LOGS</h3>
+                <h3 style="color: #66fcf1; font-size: 12px; margin-bottom: 20px; letter-spacing: 2px;">DIGITAL EXHAUST SIGNALS</h3>
                 <div id="techData" style="font-size: 13px;">
-                    <p style="color: #8892b0; font-style: italic;">No session data loaded. Select an incident from the Alerts page.</p>
+                    <p style="color: #8892b0; font-style: italic;">Awaiting telemetry data...</p>
                 </div>
             </div>
         </div>
 
         <div class="card">
-            <div class="badge badge-danger">XAI ANALYSIS ACTIVE</div>
-            <h3 style="color: #66fcf1; font-size: 12px; margin-bottom: 20px; letter-spacing: 2px;">AI DETECTION EVIDENCE (ISOLATION FOREST)</h3>
+            <div class="badge badge-danger">ISOLATION FOREST ACTIVE</div>
+            <h3 style="color: #66fcf1; font-size: 12px; margin-bottom: 20px; letter-spacing: 2px;">EXPLAINABLE AI (XAI) EVIDENCE</h3>
             <div id="evidenceList">
-                <p style="color: #8892b0; font-style: italic;">Awaiting stream from detection engine...</p>
+                <p style="color: #8892b0; font-style: italic;">Awaiting reasoning stream from engine...</p>
             </div>
         </div>
     </main>
@@ -89,30 +100,32 @@
             if (!id) return;
 
             try {
-                // Fetch alert data from your API
                 const res = await fetch(`/api/v2/alerts/${id}`);
                 const data = await res.json();
 
-                // 1. Update Basic UI Fields
-                document.getElementById('caseId').innerText = `CASE_ID: ${data.transaction_id || 'TXN-REDACTED'}`;
+                // 1. Basic Fields
+                document.getElementById('caseId').innerText = `CASE_ID: ${data.transaction_id || 'REDACTED'}`;
                 document.getElementById('userName').innerText = data.user_name;
                 document.getElementById('amount').innerText = `KES ${parseFloat(data.amount).toLocaleString()}`;
                 document.getElementById('recipient').innerText = data.recipient;
                 document.getElementById('location').innerText = data.location;
+                document.getElementById('riskScore').innerText = data.risk_score.toFixed(2);
 
-                // 2. Safely Parse Detection Signals
+                // 2. Parse Forensics
                 let forensics = data.detection_signals;
                 if (typeof forensics === 'string') {
                     try { forensics = JSON.parse(forensics); } catch(e) { forensics = {}; }
                 }
 
-                // 3. Render Metadata with Conditional Styling (Red if Fail/Conflict)
+                // 3. Render Metadata (The technical signals from app.py)
                 const techBox = document.getElementById('techData');
                 if (forensics.signals) {
                     techBox.innerHTML = Object.entries(forensics.signals).map(([key, val]) => {
                         let colorClass = "success-value";
-                        // Logic to highlight anomalies in RED
-                        if (val === "FAIL" || val === "COMPROMISED" || val === "SWAP_DETECTED" || val.includes("CONFLICT") || val === "UNAUTHORIZED") {
+                        
+                        // HIGH-LEVEL THESIS LOGIC: Highlight the specific issues
+                        const valLower = String(val).toUpperCase();
+                        if (valLower.includes("ROGUE") || valLower.includes("FAIL") || valLower.includes("ALICE") || valLower.includes("CLONE") || valLower.includes("MISMATCH")) {
                             colorClass = "critical-value";
                         }
                         
@@ -125,7 +138,7 @@
                     }).join('');
                 }
 
-                // 4. Render AI Logic/Reasoning
+                // 4. Render AI Logic reasoning
                 const evidenceBox = document.getElementById('evidenceList');
                 if (forensics.explanations && forensics.explanations.length > 0) {
                     evidenceBox.innerHTML = forensics.explanations.map(exp => `
@@ -137,7 +150,7 @@
 
             } catch (err) {
                 console.error("Forensic Load Error:", err);
-                document.getElementById('techData').innerHTML = `<p style="color: #ff4c4c;">SYSTEM_ERROR: Failed to retrieve forensic session.</p>`;
+                document.getElementById('techData').innerHTML = `<p style="color: #ff4c4c;">ERROR: UNABLE TO RECONSTRUCT SESSION</p>`;
             }
         }
 
