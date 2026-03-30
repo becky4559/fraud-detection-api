@@ -3,7 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
 
-# Using the same filename as your PyCharm project setup
+# Database URL for SQLite
 DATABASE_URL = "sqlite:///./fraud.db"
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
@@ -16,18 +16,18 @@ class FraudAlert(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     transaction_id = Column(String, index=True)
-    # Changed user_id to user_name to match app.py logic
     user_name = Column(String, index=True, nullable=True) 
     fraud_type = Column(String)
     fraud_name = Column(String, nullable=True)
     risk_score = Column(Float)
     risk_level = Column(String, nullable=True)
-    # Changed to Text to ensure long JSON strings don't get cut off
+    # Stores the JSON-encoded AI reasoning logs (XAI)
     detection_signals = Column(Text, nullable=True)  
     amount = Column(Float, nullable=True)
     recipient = Column(String, nullable=True)
     location = Column(String, nullable=True)
-    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    # Use datetime.now (local system time) for the demo so it matches your watch/phone
+    timestamp = Column(DateTime, default=datetime.now, index=True)
     acknowledged = Column(Boolean, default=False)
 
 def get_db():
@@ -37,4 +37,5 @@ def get_db():
     finally:
         db.close()
 
+# Create tables if they don't exist
 Base.metadata.create_all(bind=engine)
