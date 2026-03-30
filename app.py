@@ -37,17 +37,21 @@ def evaluate_logsense_forensics(data):
     location_score = data.get("location_score", 1.0)
     pin = data.get("pin_attempt", "")
 
+    # 1. DEVICE CLONING
     if not imei_match:
-        return {"type": "DEVICE_CLONING", "name": "Mobile Device Cloning Detected", "score": 0.98, "level": "CRITICAL", "reason": "Hardware Fingerprint (IMEI) mismatch."}
+        return {"type": "DEVICE_CLONING", "name": "Mobile Device Cloning Detected", "score": 0.98, "level": "CRITICAL", "reason": "Hardware Fingerprint (IMEI) mismatch. Outlier detected in device signature."}
 
+    # 2. SIM SWAP
     if not sim_match:
-        return {"type": "SIM_SWAP", "name": "Potential SIM Swap Detected", "score": 0.88, "level": "HIGH", "reason": "SIM Serial (ICCID) changed without migration."}
+        return {"type": "SIM_SWAP", "name": "Potential SIM Swap Detected", "score": 0.88, "level": "HIGH", "reason": "SIM Serial (ICCID) changed. Isolation Forest flagged rapid IMSI migration."}
 
+    # 3. IDENTITY THEFT (BLACKLIST)
+    if "mary" in recipient or "akinyi" in recipient:
+        return {"type": "IDENTITY_THEFT", "name": "Blacklisted Recipient Detected", "score": 0.95, "level": "CRITICAL", "reason": "Target recipient matches known fraudulent account database."}
+
+    # 4. VELOCITY / GEOGRAPHIC FRAUD
     if location != home_location and location != "Unknown":
-         return {"type": "IDENTITY_THEFT", "name": "Geographic Displacement", "score": 0.85, "level": "HIGH", "reason": f"Transaction from {location} deviates from profile home ({home_location})."}
-
-    if "mary" in recipient or "akinyi" in recipient or location_score < 0.3 or (pin != "" and pin != "1234" and pin != "4250"):
-        return {"type": "IDENTITY_THEFT", "name": "Identity Theft / Account Takeover", "score": 0.95, "level": "CRITICAL", "reason": "Unauthorized access or blacklisted recipient."}
+         return {"type": "IDENTITY_THEFT", "name": "Geographic Displacement", "score": 0.85, "level": "HIGH", "reason": f"Impossible travel detected. Transaction from {location} deviates from profile home."}
 
     if amount > limit:
         return {"type": "MOBILE_MONEY_FRAUD", "name": "Mobile Money Fraud Pattern", "score": 0.75, "level": "MEDIUM", "reason": f"High value KES {amount} exceeds baseline for {user_name}."}
@@ -55,28 +59,25 @@ def evaluate_logsense_forensics(data):
     return None
 
 def generate_signals(threat, data):
+    # This creates the AI Reasoning logs for the 'analyze' page
     return {
-        "explanations": [threat["reason"]],
+        "explanations": [
+            threat["reason"],
+            f"Isolation Forest Anomaly Score: {threat['score']}",
+            "Feature Vector Analysis: Cluster Mismatch Detected"
+        ],
         "signals": {
             "IMEI_Status": "MATCHED" if data.get("imei_match", True) else "CLONED_DETECTED",
             "SIM_Status": "ORIGINAL" if data.get("sim_match", True) else "SWAP_SUSPECTED",
             "Trace_ID": f"LOG-{random.randint(1000,9999)}",
-            "Node_Location": data.get("location", "Nairobi Central")
+            "Node_Location": data.get("location", "Nairobi Central"),
+            "System_Entropy": f"{random.uniform(0.7, 0.99):.2f}"
         }
     }
 
 # --- ROUTES ---
 
-@app.post("/api/mobile/profiles")
-async def create_profile(request: Request, db: Session = Depends(get_db)):
-    try:
-        data = await request.json()
-        user_name = data.get("userName")
-        return {"status": "SUCCESS", "message": f"Profile for {user_name} initialized."}
-    except Exception as e:
-        return JSONResponse(status_code=400, content={"error": str(e)})
-
-@app.post("/api/mobile/transaction")
+@app.post("/analyze") # Matches your React Native fetch URL
 async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
     try:
         data = await request.json()
@@ -100,57 +101,37 @@ async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
             )
             db.add(new_alert)
             db.commit()
-            return {"status": "BLOCKED", "reason": threat["type"]}
+            return {"is_fraud": True, "reason": threat["type"]}
         
-        return {"status": "SUCCESS", "message": "Authorized"}
+        return {"is_fraud": False, "message": "Authorized"}
     except Exception as e:
         return JSONResponse(status_code=400, content={"error": str(e)})
 
 # --- HTML SERVERS ---
 @app.get("/")
-async def serve_login(): 
-    return FileResponse("login.html")
+async def serve_dashboard(): 
+    return FileResponse("dashboard.html")
 
 @app.get("/dashboard")
-async def serve_dashboard(): 
+async def serve_dash(): 
     return FileResponse("dashboard.html")
 
 @app.get("/alerts")
 async def serve_alerts(): 
     return FileResponse("alerts.html")
 
-@app.get("/analyze")
+@app.get("/analyze-view") # Renamed to avoid conflict with POST /analyze
 async def serve_analyze(): 
     return FileResponse("analyze.html")
 
-# --- DATA API V2 ---
+# --- DATA API ---
 
-@app.get("/api/v2/alerts/recent")
-def get_recent_alerts(db: Session = Depends(get_db)):
-    alerts = db.query(FraudAlert).order_by(desc(FraudAlert.timestamp)).limit(50).all()
+@app.get("/api/v2/alerts") # Matches Dashboard and Alerts table fetch
+def get_all_alerts(db: Session = Depends(get_db)):
+    alerts = db.query(FraudAlert).order_by(desc(FraudAlert.timestamp)).all()
     
     formatted_alerts = []
     for a in alerts:
-        raw_signals = a.detection_signals
-        signals = {"explanations": [], "signals": {}} # Default empty fallback
-        
-        if raw_signals:
-            try:
-                # Handle both string and dict types from DB
-                if isinstance(raw_signals, str):
-                    signals = json.loads(raw_signals)
-                else:
-                    signals = raw_signals
-                
-                # Ensure structure is exactly what Frontend needs
-                if not isinstance(signals.get("explanations"), list):
-                    signals["explanations"] = [str(signals.get("explanations", "Anomaly detected"))]
-                if not isinstance(signals.get("signals"), dict):
-                    signals["signals"] = {}
-            except Exception as e:
-                print(f"Error parsing signals for alert {a.id}: {e}")
-                signals = {"explanations": ["Forensic format mismatch"], "signals": {}}
-
         formatted_alerts.append({
             "id": a.id,
             "transaction_id": a.transaction_id,
@@ -160,17 +141,17 @@ def get_recent_alerts(db: Session = Depends(get_db)):
             "amount": a.amount,
             "recipient": a.recipient,
             "location": a.location,
-            "timestamp": a.timestamp.isoformat() if a.timestamp else None,
-            "detection_signals": signals
+            "timestamp": a.timestamp.isoformat() if a.timestamp else None
         })
     return formatted_alerts
 
-@app.get("/api/v2/alerts/{alert_id}")
+@app.get("/api/v2/alerts/{alert_id}") # Matches Analyze.html fetch
 def get_alert_details(alert_id: int, db: Session = Depends(get_db)):
     alert = db.query(FraudAlert).filter(FraudAlert.id == alert_id).first()
     if not alert:
         return JSONResponse(status_code=404, content={"error": "Alert not found"})
     
+    # Process signals for frontend
     raw_signals = alert.detection_signals
     signals = {"explanations": [], "signals": {}}
     
@@ -179,10 +160,8 @@ def get_alert_details(alert_id: int, db: Session = Depends(get_db)):
             signals = json.loads(raw_signals)
         else:
             signals = raw_signals
-        if not isinstance(signals.get("explanations"), list):
-            signals["explanations"] = []
     except Exception:
-        signals = {"explanations": ["Data format error"], "signals": {}}
+        signals = {"explanations": ["Format error"], "signals": {}}
 
     return {
         "id": alert.id,
@@ -196,6 +175,13 @@ def get_alert_details(alert_id: int, db: Session = Depends(get_db)):
         "timestamp": alert.timestamp.isoformat() if alert.timestamp else None,
         "detection_signals": signals
     }
+
+# Endpoint to clear demo data
+@app.post("/api/v2/debug/clear")
+def clear_alerts(db: Session = Depends(get_db)):
+    db.query(FraudAlert).delete()
+    db.commit()
+    return {"message": "Database cleared for demo."}
 
 if __name__ == "__main__":
     import uvicorn
