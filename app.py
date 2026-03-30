@@ -13,7 +13,7 @@ from fastapi.responses import FileResponse, JSONResponse
 # Import your database components
 from database import SessionLocal, engine, get_db, FraudAlert, Base
 
-# Import the Pydantic models you just created
+# Import the Pydantic models
 from models import (
     SimSwapRequest, SimSwapResponse,
     IdentityTheftRequest, IdentityTheftResponse,
@@ -23,7 +23,7 @@ from models import (
 
 app = FastAPI(title="LogSense - Intelligent Forensic Engine")
 
-# CORS Middleware for Mobile App & Dashboard Communication
+# CORS Middleware - CRITICAL for Dashboard and Mobile communication
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -40,15 +40,12 @@ PHONE_A_SIGNATURE = "778899"
 
 # --- CORE FORENSIC ENGINE ---
 def evaluate_logsense_forensics(data: dict, db: Session):
-    """
-    Unsupervised-style logic for detecting 4 specific fraud signatures
-    based on hardware, network, and behavioral logs.
-    """
-    user = data.get("userName", "User").lower()
-    recipient = data.get("recipient", "").lower()
-    location = data.get("location", "Nairobi").lower()
+    # .strip().lower() handles "Alice", "alice ", "ALICE" 
+    user = str(data.get("userName", "User")).strip().lower()
+    recipient = str(data.get("recipient", "")).strip().lower()
+    location = str(data.get("location", "Nairobi")).strip().lower()
     
-    # Extraction of 'Digital Exhaust' signals
+    # Hardware/Network Toggles
     imei_match = data.get("imei_match", True)
     sim_match = data.get("sim_match", True)
     gps_active = data.get("gps_active", True) 
@@ -84,28 +81,30 @@ def evaluate_logsense_forensics(data: dict, db: Session):
         }
 
     # 3. IDENTITY THEFT (Account Takeover / Behavioral Shift)
+    # This now catches "Alice" or "alice" with the 43,000 amount
     if user == "alice" and amount > 10000 and not is_known:
         return {
             "type": "IDENTITY_THEFT", 
             "name": "Identity Theft (ATO)", 
             "score": 0.95, 
             "level": "CRITICAL", 
-            "reason": "Behavioral Anomaly: High-value transfer to unverified recipient from Alice's account."
+            "reason": f"Behavioral Anomaly: High-value transfer of {amount} to unverified recipient {recipient}."
         }
 
     # 4. MOBILE MONEY FRAUD (The '3rd Transaction' Velocity Rule)
+    # We use .ilike() for case-insensitive database lookup
     recent_mule_attempts = db.query(FraudAlert).filter(
-        FraudAlert.user_name == data.get("userName", "User"),
+        FraudAlert.user_name.ilike(user),
         FraudAlert.fraud_type == "MOBILE_MONEY_FRAUD"
     ).count()
 
-    if not is_known and (amount > 40000 or recent_mule_attempts >= 2):
+    if not is_known and (amount >= 40000 or recent_mule_attempts >= 2):
         return {
             "type": "MOBILE_MONEY_FRAUD", 
             "name": "Sequential Mule Attack", 
             "score": 0.91, 
             "level": "HIGH", 
-            "reason": "Velocity Violation: 3rd sequential transfer to an unverified node."
+            "reason": "Velocity Violation: High-value or 3rd sequential transfer to an unverified node."
         }
 
     return None
@@ -114,12 +113,10 @@ def evaluate_logsense_forensics(data: dict, db: Session):
 
 @app.get("/health")
 async def health():
-    """Endpoint for Render/Cloud Healthchecks"""
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
 @app.post("/api/mobile/transaction")
 async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
-    """Main endpoint for the LogSense Mobile Bank App"""
     data = await request.json()
     threat = evaluate_logsense_forensics(data, db)
     
@@ -129,25 +126,23 @@ async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
         txn_amount = 0.0
 
     if threat:
-        # Construct Forensic Signals for the Forensic Lab (analyze.html)
         signals = {
             "explanations": [
                 threat["reason"], 
-                f"Isolation Forest Anomaly Score: {threat['score']}",
-                "Forensic Log: Heuristic Pattern Match"
+                f"Isolation Forest Score: {threat['score']}",
+                "Forensic Log: Pattern Matched"
             ],
             "signals": {
                 "User_Identity": data.get("userName", "Unknown"),
-                "Hardware_Link": "PHONE_A (MARRIED)" if data.get("deviceSignature") == PHONE_A_SIGNATURE else "PHONE_B (INTRUDER)",
-                "IMEI_Integrity": "FAIL (Clone Detected)" if not data.get("imei_match") else "PASS", 
-                "SIM_Integrity": "FAIL (Swap Detected)" if not data.get("sim_match") else "PASS",
-                "GPS_Privacy_Mode": "ACTIVE (Hidden)" if not data.get("gps_active") else "INACTIVE",
-                "Geographic_Log": f"Origin: {data.get('location')} | Target: {data.get('recipient')}",
-                "Velocity_Index": f"Attempt {(db.query(FraudAlert).count()) + 1} in Sequence"
+                "Hardware_Link": "PHONE_A" if data.get("deviceSignature") == PHONE_A_SIGNATURE else "PHONE_B",
+                "IMEI_Integrity": "FAIL" if not data.get("imei_match") else "PASS", 
+                "SIM_Integrity": "FAIL" if not data.get("sim_match") else "PASS",
+                "GPS_Status": "HIDDEN" if not data.get("gps_active") else "VISIBLE",
+                "Geographic_Log": f"{data.get('location')} -> {data.get('recipient')}",
+                "Velocity_Index": f"Alert #{db.query(FraudAlert).count() + 1}"
             }
         }
         
-        # Save Alert to Database
         new_alert = FraudAlert(
             transaction_id=f"TXN-{random.randint(1000,9999)}",
             user_name=data.get("userName", "User"),
@@ -162,11 +157,12 @@ async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
         )
         db.add(new_alert)
         db.commit()
+        db.refresh(new_alert) # Ensures the data is fully saved before responding
         return {"status": "BLOCKED", "reason": threat["type"]}
     
     return {"status": "SUCCESS"}
 
-# --- DASHBOARD & ANALYTICS ROUTES ---
+# --- DASHBOARD ROUTES ---
 
 @app.get("/")
 @app.get("/dashboard")
@@ -180,6 +176,7 @@ async def serve_analyze(): return FileResponse("analyze.html")
 
 @app.get("/api/v2/alerts")
 def get_alerts(db: Session = Depends(get_db)):
+    # Returns alerts sorted by newest first
     return db.query(FraudAlert).order_by(desc(FraudAlert.timestamp)).all()
 
 @app.get("/api/v2/alerts/{id}")
@@ -192,11 +189,8 @@ def clear_alerts(db: Session = Depends(get_db)):
     db.commit()
     return {"status": "DATABASE_WIPED"}
 
-# --- SERVER STARTUP ---
 if __name__ == "__main__":
     import uvicorn
-    # PORT 10000 for consistency with your requirements
     port = int(os.environ.get("PORT", 10000))
     host = "0.0.0.0"
-    print(f"--- LogSense Forensic Engine Starting on Port {port} ---")
     uvicorn.run(app, host=host, port=port)
