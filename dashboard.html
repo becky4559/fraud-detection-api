@@ -2,147 +2,115 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LogSense - Surveillance Console</title>
+    <title>LogSense - AI Command Center</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-        body { background: #0b0c10; display: flex; color: #c5c6c7; overflow-x: hidden; }
+        body { background: #0b0c10; color: #c5c6c7; display: flex; }
         
-        /* Sidebar */
-        .sidebar { 
-            width: 250px; 
-            background: #1f2833; 
-            height: 100vh; 
-            position: fixed; 
-            padding: 20px; 
-            border-right: 1px solid #45a29e;
-        }
-        .sidebar h2 { color: #66fcf1; letter-spacing: 2px; margin-bottom: 30px; font-size: 22px; }
-        .sidebar a { 
-            display: block; 
-            color: #8892b0; 
-            padding: 12px; 
-            text-decoration: none; 
-            margin-bottom: 10px; 
-            font-size: 14px;
-            transition: 0.3s;
-            border-left: 3px solid transparent;
-        }
-        .sidebar a:hover, .sidebar a.active { 
-            background: rgba(102, 252, 241, 0.05); 
-            color: #66fcf1; 
-            border-left: 3px solid #66fcf1; 
-        }
+        .sidebar { width: 260px; background: #1f2833; height: 100vh; position: fixed; padding: 25px; border-right: 1px solid #45a29e; }
+        .sidebar h2 { color: #66fcf1; letter-spacing: 2px; margin-bottom: 40px; font-size: 20px; }
+        .sidebar a { display: block; color: #8892b0; padding: 12px; text-decoration: none; font-size: 14px; margin-bottom: 10px; border-left: 3px solid transparent; transition: 0.3s; }
+        .sidebar a.active { color: #66fcf1; background: rgba(102, 252, 241, 0.05); border-left: 3px solid #66fcf1; }
 
-        /* Main Content */
-        .main { flex: 1; margin-left: 250px; padding: 40px; }
+        .main { flex: 1; margin-left: 260px; padding: 40px; }
+        .header { margin-bottom: 30px; }
+        .header h1 { color: #fff; font-size: 28px; }
         
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
-        .status-pill { background: rgba(102, 252, 241, 0.1); color: #66fcf1; padding: 5px 15px; border-radius: 20px; font-size: 12px; border: 1px solid #66fcf1; }
-
         /* Stats Grid */
         .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 40px; }
-        .stat-card { background: #1f2833; padding: 25px; border-radius: 4px; border: 1px solid #45a29e; }
-        .stat-card small { color: #8892b0; text-transform: uppercase; font-size: 11px; letter-spacing: 1px; }
-        .stat-card h2 { color: #fff; font-size: 28px; margin-top: 5px; }
+        .stat-card { background: #1f2833; padding: 30px; border-radius: 8px; border: 1px solid rgba(69, 162, 158, 0.2); text-align: center; }
+        .stat-card h3 { color: #8892b0; font-size: 12px; text-transform: uppercase; margin-bottom: 10px; }
+        .stat-card p { color: #66fcf1; font-size: 36px; font-weight: bold; }
 
-        /* Alert Table */
-        .card { background: #1f2833; padding: 30px; border-radius: 4px; border: 1px solid #45a29e; }
-        .card h3 { color: #66fcf1; margin-bottom: 20px; font-size: 16px; text-transform: uppercase; }
+        /* Navigation Directory */
+        .directory-box { background: #1f2833; border: 1px solid #45a29e; border-radius: 8px; padding: 25px; margin-bottom: 30px; }
+        .directory-box h3 { color: #fff; margin-bottom: 15px; font-size: 16px; }
+        .nav-btn { display: inline-block; padding: 12px 25px; background: #45a29e; color: #0b0c10; text-decoration: none; font-weight: bold; border-radius: 4px; margin-right: 15px; transition: 0.3s; }
+        .nav-btn:hover { background: #66fcf1; }
 
-        table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; padding: 15px; color: #45a29e; font-size: 12px; border-bottom: 1px solid #45a29e; }
-        td { padding: 15px; border-bottom: 1px solid #0b0c10; font-size: 14px; }
-
-        .risk-CRITICAL { color: #ff4c4c; font-weight: bold; }
-        .btn { 
-            padding: 6px 12px; 
-            border: 1px solid #66fcf1; 
-            color: #66fcf1; 
-            text-decoration: none; 
-            font-size: 11px; 
-            transition: 0.3s;
-        }
-        .btn:hover { background: #66fcf1; color: #0b0c10; }
+        /* Live Feed */
+        .live-feed { background: #0b0c10; border: 1px solid rgba(66, 252, 241, 0.1); padding: 20px; border-radius: 8px; }
+        .feed-item { padding: 15px; border-bottom: 1px solid #1f2833; display: flex; justify-content: space-between; align-items: center; }
+        .feed-item:last-child { border-bottom: none; }
+        .view-btn { color: #66fcf1; text-decoration: none; font-size: 12px; border: 1px solid #66fcf1; padding: 5px 10px; border-radius: 4px; }
     </style>
 </head>
 <body>
     <div class="sidebar">
-        <h2>LOGSENSE</h2>
-        <a href="/dashboard" class="active">Surveillance Console</a>
-        <a href="/alerts">Incident Logs</a>
-        <a href="/" onclick="sessionStorage.clear()">Terminal Logout</a>
+        <h2>LOGSENSE AI</h2>
+        <a href="/dashboard" class="active">System Overview</a>
+        <a href="/alerts">Security Alerts</a>
+        <a href="/analyze">Forensic Lab</a>
     </div>
 
     <div class="main">
         <div class="header">
-            <h1>System Overview</h1>
-            <div class="status-pill">AI ENGINE: ACTIVE</div>
+            <h1>Forensic Monitoring Dashboard</h1>
+            <p style="color: #45a29e;">Real-time Log Analysis Engine (Isolation Forest v3)</p>
         </div>
 
         <div class="stats-grid">
             <div class="stat-card">
-                <small>Active Threats</small>
-                <h2 id="threatCount">--</h2>
+                <h3>Total Anomalies</h3>
+                <p id="totalAlerts">0</p>
             </div>
             <div class="stat-card">
-                <small>Risk Index</small>
-                <h2 style="color: #ff4c4c;">CRITICAL</h2>
+                <h3>High Risk Events</h3>
+                <p id="highRisk">0</p>
             </div>
             <div class="stat-card">
-                <small>Nodes Monitored</small>
-                <h2>1,204</h2>
+                <h3>System Health</h3>
+                <p style="color: #27ae60;">100%</p>
             </div>
         </div>
 
-        <div class="card">
-            <h3>Recent Intercepts</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Timestamp</th>
-                        <th>User</th>
-                        <th>Type</th>
-                        <th>Risk</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="interceptsList">
-                </tbody>
-            </table>
+        <div class="directory-box">
+            <h3>Quick Directory</h3>
+            <p style="color: #8892b0; margin-bottom: 20px; font-size: 14px;">Access forensic logs or the full incident table below:</p>
+            <a href="/alerts" class="nav-btn">VIEW ALL ALERTS</a>
+            <a href="/analyze" class="nav-btn" style="background: transparent; color: #66fcf1; border: 1px solid #66fcf1;">GOTO FORENSIC LAB</a>
+        </div>
+
+        <div class="live-feed">
+            <h3 style="font-size: 14px; margin-bottom: 15px; color: #45a29e;">LATEST DETECTION</h3>
+            <div id="latestIncident">
+                <p style="text-align: center; color: #8892b0; padding: 20px;">Waiting for system logs... (No fraud detected yet)</p>
+            </div>
         </div>
     </div>
 
     <script>
-        async function fetchDashboard() {
-            if (sessionStorage.getItem('adminLoggedIn') !== 'true') {
-                window.location.href = '/';
-                return;
-            }
-
+        async function updateDashboard() {
             try {
-                const response = await fetch('/api/v2/alerts/recent');
+                const response = await fetch('/api/v2/alerts');
                 const alerts = await response.json();
                 
-                document.getElementById('threatCount').innerText = alerts.length;
-                
-                const list = document.getElementById('interceptsList');
-                list.innerHTML = alerts.slice(0, 5).map(a => `
-                    <tr>
-                        <td style="font-family: monospace;">${new Date(a.timestamp).toLocaleTimeString()}</td>
-                        <td>${a.user_name}</td>
-                        <td>${a.fraud_name}</td>
-                        <td class="risk-${a.risk_level}">${a.risk_level}</td>
-                        <td><a href="/analyze?id=${a.id}" class="btn">INVESTIGATE</a></td>
-                    </tr>
-                `).join('');
+                // Update Counters
+                document.getElementById('totalAlerts').innerText = alerts.length;
+                document.getElementById('highRisk').innerText = alerts.filter(a => a.risk_level === 'CRITICAL').length;
+
+                const feedContainer = document.getElementById('latestIncident');
+
+                if (alerts.length > 0) {
+                    const latest = alerts[0]; // Assuming the API returns newest first
+                    feedContainer.innerHTML = `
+                        <div class="feed-item">
+                            <div>
+                                <strong style="color: #ff4c4c;">${latest.fraud_name}</strong>
+                                <p style="font-size: 12px; color: #8892b0;">Target: ${latest.recipient} | User: ${latest.user_name}</p>
+                            </div>
+                            <a href="/analyze?id=${latest.id}" class="view-btn">OPEN FORENSICS</a>
+                        </div>
+                    `;
+                }
             } catch (err) {
-                console.error("Connection Failed", err);
+                console.error("Dashboard Sync Error:", err);
             }
         }
 
-        setInterval(fetchDashboard, 5000);
-        window.onload = fetchDashboard;
+        // Auto-refresh every 3 seconds for the "Live" feel
+        setInterval(updateDashboard, 3000);
+        window.onload = updateDashboard;
     </script>
 </body>
 </html>
