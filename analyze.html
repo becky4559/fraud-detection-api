@@ -5,7 +5,6 @@
     <title>LogSense - Forensic Analysis</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
     <style>
-        /* ... Keep your existing CSS styles here ... */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body { background: #0b0c10; color: #c5c6c7; display: flex; min-height: 100vh; }
         .sidebar { width: 260px; background: #1f2833; height: 100vh; position: fixed; padding: 25px; border-right: 1px solid #45a29e; }
@@ -24,15 +23,10 @@
         <h2>LOGSENSE AI</h2>
         <a href="/dashboard">Dashboard</a>
         <a href="/alerts">Alerts</a>
-        <a href="#" onclick="window.print()">Export PDF</a>
+        <a href="/analyze-view" class="active">Forensic Lab</a>
     </nav>
-
     <main class="main">
-        <header style="margin-bottom: 30px;">
-            <h1 style="color: #fff;">Forensic Reconstruction</h1>
-            <p id="caseId" style="color: #45a29e; font-family: 'JetBrains Mono';">CASE_ID: Loading...</p>
-        </header>
-
+        <header style="margin-bottom: 30px;"><h1 style="color: #fff;">Forensic Reconstruction</h1><p id="caseId" style="color: #45a29e; font-family: 'JetBrains Mono';">CASE_ID: Loading...</p></header>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
             <div class="card">
                 <h3 style="color: #66fcf1; font-size: 13px; margin-bottom: 15px;">TRANSACTION CONTEXT</h3>
@@ -41,62 +35,41 @@
                 <div class="data-row"><span class="label">RECIPIENT</span><span id="recipient">--</span></div>
                 <div class="data-row"><span class="label">LOCATION</span><span id="location">--</span></div>
             </div>
-
             <div class="card">
                 <h3 style="color: #66fcf1; font-size: 13px; margin-bottom: 15px;">TECHNICAL METADATA</h3>
                 <div id="techData">Loading logs...</div>
             </div>
         </div>
-
         <div class="card">
             <h3 style="color: #66fcf1; font-size: 13px; margin-bottom: 15px;">AI DETECTION EVIDENCE (ISOLATION FOREST XAI)</h3>
             <div id="evidenceList">Analyzing signals...</div>
         </div>
     </main>
-
     <script>
         async function loadCase() {
             const id = new URLSearchParams(window.location.search).get('id');
             if (!id) return;
-
             try {
                 const res = await fetch(`/api/v2/alerts/${id}`);
                 const data = await res.json();
-
-                // Populate Text Fields
                 document.getElementById('caseId').innerText = `CASE_ID: ${data.transaction_id}`;
                 document.getElementById('userName').innerText = data.user_name;
                 document.getElementById('amount').innerText = `KES ${data.amount.toLocaleString()}`;
                 document.getElementById('recipient').innerText = data.recipient;
                 document.getElementById('location').innerText = data.location;
 
-                // Parse Detection Signals
                 let forensics = data.detection_signals;
                 if (typeof forensics === 'string') forensics = JSON.parse(forensics);
 
-                // Populate Technical Metadata
                 const techBox = document.getElementById('techData');
                 if (forensics.signals) {
-                    techBox.innerHTML = Object.entries(forensics.signals).map(([k, v]) => `
-                        <div class="data-row"><span class="label">${k}</span><span>${v}</span></div>
-                    `).join('');
-                } else {
-                    techBox.innerHTML = "No hardware signals captured.";
+                    techBox.innerHTML = Object.entries(forensics.signals).map(([k, v]) => `<div class="data-row"><span class="label">${k}</span><span>${v}</span></div>`).join('');
                 }
-
-                // Populate AI Evidence
                 const evidenceBox = document.getElementById('evidenceList');
-                if (forensics.explanations && forensics.explanations.length > 0) {
-                    evidenceBox.innerHTML = forensics.explanations.map(e => `
-                        <div class="evidence-box"><p style="color:#66fcf1;">● ${e}</p></div>
-                    `).join('');
-                } else {
-                    evidenceBox.innerHTML = "Anomaly detected via baseline deviation (Isolation Forest).";
+                if (forensics.explanations) {
+                    evidenceBox.innerHTML = forensics.explanations.map(e => `<div class="evidence-box"><p style="color:#66fcf1;">● ${e}</p></div>`).join('');
                 }
-
-            } catch (e) {
-                console.error("Load Error:", e);
-            }
+            } catch (e) { console.error(e); }
         }
         window.onload = loadCase;
     </script>
