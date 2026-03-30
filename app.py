@@ -10,10 +10,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from fastapi.responses import FileResponse, JSONResponse
 
-# Import your database components
+# Import database & models - Ensure these files exist in your directory
 from database import SessionLocal, engine, get_db, FraudAlert, Base
-
-# Import the Pydantic models
 from models import (
     SimSwapRequest, SimSwapResponse,
     IdentityTheftRequest, IdentityTheftResponse,
@@ -23,7 +21,8 @@ from models import (
 
 app = FastAPI(title="LogSense - Intelligent Forensic Engine")
 
-# CORS Middleware - CRITICAL for Dashboard and Mobile communication
+# --- CONNECTIVITY CONFIG ---
+# Allows Dashboard (Browser) and Mobile App to communicate with the API
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -32,20 +31,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Create database tables on startup
+# Initialize Database Tables
 Base.metadata.create_all(bind=engine)
 
-# --- CONFIGURATION ---
+# Primary "Safe" Device Identifier
 PHONE_A_SIGNATURE = "778899" 
 
 # --- CORE FORENSIC ENGINE ---
 def evaluate_logsense_forensics(data: dict, db: Session):
-    # .strip().lower() handles "Alice", "alice ", "ALICE" 
+    """
+    Simulates an Isolation Forest (Unsupervised ML) detection engine.
+    Analyzes system logs for hardware, network, and behavioral anomalies.
+    """
+    # Normalize inputs to prevent case-sensitivity demo fails
     user = str(data.get("userName", "User")).strip().lower()
     recipient = str(data.get("recipient", "")).strip().lower()
     location = str(data.get("location", "Nairobi")).strip().lower()
     
-    # Hardware/Network Toggles
+    # Extract Digital Exhaust signals
     imei_match = data.get("imei_match", True)
     sim_match = data.get("sim_match", True)
     gps_active = data.get("gps_active", True) 
@@ -80,19 +83,17 @@ def evaluate_logsense_forensics(data: dict, db: Session):
             "reason": "Network Anomaly: ICCID mismatch detected during a GPS-suppressed session."
         }
 
-    # 3. IDENTITY THEFT (Account Takeover / Behavioral Shift)
-    # This now catches "Alice" or "alice" with the 43,000 amount
+    # 3. IDENTITY THEFT (Behavioral Anomaly - The Alice Rule)
     if user == "alice" and amount > 10000 and not is_known:
         return {
             "type": "IDENTITY_THEFT", 
             "name": "Identity Theft (ATO)", 
             "score": 0.95, 
             "level": "CRITICAL", 
-            "reason": f"Behavioral Anomaly: High-value transfer of {amount} to unverified recipient {recipient}."
+            "reason": f"Behavioral Anomaly: Alice sending high-value {amount} to unverified recipient {recipient}."
         }
 
-    # 4. MOBILE MONEY FRAUD (The '3rd Transaction' Velocity Rule)
-    # We use .ilike() for case-insensitive database lookup
+    # 4. MOBILE MONEY FRAUD (The Velocity / Mule Rule)
     recent_mule_attempts = db.query(FraudAlert).filter(
         FraudAlert.user_name.ilike(user),
         FraudAlert.fraud_type == "MOBILE_MONEY_FRAUD"
@@ -126,6 +127,7 @@ async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
         txn_amount = 0.0
 
     if threat:
+        # Build the forensic 'Explanations' for the Analyze View (XAI)
         signals = {
             "explanations": [
                 threat["reason"], 
@@ -134,7 +136,7 @@ async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
             ],
             "signals": {
                 "User_Identity": data.get("userName", "Unknown"),
-                "Hardware_Link": "PHONE_A" if data.get("deviceSignature") == PHONE_A_SIGNATURE else "PHONE_B",
+                "Hardware_Link": "PHONE_A" if data.get("deviceSignature") == PHONE_A_SIGNATURE else "PHONE_B (INTRUDER)",
                 "IMEI_Integrity": "FAIL" if not data.get("imei_match") else "PASS", 
                 "SIM_Integrity": "FAIL" if not data.get("sim_match") else "PASS",
                 "GPS_Status": "HIDDEN" if not data.get("gps_active") else "VISIBLE",
@@ -157,12 +159,12 @@ async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
         )
         db.add(new_alert)
         db.commit()
-        db.refresh(new_alert) # Ensures the data is fully saved before responding
+        db.refresh(new_alert) 
         return {"status": "BLOCKED", "reason": threat["type"]}
     
     return {"status": "SUCCESS"}
 
-# --- DASHBOARD ROUTES ---
+# --- DASHBOARD & ANALYTICS ---
 
 @app.get("/")
 @app.get("/dashboard")
@@ -176,7 +178,6 @@ async def serve_analyze(): return FileResponse("analyze.html")
 
 @app.get("/api/v2/alerts")
 def get_alerts(db: Session = Depends(get_db)):
-    # Returns alerts sorted by newest first
     return db.query(FraudAlert).order_by(desc(FraudAlert.timestamp)).all()
 
 @app.get("/api/v2/alerts/{id}")
@@ -191,6 +192,6 @@ def clear_alerts(db: Session = Depends(get_db)):
 
 if __name__ == "__main__":
     import uvicorn
+    # Use Port 10000 for consistency across all files
     port = int(os.environ.get("PORT", 10000))
-    host = "0.0.0.0"
-    uvicorn.run(app, host=host, port=port)
+    uvicorn.run(app, host="0.0.0.0", port=port)
