@@ -3,36 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LogSense - Forensic Analysis</title>
+    <title>LogSense - Forensic Analysis Lab</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body { background: #0b0c10; color: #c5c6c7; display: flex; min-height: 100vh; }
         
-        /* Navigation */
+        /* Navigation Sidebar */
         .sidebar { width: 260px; background: #1f2833; height: 100vh; position: fixed; padding: 25px; border-right: 1px solid #45a29e; }
-        .sidebar h2 { color: #66fcf1; letter-spacing: 2px; margin-bottom: 40px; font-size: 20px; }
+        .sidebar h2 { color: #66fcf1; letter-spacing: 2px; margin-bottom: 40px; font-size: 20px; font-weight: 700; }
         .sidebar a { display: block; color: #8892b0; padding: 12px; text-decoration: none; font-size: 14px; margin-bottom: 10px; border-left: 3px solid transparent; transition: 0.3s; }
         .sidebar a:hover, .sidebar a.active { color: #66fcf1; background: rgba(102, 252, 241, 0.05); border-left: 3px solid #66fcf1; }
 
-        /* Main Lab Interface */
+        /* Main Content Area */
         .main { flex: 1; margin-left: 260px; padding: 40px; }
-        .card { background: #1f2833; border-radius: 8px; padding: 25px; border: 1px solid rgba(69, 162, 158, 0.2); margin-bottom: 20px; }
+        .card { background: #1f2833; border-radius: 8px; padding: 25px; border: 1px solid rgba(69, 162, 158, 0.2); margin-bottom: 20px; position: relative; overflow: hidden; }
         
-        .header-meta { margin-bottom: 30px; }
-        .case-id { color: #45a29e; font-family: 'JetBrains Mono'; font-size: 14px; margin-top: 5px; }
+        .header-meta { margin-bottom: 30px; border-bottom: 1px solid rgba(69, 162, 158, 0.2); padding-bottom: 20px; }
+        .case-id { color: #45a29e; font-family: 'JetBrains Mono'; font-size: 14px; margin-top: 5px; text-transform: uppercase; }
 
+        /* Data Rows */
         .data-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(11, 12, 16, 0.5); }
         .label { color: #45a29e; font-size: 11px; font-family: 'JetBrains Mono'; text-transform: uppercase; letter-spacing: 1px; }
-        .value { color: #fff; font-size: 14px; }
+        .value { color: #fff; font-size: 14px; font-weight: 400; }
+        .critical-value { color: #ff4c4c; font-weight: 700; } /* For Failures */
+        .success-value { color: #66fcf1; } /* For Passes */
 
-        /* AI Evidence Styling */
-        .evidence-box { border-left: 3px solid #66fcf1; background: #0b0c10; padding: 15px; margin-top: 10px; border-radius: 0 4px 4px 0; }
-        .evidence-text { color: #66fcf1; font-family: 'JetBrains Mono'; font-size: 12px; }
+        /* AI Evidence Box */
+        .evidence-box { border-left: 3px solid #66fcf1; background: #0b0c10; padding: 18px; margin-top: 12px; border-radius: 0 4px 4px 0; }
+        .evidence-text { color: #66fcf1; font-family: 'JetBrains Mono'; font-size: 12px; line-height: 1.6; }
         
         .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 
-        @media (max-width: 900px) { .grid-container { grid-template-columns: 1fr; } }
+        /* Status Badge */
+        .badge { position: absolute; top: 15px; right: 15px; padding: 4px 10px; border-radius: 4px; font-size: 10px; font-weight: 700; font-family: 'JetBrains Mono'; }
+        .badge-danger { background: rgba(255, 76, 76, 0.2); color: #ff4c4c; border: 1px solid #ff4c4c; }
+
+        @media (max-width: 1000px) { .grid-container { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -45,85 +52,92 @@
 
     <main class="main">
         <div class="header-meta">
-            <h1 style="color: #fff; font-size: 28px;">Forensic Reconstruction</h1>
-            <p id="caseId" class="case-id">AWAITING INCIDENT SELECTION...</p>
+            <h1 style="color: #fff; font-size: 28px; font-weight: 700;">Forensic Reconstruction</h1>
+            <p id="caseId" class="case-id">SYSTEM STANDBY // AWAITING INPUT...</p>
         </div>
 
         <div class="grid-container">
             <div class="card">
                 <h3 style="color: #66fcf1; font-size: 12px; margin-bottom: 20px; letter-spacing: 2px;">TRANSACTION CONTEXT</h3>
-                <div class="data-row"><span class="label">Subject</span><span id="userName" class="value">--</span></div>
-                <div class="data-row"><span class="label">Amount</span><span id="amount" class="value">--</span></div>
-                <div class="data-row"><span class="label">Recipient</span><span id="recipient" class="value">--</span></div>
-                <div class="data-row"><span class="label">Location</span><span id="location" class="value">--</span></div>
+                <div class="data-row"><span class="label">Subject (Sender)</span><span id="userName" class="value">--</span></div>
+                <div class="data-row"><span class="label">Amount</span><span id="amount" class="value" style="color: #66fcf1; font-weight: bold;">--</span></div>
+                <div class="data-row"><span class="label">Target Recipient</span><span id="recipient" class="value">--</span></div>
+                <div class="data-row"><span class="label">Transaction Origin</span><span id="location" class="value">--</span></div>
             </div>
 
             <div class="card">
                 <h3 style="color: #66fcf1; font-size: 12px; margin-bottom: 20px; letter-spacing: 2px;">TECHNICAL METADATA LOGS</h3>
                 <div id="techData" style="font-size: 13px;">
-                    <p style="color: #8892b0; font-style: italic;">No session data loaded. Please select an alert from the table.</p>
+                    <p style="color: #8892b0; font-style: italic;">No session data loaded. Select an incident from the Alerts page.</p>
                 </div>
             </div>
         </div>
 
         <div class="card">
-            <h3 style="color: #66fcf1; font-size: 12px; margin-bottom: 20px; letter-spacing: 2px;">AI DETECTION EVIDENCE (ISOLATION FOREST XAI)</h3>
+            <div class="badge badge-danger">XAI ANALYSIS ACTIVE</div>
+            <h3 style="color: #66fcf1; font-size: 12px; margin-bottom: 20px; letter-spacing: 2px;">AI DETECTION EVIDENCE (ISOLATION FOREST)</h3>
             <div id="evidenceList">
-                <p style="color: #8892b0; font-style: italic;">Awaiting anomaly scores from forensic engine...</p>
+                <p style="color: #8892b0; font-style: italic;">Awaiting stream from detection engine...</p>
             </div>
         </div>
     </main>
 
     <script>
-        // Use your Render URL or leave empty if served from the same server
-        const API_URL = ""; 
-
         async function loadCase() {
             const params = new URLSearchParams(window.location.search);
             const id = params.get('id');
             if (!id) return;
 
             try {
-                const res = await fetch(`${API_URL}/api/v2/alerts/${id}`);
+                // Fetch alert data from your API
+                const res = await fetch(`/api/v2/alerts/${id}`);
                 const data = await res.json();
 
-                // 1. Map basic fields
-                document.getElementById('caseId').innerText = `CASE_ID: ${data.transaction_id || 'TXN-UNKNOWN'}`;
+                // 1. Update Basic UI Fields
+                document.getElementById('caseId').innerText = `CASE_ID: ${data.transaction_id || 'TXN-REDACTED'}`;
                 document.getElementById('userName').innerText = data.user_name;
                 document.getElementById('amount').innerText = `KES ${parseFloat(data.amount).toLocaleString()}`;
                 document.getElementById('recipient').innerText = data.recipient;
                 document.getElementById('location').innerText = data.location;
 
-                // 2. Parse Detection Signals (Handle String or Object)
+                // 2. Safely Parse Detection Signals
                 let forensics = data.detection_signals;
                 if (typeof forensics === 'string') {
                     try { forensics = JSON.parse(forensics); } catch(e) { forensics = {}; }
                 }
 
-                // 3. Render Technical Metadata
+                // 3. Render Metadata with Conditional Styling (Red if Fail/Conflict)
                 const techBox = document.getElementById('techData');
                 if (forensics.signals) {
-                    techBox.innerHTML = Object.entries(forensics.signals).map(([key, val]) => `
-                        <div class="data-row">
-                            <span class="label">${key.replace(/_/g, ' ')}</span>
-                            <span class="value" style="color: #66fcf1;">${val}</span>
-                        </div>
-                    `).join('');
+                    techBox.innerHTML = Object.entries(forensics.signals).map(([key, val]) => {
+                        let colorClass = "success-value";
+                        // Logic to highlight anomalies in RED
+                        if (val === "FAIL" || val === "COMPROMISED" || val === "SWAP_DETECTED" || val.includes("CONFLICT") || val === "UNAUTHORIZED") {
+                            colorClass = "critical-value";
+                        }
+                        
+                        return `
+                            <div class="data-row">
+                                <span class="label">${key.replace(/_/g, ' ')}</span>
+                                <span class="value ${colorClass}">${val}</span>
+                            </div>
+                        `;
+                    }).join('');
                 }
 
-                // 4. Render AI Explanations
+                // 4. Render AI Logic/Reasoning
                 const evidenceBox = document.getElementById('evidenceList');
                 if (forensics.explanations && forensics.explanations.length > 0) {
                     evidenceBox.innerHTML = forensics.explanations.map(exp => `
                         <div class="evidence-box">
-                            <p class="evidence-text">● ${exp}</p>
+                            <p class="evidence-text">> ${exp}</p>
                         </div>
                     `).join('');
                 }
 
             } catch (err) {
                 console.error("Forensic Load Error:", err);
-                document.getElementById('techData').innerHTML = `<p style="color: #ff4c4c;">Error loading forensic logs.</p>`;
+                document.getElementById('techData').innerHTML = `<p style="color: #ff4c4c;">SYSTEM_ERROR: Failed to retrieve forensic session.</p>`;
             }
         }
 
