@@ -12,6 +12,7 @@ from database import SessionLocal, engine, get_db, FraudAlert, Base
 
 app = FastAPI(title="LogSense - Forensic Fraud Engine")
 
+# Enable CORS so your Mobile App and Dashboard can talk to the server
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -20,6 +21,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Initialize Database Tables
 Base.metadata.create_all(bind=engine)
 
 # --- HARDWARE PAIRING (The "Marriage") ---
@@ -31,7 +33,7 @@ def evaluate_logsense_forensics(data, db: Session):
     recipient = data.get("recipient", "").lower()
     location = data.get("location", "Nairobi").lower()
     
-    # Toggles from Mobile App (Phone B APK vs Phone A)
+    # Toggles/Signals from Mobile APK
     imei_match = data.get("imei_match", True)
     sim_match = data.get("sim_match", True)
     gps_active = data.get("gps_active", True) 
@@ -42,22 +44,21 @@ def evaluate_logsense_forensics(data, db: Session):
     except:
         amount = 0.0
 
+    # Social Graph: Legitimate Contacts
     safe_contacts = ["zeddy", "eddie", "mary"]
     is_known = any(contact in recipient for contact in safe_contacts)
 
-    # --- 1. DEVICE CLONING (Hardware + Geo Conflict) ---
-    # Trigger: Phone B (mismatch) + Kisii location + IMEI Fail
+    # --- 1. DEVICE CLONING (The Phone B + Kisii Case) ---
     if not imei_match and location == "kisii":
         return {
             "type": "DEVICE_CLONING", 
-            "name": "Impossible Travel (Cloning)", 
+            "name": "Mobile Device Cloning", 
             "score": 0.99, 
             "level": "CRITICAL", 
-            "reason": "Hardware/Geo Conflict: Account active in Kisii & Nairobi simultaneously via Phone B."
+            "reason": "Hardware Collision: Unauthorized APK signature (Phone B) active in Kisii."
         }
     
-    # --- 2. SIM SWAPPING (Network + Privacy Mode) ---
-    # Trigger: SIM Fail + GPS turned OFF (to hide location)
+    # --- 2. SIM SWAPPING (The GPS Off Case) ---
     if not sim_match and not gps_active:
         return {
             "type": "SIM_SWAP", 
@@ -67,15 +68,14 @@ def evaluate_logsense_forensics(data, db: Session):
             "reason": "Network Anomaly: ICCID mismatch detected during a GPS-suppressed session."
         }
 
-    # --- 3. IDENTITY THEFT (Behavioral Anomaly) ---
-    # Trigger: Alice (Phone A) + High Amount + Unknown Recipient
+    # --- 3. IDENTITY THEFT (Alice Behavioral Shift) ---
     if user == "alice" and amount > 10000 and not is_known:
         return {
             "type": "IDENTITY_THEFT", 
             "name": "Identity Theft (ATO)", 
             "score": 0.95, 
             "level": "CRITICAL", 
-            "reason": "Unauthorized high-value transaction by Alice to unverified recipient."
+            "reason": "Behavioral Anomaly: High-value transaction by Alice to unverified recipient."
         }
 
     # --- 4. MOBILE MONEY FRAUD (The 3rd Transaction Rule) ---
@@ -90,7 +90,7 @@ def evaluate_logsense_forensics(data, db: Session):
             "name": "Sequential Mule Attack", 
             "score": 0.89, 
             "level": "HIGH", 
-            "reason": "Velocity Violation: 3rd sequential transfer to an unverified recipient detected."
+            "reason": "Velocity Violation: 3rd sequential transfer to an unknown node detected."
         }
 
     return None
@@ -107,7 +107,7 @@ async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
         txn_amount = 0.0
 
     if threat:
-        # Build Forensic Signals for analyze.html
+        # Build Metadata for analyze.html
         signals = {
             "explanations": [
                 threat["reason"], 
@@ -143,7 +143,11 @@ async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
     
     return {"status": "SUCCESS"}
 
-# --- SYSTEM ROUTES ---
+# --- SYSTEM & DASHBOARD ROUTES ---
+@app.get("/health")
+async def health():
+    return {"status": "healthy", "timestamp": datetime.now().isoformat()}
+
 @app.get("/")
 @app.get("/dashboard")
 async def serve_dash(): return FileResponse("dashboard.html")
@@ -170,6 +174,8 @@ def clear_alerts(db: Session = Depends(get_db)):
 
 if __name__ == "__main__":
     import uvicorn
+    # PORT is set to 10000. On Render, it will auto-detect this.
     port = int(os.environ.get("PORT", 10000))
-    host = "0.0.0.0" if os.environ.get("RENDER") else "127.0.0.1"
+    host = "0.0.0.0"
+    print(f"--- LogSense Engine Online on Port {port} ---")
     uvicorn.run(app, host=host, port=port)
