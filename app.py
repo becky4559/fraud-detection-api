@@ -24,7 +24,6 @@ Base.metadata.create_all(bind=engine)
 
 # --- DETECTION LOGIC ---
 def evaluate_logsense_forensics(data):
-    # Extracting values for logic check
     recipient = data.get("recipient", "").lower()
     imei_match = data.get("imei_match", True)
     sim_match = data.get("sim_match", True)
@@ -47,32 +46,23 @@ async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
     data = await request.json()
     threat = evaluate_logsense_forensics(data)
     
-    # Extracting amount correctly for DB storage
     try:
-        raw_amount = data.get("amount", 0)
-        txn_amount = float(raw_amount)
+        txn_amount = float(data.get("amount", 0))
     except:
         txn_amount = 0.0
 
     if threat:
-        # Constructing the XAI (Explainable AI) signals for the Forensic Lab
         signals = {
-            "explanations": [
-                threat["reason"], 
-                f"Isolation Forest Anomaly Score: {threat['score']}",
-                "Feature set identified as statistical outlier."
-            ],
+            "explanations": [threat["reason"], f"Isolation Forest Score: {threat['score']}"],
             "signals": {
-                "IMEI_Integrity": "COMPROMISED" if not data.get("imei_match", True) else "VALID",
-                "SIM_Status": "SWAP_DETECTED" if not data.get("sim_match", True) else "MATCHED",
-                "Network_Loc": data.get("location", "Nairobi"),
-                "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                "IMEI": "CLONED" if not data.get("imei_match") else "OK", 
+                "SIM": "SWAP" if not data.get("sim_match") else "OK",
+                "Device_Loc": data.get("location", "Nairobi")
             }
         }
-
         new_alert = FraudAlert(
             transaction_id=f"TXN-{random.randint(1000,9999)}",
-            user_name=data.get("userName", "Unknown User"),
+            user_name=data.get("userName", "User"),
             fraud_type=threat["type"],
             fraud_name=threat["name"],
             risk_score=threat["score"],
@@ -80,43 +70,32 @@ async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
             amount=txn_amount,
             recipient=data.get("recipient", "Unknown"),
             location=data.get("location", "Nairobi"),
-            detection_signals=json.dumps(signals) # Critical: Must be JSON string
+            detection_signals=json.dumps(signals)
         )
         db.add(new_alert)
         db.commit()
         return {"status": "BLOCKED", "reason": threat["type"]}
-    
     return {"status": "SUCCESS"}
 
-# --- WEB ROUTES (Consistent Sidebar Navigation) ---
+# --- WEB ROUTES ---
 @app.get("/")
 @app.get("/dashboard")
-async def serve_dash(): 
-    return FileResponse("dashboard.html")
+async def serve_dash(): return FileResponse("dashboard.html")
 
 @app.get("/alerts")
-async def serve_alerts(): 
-    # This now serves the dedicated Alerts history page
-    return FileResponse("alerts.html")
+async def serve_alerts(): return FileResponse("alerts.html")
 
 @app.get("/analyze-view")
-async def serve_analyze(): 
-    # This serves the Forensic Lab page
-    return FileResponse("analyze.html")
+async def serve_analyze(): return FileResponse("analyze.html")
 
-# --- API ENDPOINTS FOR FRONTEND ---
 @app.get("/api/v2/alerts")
 def get_alerts(db: Session = Depends(get_db)):
     return db.query(FraudAlert).order_by(desc(FraudAlert.timestamp)).all()
 
 @app.get("/api/v2/alerts/{id}")
 def get_alert(id: int, db: Session = Depends(get_db)):
-    alert = db.query(FraudAlert).filter(FraudAlert.id == id).first()
-    if not alert:
-        raise HTTPException(status_code=404, detail="Alert not found")
-    return alert
+    return db.query(FraudAlert).filter(FraudAlert.id == id).first()
 
 if __name__ == "__main__":
     import uvicorn
-    # Using port 10000 for Render compatibility
     uvicorn.run(app, host="0.0.0.0", port=10000)
