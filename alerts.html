@@ -2,24 +2,38 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LogSense - Live Incident Console</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-        body { background: #0b0c10; color: #c5c6c7; display: flex; }
+        body { background: #0b0c10; color: #c5c6c7; display: flex; min-height: 100vh; }
+        
+        /* Sidebar Navigation */
         .sidebar { width: 260px; background: #1f2833; height: 100vh; position: fixed; padding: 25px; border-right: 1px solid #45a29e; }
         .sidebar h2 { color: #66fcf1; letter-spacing: 2px; margin-bottom: 40px; font-size: 20px; }
         .sidebar a { display: block; color: #8892b0; padding: 12px; text-decoration: none; font-size: 14px; margin-bottom: 10px; border-left: 3px solid transparent; transition: 0.3s; }
+        .sidebar a:hover { color: #66fcf1; background: rgba(102, 252, 241, 0.05); }
         .sidebar a.active { color: #66fcf1; background: rgba(102, 252, 241, 0.05); border-left: 3px solid #66fcf1; }
+
+        /* Main Content Area */
         .main { flex: 1; margin-left: 260px; padding: 40px; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid #45a29e; padding-bottom: 20px; }
-        .alert-table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #1f2833; border-radius: 8px; overflow: hidden; }
-        .alert-table th { text-align: left; padding: 15px; background: #0b0c10; color: #45a29e; font-size: 12px; text-transform: uppercase; }
-        .alert-table td { padding: 15px; border-bottom: 1px solid rgba(69, 162, 158, 0.1); font-size: 14px; cursor: pointer; }
-        .alert-table tr:hover { background: rgba(102, 252, 241, 0.05); }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid rgba(69, 162, 158, 0.3); padding-bottom: 20px; }
+        
+        /* Alert Table Styling */
+        .table-container { width: 100%; overflow-x: auto; background: #1f2833; border-radius: 8px; border: 1px solid rgba(69, 162, 158, 0.2); }
+        .alert-table { width: 100%; border-collapse: collapse; min-width: 800px; }
+        .alert-table th { text-align: left; padding: 15px; background: #0b0c10; color: #45a29e; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
+        .alert-table td { padding: 15px; border-bottom: 1px solid rgba(69, 162, 158, 0.1); font-size: 14px; transition: 0.2s; }
+        .alert-table tr { cursor: pointer; }
+        .alert-table tr:hover td { background: rgba(102, 252, 241, 0.05); color: #fff; }
+
+        /* Status Badges */
+        .badge { padding: 4px 10px; border-radius: 4px; font-size: 10px; font-weight: bold; display: inline-block; }
+        .CRITICAL { background: rgba(255, 76, 76, 0.15); color: #ff4c4c; border: 1px solid #ff4c4c; }
+        .HIGH { background: rgba(255, 165, 0, 0.15); color: #ffa500; border: 1px solid #ffa500; }
+        
         .empty-state { text-align: center; padding: 100px; color: #45a29e; }
-        .badge { padding: 4px 10px; border-radius: 4px; font-size: 10px; font-weight: bold; }
-        .CRITICAL { background: rgba(255, 76, 76, 0.2); color: #ff4c4c; border: 1px solid #ff4c4c; }
-        .HIGH { background: rgba(255, 165, 0, 0.2); color: #ffa500; border: 1px solid #ffa500; }
+        .empty-state h3 { color: #8892b0; margin-bottom: 8px; }
     </style>
 </head>
 <body>
@@ -32,28 +46,30 @@
 
     <div class="main">
         <div class="header">
-            <h1>Live Incident Logs</h1>
-            <div style="color: #66fcf1; font-size: 12px;">● ENGINE ACTIVE</div>
+            <h1 style="color: #fff;">Live Incident Logs</h1>
+            <div style="color: #66fcf1; font-size: 12px; font-family: monospace;">● ENGINE ACTIVE</div>
         </div>
 
-        <table class="alert-table">
-            <thead>
-                <tr>
-                    <th>Timestamp</th>
-                    <th>Fraud Type</th>
-                    <th>User</th>
-                    <th>Recipient</th>
-                    <th>Amount</th>
-                    <th>Risk</th>
-                </tr>
-            </thead>
-            <tbody id="alertsBody">
-                </tbody>
-        </table>
+        <div class="table-container">
+            <table class="alert-table" id="alertsTable" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Fraud Type</th>
+                        <th>User</th>
+                        <th>Recipient</th>
+                        <th>Amount</th>
+                        <th>Risk</th>
+                    </tr>
+                </thead>
+                <tbody id="alertsBody">
+                    </tbody>
+            </table>
 
-        <div id="noData" class="empty-state">
-            <h3>Monitoring Network...</h3>
-            <p>No anomalous log patterns detected in the current session.</p>
+            <div id="noData" class="empty-state">
+                <h3>Monitoring Network...</h3>
+                <p>No anomalous log patterns detected in the current session.</p>
+            </div>
         </div>
     </div>
 
@@ -62,19 +78,24 @@
             try {
                 const response = await fetch('/api/v2/alerts');
                 const alerts = await response.json();
+                
                 const tableBody = document.getElementById('alertsBody');
+                const tableElement = document.getElementById('alertsTable');
                 const noData = document.getElementById('noData');
 
                 if (!alerts || alerts.length === 0) {
                     tableBody.innerHTML = "";
+                    tableElement.style.display = "none";
                     noData.style.display = "block";
                     return;
                 }
 
                 noData.style.display = "none";
+                tableElement.style.display = "table";
+                
                 tableBody.innerHTML = alerts.map(alert => `
                     <tr onclick="window.location.href='/analyze-view?id=${alert.id}'">
-                        <td style="color: #8892b0;">${new Date(alert.timestamp).toLocaleTimeString()}</td>
+                        <td style="color: #8892b0; font-family: monospace;">${new Date(alert.timestamp).toLocaleTimeString()}</td>
                         <td style="color: #fff; font-weight: bold;">${alert.fraud_name}</td>
                         <td>${alert.user_name}</td>
                         <td>${alert.recipient}</td>
@@ -86,6 +107,8 @@
                 console.error("Fetch error:", err);
             }
         }
+
+        // Refresh every 3 seconds for live-monitoring feel
         setInterval(fetchAlerts, 3000);
         window.onload = fetchAlerts;
     </script>
