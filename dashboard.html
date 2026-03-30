@@ -15,13 +15,11 @@
         <div class="card" style="flex: 1;"><h3>Total Alerts</h3><p id="count" style="font-size: 40px; color: #66fcf1;">0</p></div>
         <div class="card" style="flex: 1;"><h3>System Health</h3><p style="font-size: 40px; color: #27ae60;">Active</p></div>
     </div>
-
     <div class="card">
         <h3>Live Alerts Stream</h3>
         <div id="latest">Monitoring for anomalies...</div>
     </div>
     <a href="/alerts" class="btn">View All History</a>
-
     <script>
         async function update() {
             const res = await fetch('/api/v2/alerts');
