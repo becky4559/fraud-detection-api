@@ -37,7 +37,6 @@ def evaluate_logsense_forensics(data):
         return {"type": "IDENTITY_THEFT", "name": "Blacklisted Recipient", "score": 0.95, "level": "CRITICAL", "reason": "Recipient matches high-risk fraud database."}
     if location != "Nairobi" and location != "Unknown":
          return {"type": "GEOGRAPHIC_FRAUD", "name": "Geographic Displacement", "score": 0.85, "level": "HIGH", "reason": f"Transaction from {location} is outside home cluster."}
-    
     return None
 
 # --- MOBILE ENDPOINT ---
@@ -88,6 +87,7 @@ async def serve_alerts(): return FileResponse("alerts.html")
 @app.get("/analyze-view")
 async def serve_analyze(): return FileResponse("analyze.html")
 
+# --- DATA API ---
 @app.get("/api/v2/alerts")
 def get_alerts(db: Session = Depends(get_db)):
     return db.query(FraudAlert).order_by(desc(FraudAlert.timestamp)).all()
@@ -96,6 +96,13 @@ def get_alerts(db: Session = Depends(get_db)):
 def get_alert(id: int, db: Session = Depends(get_db)):
     return db.query(FraudAlert).filter(FraudAlert.id == id).first()
 
+# --- DEMO WIPE ENDPOINT ---
+@app.post("/api/v2/alerts/clear")
+def clear_alerts(db: Session = Depends(get_db)):
+    db.query(FraudAlert).delete()
+    db.commit()
+    return {"status": "DATABASE_WIPED"}
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=10000)
+    uvicorn.run(app, host="127.0.0.1", port=10000)
