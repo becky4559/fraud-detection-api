@@ -2,20 +2,37 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LogSense - Forensic Analysis</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body { background: #0b0c10; color: #c5c6c7; display: flex; min-height: 100vh; }
+        
+        /* Navigation */
         .sidebar { width: 260px; background: #1f2833; height: 100vh; position: fixed; padding: 25px; border-right: 1px solid #45a29e; }
         .sidebar h2 { color: #66fcf1; letter-spacing: 2px; margin-bottom: 40px; font-size: 20px; }
-        .sidebar a { display: block; color: #8892b0; padding: 12px; text-decoration: none; font-size: 14px; margin-bottom: 10px; border-left: 3px solid transparent; }
+        .sidebar a { display: block; color: #8892b0; padding: 12px; text-decoration: none; font-size: 14px; margin-bottom: 10px; border-left: 3px solid transparent; transition: 0.3s; }
         .sidebar a:hover, .sidebar a.active { color: #66fcf1; background: rgba(102, 252, 241, 0.05); border-left: 3px solid #66fcf1; }
+
+        /* Main Lab Interface */
         .main { flex: 1; margin-left: 260px; padding: 40px; }
         .card { background: #1f2833; border-radius: 8px; padding: 25px; border: 1px solid rgba(69, 162, 158, 0.2); margin-bottom: 20px; }
-        .data-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #0b0c10; }
-        .label { color: #45a29e; font-size: 11px; font-family: 'JetBrains Mono'; }
-        .evidence-box { border-left: 3px solid #66fcf1; background: #0b0c10; padding: 15px; margin-top: 10px; }
+        
+        .header-meta { margin-bottom: 30px; }
+        .case-id { color: #45a29e; font-family: 'JetBrains Mono'; font-size: 14px; margin-top: 5px; }
+
+        .data-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(11, 12, 16, 0.5); }
+        .label { color: #45a29e; font-size: 11px; font-family: 'JetBrains Mono'; text-transform: uppercase; letter-spacing: 1px; }
+        .value { color: #fff; font-size: 14px; }
+
+        /* AI Evidence Styling */
+        .evidence-box { border-left: 3px solid #66fcf1; background: #0b0c10; padding: 15px; margin-top: 10px; border-radius: 0 4px 4px 0; }
+        .evidence-text { color: #66fcf1; font-family: 'JetBrains Mono'; font-size: 12px; }
+        
+        .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+        @media (max-width: 900px) { .grid-container { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -27,67 +44,89 @@
     </nav>
 
     <main class="main">
-        <header style="margin-bottom: 30px;">
-            <h1 style="color: #fff;">Forensic Reconstruction</h1>
-            <p id="caseId" style="color: #45a29e; font-family: 'JetBrains Mono';">AWAITING SELECTION...</p>
-        </header>
+        <div class="header-meta">
+            <h1 style="color: #fff; font-size: 28px;">Forensic Reconstruction</h1>
+            <p id="caseId" class="case-id">AWAITING INCIDENT SELECTION...</p>
+        </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div class="grid-container">
             <div class="card">
-                <h3 style="color: #66fcf1; font-size: 13px; margin-bottom: 15px;">TRANSACTION CONTEXT</h3>
-                <div class="data-row"><span class="label">SUBJECT</span><span id="userName">--</span></div>
-                <div class="data-row"><span class="label">AMOUNT</span><span id="amount">--</span></div>
-                <div class="data-row"><span class="label">RECIPIENT</span><span id="recipient">--</span></div>
-                <div class="data-row"><span class="label">LOCATION</span><span id="location">--</span></div>
+                <h3 style="color: #66fcf1; font-size: 12px; margin-bottom: 20px; letter-spacing: 2px;">TRANSACTION CONTEXT</h3>
+                <div class="data-row"><span class="label">Subject</span><span id="userName" class="value">--</span></div>
+                <div class="data-row"><span class="label">Amount</span><span id="amount" class="value">--</span></div>
+                <div class="data-row"><span class="label">Recipient</span><span id="recipient" class="value">--</span></div>
+                <div class="data-row"><span class="label">Location</span><span id="location" class="value">--</span></div>
             </div>
 
             <div class="card">
-                <h3 style="color: #66fcf1; font-size: 13px; margin-bottom: 15px;">TECHNICAL METADATA</h3>
-                <div id="techData" style="font-size: 13px;">No session data loaded.</div>
+                <h3 style="color: #66fcf1; font-size: 12px; margin-bottom: 20px; letter-spacing: 2px;">TECHNICAL METADATA LOGS</h3>
+                <div id="techData" style="font-size: 13px;">
+                    <p style="color: #8892b0; font-style: italic;">No session data loaded. Please select an alert from the table.</p>
+                </div>
             </div>
         </div>
 
         <div class="card">
-            <h3 style="color: #66fcf1; font-size: 13px; margin-bottom: 15px;">AI DETECTION EVIDENCE (ISOLATION FOREST XAI)</h3>
-            <div id="evidenceList" style="font-size: 13px;">Waiting for incident selection from the Alerts tab.</div>
+            <h3 style="color: #66fcf1; font-size: 12px; margin-bottom: 20px; letter-spacing: 2px;">AI DETECTION EVIDENCE (ISOLATION FOREST XAI)</h3>
+            <div id="evidenceList">
+                <p style="color: #8892b0; font-style: italic;">Awaiting anomaly scores from forensic engine...</p>
+            </div>
         </div>
     </main>
 
     <script>
+        // Use your Render URL or leave empty if served from the same server
+        const API_URL = ""; 
+
         async function loadCase() {
-            const id = new URLSearchParams(window.location.search).get('id');
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get('id');
             if (!id) return;
 
             try {
-                const res = await fetch(`/api/v2/alerts/${id}`);
+                const res = await fetch(`${API_URL}/api/v2/alerts/${id}`);
                 const data = await res.json();
 
-                document.getElementById('caseId').innerText = `CASE_ID: ${data.transaction_id}`;
+                // 1. Map basic fields
+                document.getElementById('caseId').innerText = `CASE_ID: ${data.transaction_id || 'TXN-UNKNOWN'}`;
                 document.getElementById('userName').innerText = data.user_name;
-                document.getElementById('amount').innerText = `KES ${data.amount.toLocaleString()}`;
+                document.getElementById('amount').innerText = `KES ${parseFloat(data.amount).toLocaleString()}`;
                 document.getElementById('recipient').innerText = data.recipient;
                 document.getElementById('location').innerText = data.location;
 
+                // 2. Parse Detection Signals (Handle String or Object)
                 let forensics = data.detection_signals;
-                if (typeof forensics === 'string') forensics = JSON.parse(forensics);
+                if (typeof forensics === 'string') {
+                    try { forensics = JSON.parse(forensics); } catch(e) { forensics = {}; }
+                }
 
+                // 3. Render Technical Metadata
                 const techBox = document.getElementById('techData');
                 if (forensics.signals) {
-                    techBox.innerHTML = Object.entries(forensics.signals).map(([k, v]) => `
-                        <div class="data-row"><span class="label">${k}</span><span>${v}</span></div>
+                    techBox.innerHTML = Object.entries(forensics.signals).map(([key, val]) => `
+                        <div class="data-row">
+                            <span class="label">${key.replace(/_/g, ' ')}</span>
+                            <span class="value" style="color: #66fcf1;">${val}</span>
+                        </div>
                     `).join('');
                 }
 
+                // 4. Render AI Explanations
                 const evidenceBox = document.getElementById('evidenceList');
-                if (forensics.explanations) {
-                    evidenceBox.innerHTML = forensics.explanations.map(e => `
-                        <div class="evidence-box"><p style="color:#66fcf1;">● ${e}</p></div>
+                if (forensics.explanations && forensics.explanations.length > 0) {
+                    evidenceBox.innerHTML = forensics.explanations.map(exp => `
+                        <div class="evidence-box">
+                            <p class="evidence-text">● ${exp}</p>
+                        </div>
                     `).join('');
                 }
-            } catch (e) {
-                console.error("Load Error:", e);
+
+            } catch (err) {
+                console.error("Forensic Load Error:", err);
+                document.getElementById('techData').innerHTML = `<p style="color: #ff4c4c;">Error loading forensic logs.</p>`;
             }
         }
+
         window.onload = loadCase;
     </script>
 </body>
