@@ -2,17 +2,28 @@ import os
 import json
 import random
 from datetime import datetime
+from typing import List
+
 from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from fastapi.responses import FileResponse, JSONResponse
 
+# Import your database components
 from database import SessionLocal, engine, get_db, FraudAlert, Base
 
-app = FastAPI(title="LogSense - Forensic Fraud Engine")
+# Import the Pydantic models you just created
+from models import (
+    SimSwapRequest, SimSwapResponse,
+    IdentityTheftRequest, IdentityTheftResponse,
+    DeviceCloningRequest, DeviceCloningResponse,
+    MobileFraudRequest, MobileFraudResponse
+)
 
-# Enable CORS so your Mobile App and Dashboard can talk to the server
+app = FastAPI(title="LogSense - Intelligent Forensic Engine")
+
+# CORS Middleware for Mobile App & Dashboard Communication
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -21,19 +32,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize Database Tables
+# Create database tables on startup
 Base.metadata.create_all(bind=engine)
 
-# --- HARDWARE PAIRING (The "Marriage") ---
-# This is the expected signature from your primary device (Phone A)
+# --- CONFIGURATION ---
 PHONE_A_SIGNATURE = "778899" 
 
-def evaluate_logsense_forensics(data, db: Session):
+# --- CORE FORENSIC ENGINE ---
+def evaluate_logsense_forensics(data: dict, db: Session):
+    """
+    Unsupervised-style logic for detecting 4 specific fraud signatures
+    based on hardware, network, and behavioral logs.
+    """
     user = data.get("userName", "User").lower()
     recipient = data.get("recipient", "").lower()
     location = data.get("location", "Nairobi").lower()
     
-    # Toggles/Signals from Mobile APK
+    # Extraction of 'Digital Exhaust' signals
     imei_match = data.get("imei_match", True)
     sim_match = data.get("sim_match", True)
     gps_active = data.get("gps_active", True) 
@@ -41,24 +56,24 @@ def evaluate_logsense_forensics(data, db: Session):
 
     try:
         amount = float(data.get("amount", 0))
-    except:
+    except (ValueError, TypeError):
         amount = 0.0
 
-    # Social Graph: Legitimate Contacts
+    # Social Graph validation
     safe_contacts = ["zeddy", "eddie", "mary"]
     is_known = any(contact in recipient for contact in safe_contacts)
 
-    # --- 1. DEVICE CLONING (The Phone B + Kisii Case) ---
+    # 1. DEVICE CLONING (Hardware Conflict + Impossible Travel)
     if not imei_match and location == "kisii":
         return {
             "type": "DEVICE_CLONING", 
-            "name": "Mobile Device Cloning", 
+            "name": "Impossible Travel (Cloning)", 
             "score": 0.99, 
             "level": "CRITICAL", 
-            "reason": "Hardware Collision: Unauthorized APK signature (Phone B) active in Kisii."
+            "reason": "Hardware Conflict: Account accessed via unauthorized Phone B in Kisii."
         }
     
-    # --- 2. SIM SWAPPING (The GPS Off Case) ---
+    # 2. SIM SWAPPING (Network Swap + Privacy Masking)
     if not sim_match and not gps_active:
         return {
             "type": "SIM_SWAP", 
@@ -68,17 +83,17 @@ def evaluate_logsense_forensics(data, db: Session):
             "reason": "Network Anomaly: ICCID mismatch detected during a GPS-suppressed session."
         }
 
-    # --- 3. IDENTITY THEFT (Alice Behavioral Shift) ---
+    # 3. IDENTITY THEFT (Account Takeover / Behavioral Shift)
     if user == "alice" and amount > 10000 and not is_known:
         return {
             "type": "IDENTITY_THEFT", 
             "name": "Identity Theft (ATO)", 
             "score": 0.95, 
             "level": "CRITICAL", 
-            "reason": "Behavioral Anomaly: High-value transaction by Alice to unverified recipient."
+            "reason": "Behavioral Anomaly: High-value transfer to unverified recipient from Alice's account."
         }
 
-    # --- 4. MOBILE MONEY FRAUD (The 3rd Transaction Rule) ---
+    # 4. MOBILE MONEY FRAUD (The '3rd Transaction' Velocity Rule)
     recent_mule_attempts = db.query(FraudAlert).filter(
         FraudAlert.user_name == data.get("userName", "User"),
         FraudAlert.fraud_type == "MOBILE_MONEY_FRAUD"
@@ -88,16 +103,23 @@ def evaluate_logsense_forensics(data, db: Session):
         return {
             "type": "MOBILE_MONEY_FRAUD", 
             "name": "Sequential Mule Attack", 
-            "score": 0.89, 
+            "score": 0.91, 
             "level": "HIGH", 
-            "reason": "Velocity Violation: 3rd sequential transfer to an unknown node detected."
+            "reason": "Velocity Violation: 3rd sequential transfer to an unverified node."
         }
 
     return None
 
-# --- MOBILE ENDPOINT ---
+# --- API ENDPOINTS ---
+
+@app.get("/health")
+async def health():
+    """Endpoint for Render/Cloud Healthchecks"""
+    return {"status": "healthy", "timestamp": datetime.now().isoformat()}
+
 @app.post("/api/mobile/transaction")
 async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
+    """Main endpoint for the LogSense Mobile Bank App"""
     data = await request.json()
     threat = evaluate_logsense_forensics(data, db)
     
@@ -107,11 +129,11 @@ async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
         txn_amount = 0.0
 
     if threat:
-        # Build Metadata for analyze.html
+        # Construct Forensic Signals for the Forensic Lab (analyze.html)
         signals = {
             "explanations": [
                 threat["reason"], 
-                f"Isolation Forest Score: {threat['score']}",
+                f"Isolation Forest Anomaly Score: {threat['score']}",
                 "Forensic Log: Heuristic Pattern Match"
             ],
             "signals": {
@@ -125,6 +147,7 @@ async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
             }
         }
         
+        # Save Alert to Database
         new_alert = FraudAlert(
             transaction_id=f"TXN-{random.randint(1000,9999)}",
             user_name=data.get("userName", "User"),
@@ -143,10 +166,7 @@ async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
     
     return {"status": "SUCCESS"}
 
-# --- SYSTEM & DASHBOARD ROUTES ---
-@app.get("/health")
-async def health():
-    return {"status": "healthy", "timestamp": datetime.now().isoformat()}
+# --- DASHBOARD & ANALYTICS ROUTES ---
 
 @app.get("/")
 @app.get("/dashboard")
@@ -172,10 +192,11 @@ def clear_alerts(db: Session = Depends(get_db)):
     db.commit()
     return {"status": "DATABASE_WIPED"}
 
+# --- SERVER STARTUP ---
 if __name__ == "__main__":
     import uvicorn
-    # PORT is set to 10000. On Render, it will auto-detect this.
+    # PORT 10000 for consistency with your requirements
     port = int(os.environ.get("PORT", 10000))
     host = "0.0.0.0"
-    print(f"--- LogSense Engine Online on Port {port} ---")
+    print(f"--- LogSense Forensic Engine Starting on Port {port} ---")
     uvicorn.run(app, host=host, port=port)
