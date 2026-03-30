@@ -25,18 +25,38 @@
 <body>
     <div class="sidebar">
         <h2>LOGSENSE AI</h2>
-        <a href="/dashboard">System Overview</a>
-        <a href="/alerts" class="active">Security Alerts</a>
+        <a href="/dashboard">Dashboard</a>
+        <a href="/alerts" class="active">Alerts</a>
         <a href="/analyze-view">Forensic Lab</a>
     </div>
+
     <div class="main">
-        <div class="header"><h1>Live Incident Logs</h1><div id="status-dot" style="color: #66fcf1; font-size: 12px;">● ENGINE ACTIVE</div></div>
-        <table class="alert-table" id="alertsTable">
-            <thead><tr><th>Timestamp</th><th>Fraud Type</th><th>User</th><th>Recipient</th><th>Amount</th><th>Risk</th></tr></thead>
-            <tbody id="alertsBody"></tbody>
+        <div class="header">
+            <h1>Live Incident Logs</h1>
+            <div style="color: #66fcf1; font-size: 12px;">● ENGINE ACTIVE</div>
+        </div>
+
+        <table class="alert-table">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Fraud Type</th>
+                    <th>User</th>
+                    <th>Recipient</th>
+                    <th>Amount</th>
+                    <th>Risk</th>
+                </tr>
+            </thead>
+            <tbody id="alertsBody">
+                </tbody>
         </table>
-        <div id="noData" class="empty-state"><h3>Monitoring Network...</h3><p>No anomalous log patterns detected.</p></div>
+
+        <div id="noData" class="empty-state">
+            <h3>Monitoring Network...</h3>
+            <p>No anomalous log patterns detected in the current session.</p>
+        </div>
     </div>
+
     <script>
         async function fetchAlerts() {
             try {
@@ -44,7 +64,13 @@
                 const alerts = await response.json();
                 const tableBody = document.getElementById('alertsBody');
                 const noData = document.getElementById('noData');
-                if (alerts.length === 0) { tableBody.innerHTML = ""; noData.style.display = "block"; return; }
+
+                if (!alerts || alerts.length === 0) {
+                    tableBody.innerHTML = "";
+                    noData.style.display = "block";
+                    return;
+                }
+
                 noData.style.display = "none";
                 tableBody.innerHTML = alerts.map(alert => `
                     <tr onclick="window.location.href='/analyze-view?id=${alert.id}'">
@@ -56,9 +82,11 @@
                         <td><span class="badge ${alert.risk_level}">${alert.risk_level}</span></td>
                     </tr>
                 `).join('');
-            } catch (err) { console.error(err); }
+            } catch (err) {
+                console.error("Fetch error:", err);
+            }
         }
-        setInterval(fetchAlerts, 5000);
+        setInterval(fetchAlerts, 3000);
         window.onload = fetchAlerts;
     </script>
 </body>
