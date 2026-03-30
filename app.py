@@ -23,6 +23,7 @@ app.add_middleware(
 Base.metadata.create_all(bind=engine)
 
 # --- HARDWARE PAIRING (The "Marriage") ---
+# This is the expected signature from your primary device (Phone A)
 PHONE_A_SIGNATURE = "778899" 
 
 def evaluate_logsense_forensics(data, db: Session):
@@ -30,7 +31,7 @@ def evaluate_logsense_forensics(data, db: Session):
     recipient = data.get("recipient", "").lower()
     location = data.get("location", "Nairobi").lower()
     
-    # Toggles from Mobile App
+    # Toggles from Mobile App (Phone B APK vs Phone A)
     imei_match = data.get("imei_match", True)
     sim_match = data.get("sim_match", True)
     gps_active = data.get("gps_active", True) 
@@ -78,7 +79,6 @@ def evaluate_logsense_forensics(data, db: Session):
         }
 
     # --- 4. MOBILE MONEY FRAUD (The 3rd Transaction Rule) ---
-    # Logic: Counts existing fraud alerts for this user to detect a "burst"
     recent_mule_attempts = db.query(FraudAlert).filter(
         FraudAlert.user_name == data.get("userName", "User"),
         FraudAlert.fraud_type == "MOBILE_MONEY_FRAUD"
@@ -115,11 +115,13 @@ async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
                 "Forensic Log: Heuristic Pattern Match"
             ],
             "signals": {
+                "User_Identity": data.get("userName", "Unknown"),
                 "Hardware_Link": "PHONE_A (MARRIED)" if data.get("deviceSignature") == PHONE_A_SIGNATURE else "PHONE_B (INTRUDER)",
-                "IMEI_Integrity": "FAIL (CONFLICT)" if not data.get("imei_match") else "PASS", 
-                "SIM_Integrity": "FAIL (SWAP)" if not data.get("sim_match") else "PASS",
-                "GPS_Status": "MASKED/OFF" if not data.get("gps_active") else "BROADCASTING",
-                "Velocity_Counter": f"Attempt {(db.query(FraudAlert).count()) + 1} in Sequence"
+                "IMEI_Integrity": "FAIL (Clone Detected)" if not data.get("imei_match") else "PASS", 
+                "SIM_Integrity": "FAIL (Swap Detected)" if not data.get("sim_match") else "PASS",
+                "GPS_Privacy_Mode": "ACTIVE (Hidden)" if not data.get("gps_active") else "INACTIVE",
+                "Geographic_Log": f"Origin: {data.get('location')} | Target: {data.get('recipient')}",
+                "Velocity_Index": f"Attempt {(db.query(FraudAlert).count()) + 1} in Sequence"
             }
         }
         
