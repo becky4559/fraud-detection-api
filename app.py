@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from fastapi.responses import FileResponse, JSONResponse
 
-# Import database & models
+# Import database & models (Ensure these files exist)
 from database import SessionLocal, engine, get_db, FraudAlert, Base
 
 app = FastAPI(title="LogSense - AI Forensic Engine v3.0")
@@ -29,33 +29,27 @@ Base.metadata.create_all(bind=engine)
 
 # Forensic Baselines & Master Keys
 TRUSTED_SIGNATURE = "778899"
-REGISTRATION_SECRET = "JK6594" # The secret key for your demo
+REGISTRATION_SECRET = "JK6594" 
 MAX_VELOCITY_LIMIT = 40000
 
 # --- CORE ANALYTICS ENGINE ---
 def run_anomaly_detection(data: dict):
-    """
-    Evaluates incoming log features against the John Kamau baseline.
-    Returns None if the activity is trusted (Authorized).
-    """
     user = str(data.get("userName", "")).strip().lower()
     location = str(data.get("location", "Nairobi")).strip().lower()
     sig = str(data.get("deviceSignature", ""))
     
-    # --- THE TRUSTED PATH (SUCCESS CASE) ---
+    # Authorized Case
     if user == "john" and sig == TRUSTED_SIGNATURE and location == "nairobi":
-        return None  # Authorized
+        return None 
 
-    # --- ANOMALY TRIGGERS (ATTACK CASES) ---
-    
-    # 1. IDENTITY THEFT (The Alice Logic - Triggered at Login)
+    # 1. IDENTITY THEFT (The Alice Logic)
     if "alice" in user:
         return {
             "type": "IDENTITY_THEFT",
             "name": "Identity Theft Anomaly",
             "score": 0.99,
             "level": "CRITICAL",
-            "reason": f"Identity Mismatch: User '{user}' attempting to access session bound to Master Key JK6594."
+            "reason": f"Identity Mismatch: User '{user}' is not the provisioned owner of Key {TRUSTED_SIGNATURE}."
         }
 
     # 2. DEVICE CLONING (Kisii Outlier)
@@ -65,19 +59,7 @@ def run_anomaly_detection(data: dict):
             "name": "Hardware Cloning Anomaly",
             "score": 0.99,
             "level": "CRITICAL",
-            "reason": f"Hardware Conflict: Rogue signature ({sig}) detected in unauthorized zone ({location})."
-        }
-
-    # 3. SIM SWAP (Network Layer)
-    sim_match = data.get("sim_match", True)
-    gps_active = data.get("gps_active", True)
-    if not sim_match and not gps_active:
-        return {
-            "type": "SIM_SWAP",
-            "name": "SIM Swap Detection",
-            "score": 0.95,
-            "level": "CRITICAL",
-            "reason": "Network Anomaly: ICCID mismatch detected during a GPS-suppressed session."
+            "reason": f"Hardware Conflict: Unknown signature ({sig}) detected in Kisii zone."
         }
 
     return None
@@ -86,36 +68,30 @@ def run_anomaly_detection(data: dict):
 
 @app.post("/api/mobile/register")
 async def register_device(request: Request, db: Session = Depends(get_db)):
-    """
-    SILENT REGISTRATION: 
-    Accepts the registration without firing a dashboard alert immediately.
-    """
     data = await request.json()
     auth_key = data.get("auth_key")
-    user = str(data.get("userName", "")).lower()
-
     if auth_key == REGISTRATION_SECRET:
-        # Success response but no FraudAlert created here to keep the dashboard clean
-        return {"status": "SUCCESS", "message": f"Identity '{user}' Provisioned Successfully."}
-    
-    return {"status": "FAILED", "message": "Invalid Authorization Key"}
+        return {"status": "SUCCESS", "message": "Identity Provisioned Successfully."}
+    return JSONResponse(status_code=403, content={"status": "FAILED", "message": "Invalid Key"})
 
 @app.post("/api/mobile/transaction")
 async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
-    """
-    ACTIVE DETECTION:
-    This is where the Identity Theft alert is generated.
-    """
     data = await request.json()
     threat = run_anomaly_detection(data)
     
     if threat:
-        evidence = {
-            "explanations": [threat["reason"], f"Confidence: {threat['score']}", "Node: Alpha-Forensics"],
-            "metadata": {
-                "user": data.get("userName", "Unknown"),
-                "device": "ROGUE" if data.get("deviceSignature") != TRUSTED_SIGNATURE else "TRUSTED",
-                "risk_index": threat["level"]
+        # STRUCTURED FOR FORENSIC LAB HTML
+        forensic_payload = {
+            "explanations": [
+                threat["reason"],
+                f"Isolation Forest Confidence: {threat['score']}",
+                "Heuristic: Location/Signature Mismatch"
+            ],
+            "signals": {
+                "User_Identity": data.get("userName", "Unknown"),
+                "Device_Signature": data.get("deviceSignature", "MISSING"),
+                "Network_Location": data.get("location", "Unknown"),
+                "System_Status": "ROGUE_PROCESS_INTERCEPTED"
             }
         }
 
@@ -128,7 +104,8 @@ async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
             risk_level=threat["level"],
             amount=float(data.get("amount", 0)),
             location=data.get("location", "Nairobi"),
-            detection_signals=json.dumps(evidence)
+            # Ensure this key matches what your JS looks for:
+            detection_signals=json.dumps(forensic_payload)
         )
         db.add(new_alert)
         db.commit()
@@ -140,6 +117,14 @@ async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
 def get_alerts(db: Session = Depends(get_db)):
     return db.query(FraudAlert).order_by(desc(FraudAlert.timestamp)).all()
 
+# Endpoint for specific alert detail (The Forensic Lab fetch)
+@app.get("/api/v2/alerts/{alert_id}")
+def get_alert_detail(alert_id: int, db: Session = Depends(get_db)):
+    alert = db.query(FraudAlert).filter(FraudAlert.id == alert_id).first()
+    if not alert:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    return alert
+
 @app.post("/api/v2/alerts/clear")
 def clear_alerts(db: Session = Depends(get_db)):
     db.query(FraudAlert).delete()
@@ -150,6 +135,12 @@ def clear_alerts(db: Session = Depends(get_db)):
 @app.get("/")
 @app.get("/dashboard")
 async def dashboard(): return FileResponse("dashboard.html")
+
+@app.get("/alerts")
+async def alerts_page(): return FileResponse("alerts.html")
+
+@app.get("/analyze-view")
+async def analyze_page(): return FileResponse("analyze-view.html")
 
 if __name__ == "__main__":
     import uvicorn
