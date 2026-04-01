@@ -15,7 +15,7 @@ from database import SessionLocal, engine, get_db, FraudAlert, Base
 
 app = FastAPI(title="LogSense - AI Forensic Engine v3.0")
 
-# --- PATH CONFIGURATION (Fixes Render FileNotFoundError) ---
+# --- PATH CONFIGURATION ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # --- SECURITY & CONNECTIVITY ---
@@ -27,31 +27,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize Database on Startup
 @app.on_event("startup")
 def startup_event():
     Base.metadata.create_all(bind=engine)
 
-# Forensic Baselines & Master Keys
 TRUSTED_SIGNATURE = "778899"
 REGISTRATION_SECRET = "JK6594" 
 
-# --- CORE ANALYTICS ENGINE ---
+# --- CORE ANALYTICS ENGINE (Unchanged) ---
 def run_anomaly_detection(data: dict):
-    """
-    Evaluates incoming log features.
-    Returns a threat dictionary if anomalous, else None.
-    """
     user = str(data.get("userName", "")).strip().lower()
     location = str(data.get("location", "Nairobi")).strip().lower()
     sig = str(data.get("deviceSignature", ""))
     sim_match = data.get("sim_match", True)
     
-    # 0. AUTHORIZED BASELINE (John Kamau)
     if user == "john" and sig == TRUSTED_SIGNATURE and location == "nairobi":
         return None 
 
-    # 1. IDENTITY THEFT (Alice Logic)
     if "alice" in user:
         return {
             "type": "IDENTITY_THEFT",
@@ -61,7 +53,6 @@ def run_anomaly_detection(data: dict):
             "reason": f"Identity Mismatch: User '{user}' attempted access on a session bound to Root Key {TRUSTED_SIGNATURE}."
         }
 
-    # 2. DEVICE CLONING (Location/Signature Outlier)
     if sig != TRUSTED_SIGNATURE and location == "kisii":
         return {
             "type": "DEVICE_CLONING",
@@ -71,7 +62,6 @@ def run_anomaly_detection(data: dict):
             "reason": f"Hardware Conflict: Rogue signature ({sig}) detected in restricted zone ({location})."
         }
 
-    # 3. NETWORK ANOMALY (SIM Swap / Network Layer)
     if not sim_match:
         return {
             "type": "SIM_SWAP",
@@ -80,19 +70,16 @@ def run_anomaly_detection(data: dict):
             "level": "HIGH",
             "reason": "Security Alert: Subscriber Identity Module (SIM) mismatch detected during transaction."
         }
-
     return None
 
 # --- API ENDPOINTS ---
 
 @app.post("/api/mobile/transaction")
 async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
-    """Active forensic detection for mobile transactions."""
     data = await request.json()
     threat = run_anomaly_detection(data)
     
     if threat:
-        # Structured specifically for the 'Forensic Lab' frontend visualization
         forensic_payload = {
             "explanations": [
                 threat["reason"],
@@ -137,25 +124,35 @@ def get_alert_detail(alert_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Alert not found")
     return alert
 
-# --- DASHBOARD & STATIC ROUTES (Fixed Filenames) ---
+# --- NEW: WIPE DATABASE FUNCTIONALITY ---
+@app.post("/api/v2/alerts/clear")
+def clear_alerts(db: Session = Depends(get_db)):
+    try:
+        db.query(FraudAlert).delete()
+        db.commit()
+        return {"message": "Database wiped successfully"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- ROUTING SYSTEM ---
 
 @app.get("/")
 @app.get("/dashboard")
-async def dashboard(): 
-    path = os.path.join(BASE_DIR, "dashboard.html")
-    return FileResponse(path)
+async def dashboard_page(): 
+    return FileResponse(os.path.join(BASE_DIR, "dashboard.html"))
 
 @app.get("/alerts")
 async def alerts_page(): 
-    path = os.path.join(BASE_DIR, "alerts.html")
-    return FileResponse(path)
+    return FileResponse(os.path.join(BASE_DIR, "alerts.html"))
 
+# Added /analyze-view to match your HTML Sidebar links
+@app.get("/analyze-view")
 @app.get("/analyze")
 async def analyze_page(): 
-    # Corrected filename: analyze.html
     path = os.path.join(BASE_DIR, "analyze.html")
     if not os.path.exists(path):
-        raise HTTPException(status_code=404, detail=f"File {path} not found")
+        raise HTTPException(status_code=404, detail="analyze.html not found")
     return FileResponse(path)
 
 if __name__ == "__main__":
