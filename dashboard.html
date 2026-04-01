@@ -10,28 +10,25 @@
         .sidebar a { display: block; color: #8892b0; padding: 12px; text-decoration: none; font-size: 14px; margin-bottom: 10px; border-left: 3px solid transparent; }
         .sidebar a:hover { color: #66fcf1; background: rgba(102, 252, 241, 0.05); border-left: 3px solid #66fcf1; }
         
-        .content { margin-left: 280px; }
-        .grid { display: grid; grid-template-columns: 2fr 1.2fr; gap: 20px; }
-        .card { background: #1f2833; padding: 25px; border-radius: 10px; border: 1px solid #45a29e; margin-bottom: 20px; }
-        
-        /* Identity Management Styles */
-        .user-item { background: #0b0c10; border: 1px solid #45a29e; padding: 15px; border-radius: 8px; margin-top: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .user-info b { display: block; color: #66fcf1; font-size: 14px; }
-        .user-info span { color: #8892b0; font-size: 11px; font-family: 'JetBrains Mono'; }
-        .status-pill { font-size: 10px; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
-        
-        /* Registration Form Styles */
-        #registration-form { background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-top: 15px; border: 1px dashed #45a29e; display: none; }
-        .input-group { margin-bottom: 10px; }
-        .input-group label { display: block; font-size: 10px; color: #8892b0; margin-bottom: 4px; text-transform: uppercase; }
-        .input-group input { width: 100%; background: #0b0c10; border: 1px solid #45a29e; padding: 8px; color: #fff; border-radius: 4px; font-size: 13px; }
-        .secret-display { background: #2c3e50; padding: 8px; border-radius: 4px; text-align: center; margin-bottom: 10px; border: 1px solid #f1c40f; }
-        
-        .btn { background: #66fcf1; color: #0b0c10; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 12px; border: none; cursor: pointer; transition: 0.3s; }
-        .btn:hover { background: #fff; box-shadow: 0 0 10px #66fcf1; }
-        .btn-small { padding: 5px 10px; font-size: 10px; margin-top: 10px; width: 100%; }
+        /* THE CLEAR LOGS BUTTON */
+        .clear-btn { margin-top: 50px; background: transparent; color: #ff4c4c; border: 1px solid #ff4c4c; padding: 10px; font-size: 11px; cursor: pointer; width: 100%; border-radius: 4px; font-weight: bold; transition: 0.3s; }
+        .clear-btn:hover { background: #ff4c4c; color: #fff; }
 
-        .pulse { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #27ae60; margin-right: 8px; animation: pulse 2s infinite; }
+        .content { margin-left: 280px; }
+        .grid { display: grid; grid-template-columns: 1.8fr 1.2fr; gap: 30px; }
+        .card { background: #1f2833; padding: 30px; border-radius: 12px; border: 1px solid #45a29e; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        
+        .feed-item { border-bottom: 1px solid #0b0c10; padding: 25px 0; display: flex; justify-content: space-between; align-items: center; animation: slideIn 0.5s ease-out; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .user-item { background: #0b0c10; border: 1px solid #45a29e; padding: 15px; border-radius: 8px; margin-top: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; font-size: 11px; color: #8892b0; margin-bottom: 6px; text-transform: uppercase; }
+        .input-group input { width: 100%; background: #0b0c10; border: 1px solid #45a29e; padding: 12px; color: #fff; border-radius: 6px; font-size: 14px; }
+
+        .btn { background: #66fcf1; color: #0b0c10; padding: 12px 20px; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; }
+        .status-pill { font-size: 11px; padding: 6px 12px; border-radius: 5px; font-weight: bold; }
+        .pulse { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #27ae60; margin-right: 8px; animation: pulse 2s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
     </style>
 </head>
@@ -41,42 +38,45 @@
         <a href="/dashboard" style="color: #66fcf1; border-left: 3px solid #66fcf1;">Dashboard</a>
         <a href="/alerts">Alerts</a>
         <a href="/analyze-view">Forensic Lab</a>
-        <button onclick="clearLogs()" style="margin-top: 20px; background: transparent; color: #ff4c4c; border: 1px solid #ff4c4c; padding: 5px; font-size: 10px; cursor: pointer; width: 100%;">Clear All Logs</button>
+        
+        <button class="clear-btn" onclick="clearLogs()">WIPE FORENSIC DATA</button>
     </div>
 
     <div class="content">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-            <h1>System Integrity Overview</h1>
-            <div style="color: #8892b0; font-size: 13px;"><span class="pulse"></span> AI Forensic Node Active</div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+            <h1>Forensic Engine v3.0</h1>
+            <div style="color: #8892b0; font-size: 14px;"><span class="pulse"></span> System Integrity Node: ACTIVE</div>
         </div>
 
         <div class="grid">
             <div>
                 <div class="card">
-                    <h3 style="margin-bottom: 15px;">Real-time Forensic Feed</h3>
-                    <div id="latest-alerts">Awaiting network traffic...</div>
+                    <h2 style="margin-bottom: 20px; color: #66fcf1; border-bottom: 1px solid #45a29e; padding-bottom: 10px;">Live Forensic Analytics</h2>
+                    <div id="latest-alerts">
+                        <p style="color:#45a29e; font-style:italic;">Listening for anomaly signatures...</p>
+                    </div>
                 </div>
             </div>
 
             <div>
                 <div class="card">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <h3>Identity Management</h3>
-                        <button class="btn btn-small" style="width: auto;" onclick="toggleRegForm()">+ New Account</button>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3>Identity Control</h3>
+                        <button class="btn" style="padding: 6px 12px; font-size: 11px;" onclick="toggleRegForm()">+ Enroll Identity</button>
                     </div>
 
-                    <div id="registration-form">
+                    <div id="registration-form" style="display: none; background: rgba(0,0,0,0.4); padding: 20px; border-radius: 10px; border: 1px dashed #45a29e; margin-bottom: 20px;">
                         <div class="input-group">
                             <label>Full Name</label>
-                            <input type="text" id="reg-name" placeholder="e.g. Alice Wangari">
+                            <input type="text" id="reg-name" placeholder="Alice Wangari">
                         </div>
                         <div class="input-group">
                             <label>National ID</label>
-                            <input type="text" id="reg-id" placeholder="e.g. 556677">
+                            <input type="text" id="reg-id" placeholder="556677">
                         </div>
-                        <div class="secret-display">
-                            <label style="color: #f1c40f; font-size: 9px;">MASTER RECALL KEY</label>
-                            <div style="font-family: 'JetBrains Mono'; font-weight: bold; color: #fff;">JK6594</div>
+                        <div class="input-group">
+                            <label style="color: #f1c40f;">Master Authorization Key</label>
+                            <input type="password" id="admin-key" placeholder="Enter JK-Key">
                         </div>
                         <button class="btn" style="width: 100%;" onclick="enrollUser()">Authorize Identity</button>
                     </div>
@@ -85,14 +85,12 @@
                         <div class="user-item">
                             <div class="user-info">
                                 <b>John Kamau (Owner)</b>
-                                <span>SIG: 778899 | Trusted Baseline</span>
+                                <span style="font-size: 10px; color: #8892b0;">SIG: 778899 | Trusted Baseline</span>
                             </div>
                             <div class="status-pill" style="background: rgba(39,174,96,0.2); color: #27ae60;">VERIFIED</div>
                         </div>
                     </div>
-                    
-                    <div id="rogue-registrations">
-                        </div>
+                    <div id="rogue-registrations"></div>
                 </div>
             </div>
         </div>
@@ -109,36 +107,34 @@
         async function enrollUser() {
             const name = document.getElementById('reg-name').value;
             const id = document.getElementById('reg-id').value;
-            if(!name || !id) return alert("Missing Identity Fields");
+            const key = document.getElementById('admin-key').value;
+
+            if(key !== "JK6594") return alert("Unauthorized: Invalid Master Key.");
 
             try {
-                const res = await fetch(`${BASE_URL}/api/mobile/register`, {
+                await fetch(`${BASE_URL}/api/mobile/register`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ userName: name, nationalId: id, auth_key: "JK6594" })
+                    body: JSON.stringify({ userName: name, nationalId: id, auth_key: key })
                 });
-                const result = await res.json();
                 
-                // Show in the list immediately (Silent Enrollment)
-                const rogueContainer = document.getElementById('rogue-registrations');
-                rogueContainer.innerHTML += `
+                document.getElementById('rogue-registrations').innerHTML += `
                     <div class="user-item" style="border-color: #66fcf1; background: rgba(102, 252, 241, 0.05);">
-                        <div class="user-info">
-                            <b>${name} (Provisioned)</b>
-                            <span>SIG: PENDING | Auth: Master Key</span>
-                        </div>
-                        <div class="status-pill" style="background: rgba(102, 252, 241, 0.2); color: #66fcf1;">ACTIVE</div>
+                        <div class="user-info"><b>${name} (Active)</b><br><span style="font-size:10px;">ID: ${id}</span></div>
+                        <div class="status-pill" style="background: rgba(102, 252, 241, 0.2); color: #66fcf1;">PROVISIONED</div>
                     </div>
                 `;
                 toggleRegForm();
-                alert(result.message);
-            } catch (e) { alert("Registration Node Offline"); }
+            } catch (e) { alert("Backend Error"); }
         }
 
+        // CLEAR LOGS FUNCTION
         async function clearLogs() {
-            if(confirm("Wipe all forensic evidence?")) {
-                await fetch(`${BASE_URL}/api/v2/alerts/clear`, {method: 'POST'});
-                location.reload();
+            if(confirm("DANGER: This will wipe the Forensic Log History. Proceed?")) {
+                try {
+                    await fetch(`${BASE_URL}/api/v2/alerts/clear`, { method: 'POST' });
+                    document.getElementById('latest-alerts').innerHTML = '<p style="color:#45a29e; font-style:italic;">Logs purged. System ready.</p>';
+                } catch (e) { alert("Wipe Failed"); }
             }
         }
 
@@ -146,25 +142,24 @@
             try {
                 const res = await fetch(`${BASE_URL}/api/v2/alerts`);
                 const data = await res.json();
-                const alertContainer = document.getElementById('latest-alerts');
+                const container = document.getElementById('latest-alerts');
                 
                 if (data.length > 0) {
-                    alertContainer.innerHTML = data.slice(0, 6).map(a => {
-                        const isTheft = a.fraud_type === 'IDENTITY_THEFT';
-                        return `
-                            <div class="feed-item" style="${isTheft ? 'border-left: 4px solid #ff4c4c; padding-left: 12px; background: rgba(255,76,76,0.05);' : ''}">
-                                <div>
-                                    <b style="color:${isTheft ? '#ff4c4c' : '#66fcf1'}">${a.fraud_name}</b>
-                                    <p style="color:#8892b0; font-size:11px;">User: ${a.user_name} | Score: ${a.risk_score}</p>
-                                </div>
-                                <div class="status-pill" style="color:#ff4c4c; border: 1px solid #ff4c4c;">${a.risk_level}</div>
+                    container.innerHTML = data.slice(0, 5).map(a => `
+                        <div class="feed-item" style="${a.risk_level === 'CRITICAL' ? 'border-left: 6px solid #ff4c4c; padding-left: 20px; background: rgba(255,76,76,0.08);' : ''}">
+                            <div>
+                                <b style="color:${a.risk_level === 'CRITICAL' ? '#ff4c4c' : '#66fcf1'}; font-size: 18px;">${a.fraud_name}</b>
+                                <p style="font-size: 14px; margin-top: 5px;">
+                                    User Identified: ${a.user_name} <br>
+                                    Threat Source: ${a.location} <br>
+                                    AI Confidence: ${(a.risk_score * 100).toFixed(1)}%
+                                </p>
                             </div>
-                        `;
-                    }).join('');
-                } else {
-                    alertContainer.innerHTML = `<p style="color:#45a29e; font-size:12px; font-style:italic;">Listening for anomalies...</p>`;
+                            <div class="status-pill" style="color:#ff4c4c; border: 2px solid #ff4c4c;">${a.risk_level}</div>
+                        </div>
+                    `).join('');
                 }
-            } catch (e) { console.error("Sync Error", e); }
+            } catch (e) {}
         }
 
         setInterval(update, 3000);
