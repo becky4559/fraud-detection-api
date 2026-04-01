@@ -11,19 +11,26 @@
         .sidebar a:hover { color: #66fcf1; background: rgba(102, 252, 241, 0.05); border-left: 3px solid #66fcf1; }
         
         .content { margin-left: 280px; }
-        .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+        .grid { display: grid; grid-template-columns: 2fr 1.2fr; gap: 20px; }
         .card { background: #1f2833; padding: 25px; border-radius: 10px; border: 1px solid #45a29e; margin-bottom: 20px; }
         
-        /* User Registration Styles */
+        /* Identity Management Styles */
         .user-item { background: #0b0c10; border: 1px solid #45a29e; padding: 15px; border-radius: 8px; margin-top: 10px; display: flex; justify-content: space-between; align-items: center; }
         .user-info b { display: block; color: #66fcf1; font-size: 14px; }
         .user-info span { color: #8892b0; font-size: 11px; font-family: 'JetBrains Mono'; }
         .status-pill { font-size: 10px; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
         
-        /* Alert Feed Styles */
-        .feed-item { border-bottom: 1px solid #0b0c10; padding: 15px 0; display: flex; justify-content: space-between; align-items: center; }
-        .btn { background: #66fcf1; color: #0b0c10; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 12px; border: none; cursor: pointer; }
+        /* Registration Form Styles */
+        #registration-form { background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin-top: 15px; border: 1px dashed #45a29e; display: none; }
+        .input-group { margin-bottom: 10px; }
+        .input-group label { display: block; font-size: 10px; color: #8892b0; margin-bottom: 4px; text-transform: uppercase; }
+        .input-group input { width: 100%; background: #0b0c10; border: 1px solid #45a29e; padding: 8px; color: #fff; border-radius: 4px; font-size: 13px; }
+        .secret-display { background: #2c3e50; padding: 8px; border-radius: 4px; text-align: center; margin-bottom: 10px; border: 1px solid #f1c40f; }
         
+        .btn { background: #66fcf1; color: #0b0c10; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 12px; border: none; cursor: pointer; transition: 0.3s; }
+        .btn:hover { background: #fff; box-shadow: 0 0 10px #66fcf1; }
+        .btn-small { padding: 5px 10px; font-size: 10px; margin-top: 10px; width: 100%; }
+
         .pulse { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #27ae60; margin-right: 8px; animation: pulse 2s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
     </style>
@@ -34,6 +41,7 @@
         <a href="/dashboard" style="color: #66fcf1; border-left: 3px solid #66fcf1;">Dashboard</a>
         <a href="/alerts">Alerts</a>
         <a href="/analyze-view">Forensic Lab</a>
+        <button onclick="clearLogs()" style="margin-top: 20px; background: transparent; color: #ff4c4c; border: 1px solid #ff4c4c; padding: 5px; font-size: 10px; cursor: pointer; width: 100%;">Clear All Logs</button>
     </div>
 
     <div class="content">
@@ -52,12 +60,32 @@
 
             <div>
                 <div class="card">
-                    <h3 style="margin-bottom: 15px;">Identity Management</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3>Identity Management</h3>
+                        <button class="btn btn-small" style="width: auto;" onclick="toggleRegForm()">+ New Account</button>
+                    </div>
+
+                    <div id="registration-form">
+                        <div class="input-group">
+                            <label>Full Name</label>
+                            <input type="text" id="reg-name" placeholder="e.g. Alice Wangari">
+                        </div>
+                        <div class="input-group">
+                            <label>National ID</label>
+                            <input type="text" id="reg-id" placeholder="e.g. 556677">
+                        </div>
+                        <div class="secret-display">
+                            <label style="color: #f1c40f; font-size: 9px;">MASTER RECALL KEY</label>
+                            <div style="font-family: 'JetBrains Mono'; font-weight: bold; color: #fff;">JK6594</div>
+                        </div>
+                        <button class="btn" style="width: 100%;" onclick="enrollUser()">Authorize Identity</button>
+                    </div>
+
                     <div id="verified-users">
                         <div class="user-item">
                             <div class="user-info">
                                 <b>John Kamau (Owner)</b>
-                                <span>SIG: 778899 | Trusted</span>
+                                <span>SIG: 778899 | Trusted Baseline</span>
                             </div>
                             <div class="status-pill" style="background: rgba(39,174,96,0.2); color: #27ae60;">VERIFIED</div>
                         </div>
@@ -73,42 +101,68 @@
     <script>
         const BASE_URL = window.location.origin;
 
+        function toggleRegForm() {
+            const form = document.getElementById('registration-form');
+            form.style.display = form.style.display === 'block' ? 'none' : 'block';
+        }
+
+        async function enrollUser() {
+            const name = document.getElementById('reg-name').value;
+            const id = document.getElementById('reg-id').value;
+            if(!name || !id) return alert("Missing Identity Fields");
+
+            try {
+                const res = await fetch(`${BASE_URL}/api/mobile/register`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ userName: name, nationalId: id, auth_key: "JK6594" })
+                });
+                const result = await res.json();
+                
+                // Show in the list immediately (Silent Enrollment)
+                const rogueContainer = document.getElementById('rogue-registrations');
+                rogueContainer.innerHTML += `
+                    <div class="user-item" style="border-color: #66fcf1; background: rgba(102, 252, 241, 0.05);">
+                        <div class="user-info">
+                            <b>${name} (Provisioned)</b>
+                            <span>SIG: PENDING | Auth: Master Key</span>
+                        </div>
+                        <div class="status-pill" style="background: rgba(102, 252, 241, 0.2); color: #66fcf1;">ACTIVE</div>
+                    </div>
+                `;
+                toggleRegForm();
+                alert(result.message);
+            } catch (e) { alert("Registration Node Offline"); }
+        }
+
+        async function clearLogs() {
+            if(confirm("Wipe all forensic evidence?")) {
+                await fetch(`${BASE_URL}/api/v2/alerts/clear`, {method: 'POST'});
+                location.reload();
+            }
+        }
+
         async function update() {
             try {
                 const res = await fetch(`${BASE_URL}/api/v2/alerts`);
                 const data = await res.json();
-                
                 const alertContainer = document.getElementById('latest-alerts');
-                const rogueContainer = document.getElementById('rogue-registrations');
                 
                 if (data.length > 0) {
-                    // Update Forensic Feed
                     alertContainer.innerHTML = data.slice(0, 6).map(a => {
-                        const isHijack = a.fraud_type === 'REGISTRATION_HIJACK' || a.user_name.toLowerCase() === 'alice';
+                        const isTheft = a.fraud_type === 'IDENTITY_THEFT';
                         return `
-                            <div class="feed-item" style="${isHijack ? 'border-left: 3px solid #ff4c4c; padding-left: 12px;' : ''}">
+                            <div class="feed-item" style="${isTheft ? 'border-left: 4px solid #ff4c4c; padding-left: 12px; background: rgba(255,76,76,0.05);' : ''}">
                                 <div>
-                                    <b style="color:${isHijack ? '#ff4c4c' : '#66fcf1'}">${a.fraud_name}</b>
-                                    <p style="color:#8892b0; font-size:12px;">Node: ${a.location} | Risk: ${a.risk_level}</p>
+                                    <b style="color:${isTheft ? '#ff4c4c' : '#66fcf1'}">${a.fraud_name}</b>
+                                    <p style="color:#8892b0; font-size:11px;">User: ${a.user_name} | Score: ${a.risk_score}</p>
                                 </div>
-                                <a href="/analyze-view?id=${a.id}" class="btn">Analyze</a>
+                                <div class="status-pill" style="color:#ff4c4c; border: 1px solid #ff4c4c;">${a.risk_level}</div>
                             </div>
                         `;
                     }).join('');
-
-                    // Update Rogue Identity Card
-                    const aliceAlert = data.find(a => a.user_name.toLowerCase() === 'alice');
-                    if (aliceAlert) {
-                        rogueContainer.innerHTML = `
-                            <div class="user-item" style="border-color: #ff4c4c; background: rgba(255, 76, 76, 0.05);">
-                                <div class="user-info">
-                                    <b style="color: #ff4c4c;">Alice (Unauthorized)</b>
-                                    <span>SIG: 778899 | Hijacked Key</span>
-                                </div>
-                                <div class="status-pill" style="background: rgba(255,76,76,0.2); color: #ff4c4c;">BLOCKED</div>
-                            </div>
-                        `;
-                    }
+                } else {
+                    alertContainer.innerHTML = `<p style="color:#45a29e; font-size:12px; font-style:italic;">Listening for anomalies...</p>`;
                 }
             } catch (e) { console.error("Sync Error", e); }
         }
