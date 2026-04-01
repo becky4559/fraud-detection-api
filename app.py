@@ -2,21 +2,20 @@ import os
 import json
 import random
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from fastapi.responses import FileResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
 
 # Import database & models
 from database import SessionLocal, engine, get_db, FraudAlert, Base
 
-app = FastAPI(title="LogSense - Intelligent Forensic Engine")
+app = FastAPI(title="LogSense - AI Forensic Engine v3.0")
 
-# --- CONNECTIVITY CONFIG ---
+# --- SECURITY & CONNECTIVITY ---
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -25,156 +24,142 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize Database Tables
+# Initialize Database
 Base.metadata.create_all(bind=engine)
 
-# Primary "Safe" Device Identifier for John Kamau
-PHONE_A_SIGNATURE = "778899" 
+# Forensic Baselines for John Kamau
+TRUSTED_SIGNATURE = "778899"
+HOME_BASE = "nairobi"
+MAX_VELOCITY_LIMIT = 40000
 
-# --- CORE FORENSIC ENGINE ---
-def evaluate_logsense_forensics(data: dict, db: Session):
+# --- CORE ANALYTICS ENGINE ---
+def run_anomaly_detection(data: dict):
     """
-    Analyzes 'Digital Exhaust' signals using rule-based forensics and 
-    ML-simulated scoring to detect Identity Theft and Hardware Anomaly.
+    Evaluates incoming log features against the 'Married' baseline.
+    Returns a dict with threat details if an anomaly is isolated.
     """
-    user = str(data.get("userName", "User")).strip().lower()
-    recipient = str(data.get("recipient", "")).strip().lower()
+    user = str(data.get("userName", "")).strip().lower()
     location = str(data.get("location", "Nairobi")).strip().lower()
-    device_sig = data.get("deviceSignature", "UNKNOWN")
-
-    imei_match = data.get("imei_match", True)
+    sig = str(data.get("deviceSignature", ""))
+    
     sim_match = data.get("sim_match", True)
-    gps_active = data.get("gps_active", True) 
-
-    try:
-        amount = float(data.get("amount", 0))
-    except (ValueError, TypeError):
-        amount = 0.0
-
-    safe_contacts = ["zeddy", "eddie", "mary", "john"]
+    gps_active = data.get("gps_active", True)
+    amount = float(data.get("amount", 0))
+    
+    # Recipient verification
+    recipient = str(data.get("recipient", "")).lower()
+    safe_contacts = ["zeddie", "eddy", "mary", "john"]
     is_known = any(contact in recipient for contact in safe_contacts)
 
-    # 1. IDENTITY THEFT (The Alice vs. John Rule)
+    # 1. IDENTITY THEFT (The Alice Takeover)
     if user == "alice":
         return {
-            "type": "IDENTITY_THEFT", 
-            "name": "Identity Theft (ATO)", 
-            "score": 0.98, 
-            "level": "CRITICAL", 
-            "reason": "Unauthorized User: 'Alice' detected attempting to authorize a session linked to John Kamau."
+            "type": "IDENTITY_THEFT",
+            "name": "Unauthorized Account Access",
+            "score": 0.98,
+            "level": "CRITICAL",
+            "reason": f"Identity Mismatch: User '{user}' detected attempting to authorize John Kamau's session."
         }
 
-    # 2. DEVICE CLONING (Hardware Conflict + Geographic Anomaly)
-    if device_sig != PHONE_A_SIGNATURE and location == "kisii":
+    # 2. DEVICE CLONING (Hardware + Geo Mismatch)
+    if sig != TRUSTED_SIGNATURE and location == "kisii":
         return {
-            "type": "DEVICE_CLONING", 
-            "name": "Hardware Cloning Anomaly", 
-            "score": 0.99, 
-            "level": "CRITICAL", 
-            "reason": f"Hardware Conflict: Transaction from unrecognized signature ({device_sig}) in Kisii."
+            "type": "DEVICE_CLONING",
+            "name": "Hardware Cloning Anomaly",
+            "score": 0.99,
+            "level": "CRITICAL",
+            "reason": f"Hardware Conflict: Rogue signature ({sig}) detected in unauthorized zone ({location})."
         }
-    
-    # 3. SIM SWAPPING (Network Swap + Privacy Masking)
+
+    # 3. SIM SWAP (Network Layer Anomaly)
     if not sim_match and not gps_active:
         return {
-            "type": "SIM_SWAP", 
-            "name": "SIM Swap (Dark Session)", 
-            "score": 0.94, 
-            "level": "CRITICAL", 
+            "type": "SIM_SWAP",
+            "name": "SIM Swap Detection",
+            "score": 0.95,
+            "level": "CRITICAL",
             "reason": "Network Anomaly: ICCID mismatch detected during a GPS-suppressed session."
         }
 
-    # 4. MOBILE MONEY FRAUD (The Velocity / Mule Rule)
-    if not is_known and amount >= 40000:
+    # 4. MOBILE MONEY FRAUD (Velocity Detection)
+    if not is_known and amount >= MAX_VELOCITY_LIMIT:
         return {
-            "type": "MOBILE_MONEY_FRAUD", 
-            "name": "High-Value Velocity Alert", 
-            "score": 0.89, 
-            "level": "HIGH", 
-            "reason": f"Velocity Violation: Large transfer (KES {amount}) to an unverified recipient node."
+            "type": "MOBILE_MONEY_FRAUD",
+            "name": "High-Value Velocity Alert",
+            "score": 0.88,
+            "level": "HIGH",
+            "reason": f"Velocity Breach: KES {amount} transfer to unverified node."
         }
 
     return None
 
 # --- API ENDPOINTS ---
 
-@app.get("/")
-@app.get("/dashboard")
-async def serve_dash():
-    # Ensures the dashboard loads even at the root URL
-    return FileResponse("dashboard.html")
-
-@app.get("/health")
-async def health():
-    return {"status": "healthy", "service": "LogSense Engine", "node": "Render-Live"}
-
 @app.post("/api/mobile/transaction")
 async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
     data = await request.json()
-    threat = evaluate_logsense_forensics(data, db)
+    threat = run_anomaly_detection(data)
     
-    try:
-        txn_amount = float(data.get("amount", 0))
-    except:
-        txn_amount = 0.0
-
     if threat:
-        signals = {
+        # Construct Forensic Evidence for the Analyze Page
+        evidence = {
             "explanations": [
-                threat["reason"], 
-                f"Forensic Confidence Score: {threat['score']}",
-                "LogSense ML Engine: Anomaly Isolated"
+                threat["reason"],
+                f"Isolation Forest Confidence: {threat['score']}",
+                "LogSense Node: Render-Production-Alpha"
             ],
-            "signals": {
-                "Reported_User": data.get("userName", "Unknown"),
-                "Device_Status": "AUTHORIZED" if data.get("deviceSignature") == PHONE_A_SIGNATURE else "ROGUE_DEVICE",
-                "Hardware_Link": "Verified" if data.get("imei_match") else "IMEI_MISMATCH", 
-                "Network_Layer": "Suspicious" if not data.get("sim_match") else "Trusted",
-                "Location": f"{data.get('location')} -> {data.get('recipient')}",
-                "Risk_Index": threat["level"]
+            "metadata": {
+                "user": data.get("userName", "Unknown"),
+                "device": "ROGUE" if data.get("deviceSignature") != TRUSTED_SIGNATURE else "TRUSTED",
+                "sim_status": "MATCHED" if data.get("sim_match") else "MISMATCH",
+                "risk_index": threat["level"]
             }
         }
-        
+
+        # Save to Database
         new_alert = FraudAlert(
-            transaction_id=f"TXN-{random.randint(1000,9999)}",
-            user_name=data.get("userName", "User"),
+            transaction_id=f"TXN-{random.randint(10000, 99999)}",
+            user_name=data.get("userName", "Unknown"),
             fraud_type=threat["type"],
             fraud_name=threat["name"],
             risk_score=threat["score"],
             risk_level=threat["level"],
-            amount=txn_amount,
+            amount=float(data.get("amount", 0)),
             recipient=data.get("recipient", "Unknown"),
-            location=data.get("location", "Nairobi"),
-            detection_signals=json.dumps(signals)
+            location=data.get("location", "Unknown"),
+            detection_signals=json.dumps(evidence) # This powers the Analyze page
         )
         db.add(new_alert)
         db.commit()
-        db.refresh(new_alert) 
-        return {"status": "BLOCKED", "reason": threat["reason"]}
-    
-    return {"status": "SUCCESS"}
+        
+        return {"status": "BLOCKED", "alert": threat["name"], "reason": threat["reason"]}
 
-@app.get("/analyze-view")
-async def serve_analyze():
-    return FileResponse("analyze.html")
-
-@app.get("/alerts")
-async def serve_alerts():
-    return FileResponse("alerts.html")
+    return {"status": "SUCCESS", "message": "Transaction Authorized"}
 
 @app.get("/api/v2/alerts")
 def get_alerts(db: Session = Depends(get_db)):
     return db.query(FraudAlert).order_by(desc(FraudAlert.timestamp)).all()
 
-@app.get("/api/v2/alerts/{id}")
-def get_alert(id: int, db: Session = Depends(get_db)):
-    return db.query(FraudAlert).filter(FraudAlert.id == id).first()
-
 @app.post("/api/v2/alerts/clear")
 def clear_alerts(db: Session = Depends(get_db)):
     db.query(FraudAlert).delete()
     db.commit()
-    return {"status": "DATABASE_WIPED"}
+    return {"status": "FORENSIC_LOG_CLEARED"}
+
+# --- STATIC DASHBOARD ROUTES ---
+@app.get("/")
+@app.get("/dashboard")
+async def dashboard():
+    return FileResponse("dashboard.html")
+
+@app.get("/alerts")
+async def alerts_view():
+    return FileResponse("alerts.html")
+
+@app.get("/analyze-view")
+async def analyze_view():
+    """NEW: Route for the AI Reasoning & Metadata Logs page"""
+    return FileResponse("analyze.html")
 
 if __name__ == "__main__":
     import uvicorn
