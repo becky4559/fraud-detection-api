@@ -43,20 +43,19 @@ def run_anomaly_detection(data: dict):
     sig = str(data.get("deviceSignature", ""))
     
     # --- THE TRUSTED PATH (SUCCESS CASE) ---
-    # Matches John's known device and home base
     if user == "john" and sig == TRUSTED_SIGNATURE and location == "nairobi":
         return None  # Authorized
 
     # --- ANOMALY TRIGGERS (ATTACK CASES) ---
     
-    # 1. IDENTITY TAKEOVER (The Alice Logic)
-    if user == "alice":
+    # 1. IDENTITY THEFT (The Alice Logic - Triggered at Login)
+    if "alice" in user:
         return {
             "type": "IDENTITY_THEFT",
-            "name": "Unauthorized Account Access",
-            "score": 0.98,
+            "name": "Identity Theft Anomaly",
+            "score": 0.99,
             "level": "CRITICAL",
-            "reason": f"Identity Mismatch: User 'alice' detected attempting to authorize John Kamau's session."
+            "reason": f"Identity Mismatch: User '{user}' attempting to access session bound to Master Key JK6594."
         }
 
     # 2. DEVICE CLONING (Kisii Outlier)
@@ -87,42 +86,26 @@ def run_anomaly_detection(data: dict):
 
 @app.post("/api/mobile/register")
 async def register_device(request: Request, db: Session = Depends(get_db)):
-    """Handles device binding and detects hijacked master keys"""
+    """
+    SILENT REGISTRATION: 
+    Accepts the registration without firing a dashboard alert immediately.
+    """
     data = await request.json()
     auth_key = data.get("auth_key")
     user = str(data.get("userName", "")).lower()
 
-    # Trigger Identity Hijack Alert if Alice uses the Master Key
-    if auth_key == REGISTRATION_SECRET and "alice" in user:
-        evidence = {
-            "explanations": [
-                f"Exploit Detected: Master Key '{REGISTRATION_SECRET}' used by unauthorized user '{user}'.",
-                "Attempting to bind rogue hardware to OwnerID: John Kamau.",
-                "Isolation Forest: Outlier detected in registration flow."
-            ],
-            "metadata": {"auth_method": "LEAKED_SECRET_KEY", "risk": "CRITICAL"}
-        }
-        
-        new_alert = FraudAlert(
-            transaction_id=f"REG-{random.randint(1000, 9999)}",
-            user_name=user,
-            fraud_type="REGISTRATION_HIJACK",
-            fraud_name="Unauthorized Device Binding",
-            risk_score=0.99,
-            risk_level="CRITICAL",
-            location=data.get("location", "Nairobi"),
-            detection_signals=json.dumps(evidence)
-        )
-        db.add(new_alert)
-        db.commit()
-        return {"status": "REGISTERED", "message": "Device Bound via Master Key (LOGGED)"}
+    if auth_key == REGISTRATION_SECRET:
+        # Success response but no FraudAlert created here to keep the dashboard clean
+        return {"status": "SUCCESS", "message": f"Identity '{user}' Provisioned Successfully."}
     
-    # If it's a legitimate registration or generic failure
-    return {"status": "SUCCESS", "message": "Device Registered"}
+    return {"status": "FAILED", "message": "Invalid Authorization Key"}
 
 @app.post("/api/mobile/transaction")
 async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
-    """Main endpoint for checking every transaction/login attempt"""
+    """
+    ACTIVE DETECTION:
+    This is where the Identity Theft alert is generated.
+    """
     data = await request.json()
     threat = run_anomaly_detection(data)
     
@@ -144,8 +127,7 @@ async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
             risk_score=threat["score"],
             risk_level=threat["level"],
             amount=float(data.get("amount", 0)),
-            recipient=data.get("recipient", "Unknown"),
-            location=data.get("location", "Unknown"),
+            location=data.get("location", "Nairobi"),
             detection_signals=json.dumps(evidence)
         )
         db.add(new_alert)
@@ -169,13 +151,6 @@ def clear_alerts(db: Session = Depends(get_db)):
 @app.get("/dashboard")
 async def dashboard(): return FileResponse("dashboard.html")
 
-@app.get("/alerts")
-async def alerts_view(): return FileResponse("alerts.html")
-
-@app.get("/analyze-view")
-async def analyze_view(): return FileResponse("analyze.html")
-
 if __name__ == "__main__":
     import uvicorn
-    # Using port 10000 for Render compatibility
     uvicorn.run(app, host="0.0.0.0", port=10000)
