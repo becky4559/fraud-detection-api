@@ -87,14 +87,16 @@ def run_anomaly_detection(data: dict):
 
 @app.post("/api/mobile/register")
 async def register_device(request: Request, db: Session = Depends(get_db)):
+    """Handles device binding and detects hijacked master keys"""
     data = await request.json()
     auth_key = data.get("auth_key")
-    user = data.get("userName", "").lower()
+    user = str(data.get("userName", "")).lower()
 
-    if auth_key == REGISTRATION_SECRET and user == "alice":
+    # Trigger Identity Hijack Alert if Alice uses the Master Key
+    if auth_key == REGISTRATION_SECRET and "alice" in user:
         evidence = {
             "explanations": [
-                f"Exploit Detected: Master Key '{REGISTRATION_SECRET}' used by unauthorized user 'alice'.",
+                f"Exploit Detected: Master Key '{REGISTRATION_SECRET}' used by unauthorized user '{user}'.",
                 "Attempting to bind rogue hardware to OwnerID: John Kamau.",
                 "Isolation Forest: Outlier detected in registration flow."
             ],
@@ -103,22 +105,24 @@ async def register_device(request: Request, db: Session = Depends(get_db)):
         
         new_alert = FraudAlert(
             transaction_id=f"REG-{random.randint(1000, 9999)}",
-            user_name="alice",
+            user_name=user,
             fraud_type="REGISTRATION_HIJACK",
             fraud_name="Unauthorized Device Binding",
             risk_score=0.99,
             risk_level="CRITICAL",
-            location=data.get("location", "Unknown"),
+            location=data.get("location", "Nairobi"),
             detection_signals=json.dumps(evidence)
         )
         db.add(new_alert)
         db.commit()
-        return {"status": "REGISTERED", "message": "Device Bound via Master Key"}
+        return {"status": "REGISTERED", "message": "Device Bound via Master Key (LOGGED)"}
     
-    return {"status": "FAILED", "message": "Invalid Authorization Key"}
+    # If it's a legitimate registration or generic failure
+    return {"status": "SUCCESS", "message": "Device Registered"}
 
 @app.post("/api/mobile/transaction")
 async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
+    """Main endpoint for checking every transaction/login attempt"""
     data = await request.json()
     threat = run_anomaly_detection(data)
     
@@ -154,20 +158,13 @@ async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
 def get_alerts(db: Session = Depends(get_db)):
     return db.query(FraudAlert).order_by(desc(FraudAlert.timestamp)).all()
 
-@app.get("/api/v2/alerts/{alert_id}")
-def get_single_alert(alert_id: int, db: Session = Depends(get_db)):
-    alert = db.query(FraudAlert).filter(FraudAlert.id == alert_id).first()
-    if not alert:
-        raise HTTPException(status_code=404, detail="Alert not found")
-    return alert
-
 @app.post("/api/v2/alerts/clear")
 def clear_alerts(db: Session = Depends(get_db)):
     db.query(FraudAlert).delete()
     db.commit()
     return {"status": "FORENSIC_LOG_CLEARED"}
 
-# --- ROUTES ---
+# --- DASHBOARD ROUTES ---
 @app.get("/")
 @app.get("/dashboard")
 async def dashboard(): return FileResponse("dashboard.html")
@@ -180,4 +177,5 @@ async def analyze_view(): return FileResponse("analyze.html")
 
 if __name__ == "__main__":
     import uvicorn
+    # Using port 10000 for Render compatibility
     uvicorn.run(app, host="0.0.0.0", port=10000)
