@@ -34,17 +34,21 @@ MAX_VELOCITY_LIMIT = 40000
 
 # --- CORE ANALYTICS ENGINE ---
 def run_anomaly_detection(data: dict):
+    """
+    Evaluates incoming log features against the John Kamau baseline.
+    Returns None if the activity is trusted (Authorized).
+    """
     user = str(data.get("userName", "")).strip().lower()
     location = str(data.get("location", "Nairobi")).strip().lower()
     sig = str(data.get("deviceSignature", ""))
-    sim_match = data.get("sim_match", True)
-    gps_active = data.get("gps_active", True)
-    amount = float(data.get("amount", 0))
     
-    recipient = str(data.get("recipient", "")).lower()
-    safe_contacts = ["zeddie", "eddy", "mary", "john"]
-    is_known = any(contact in recipient for contact in safe_contacts)
+    # --- THE TRUSTED PATH (SUCCESS CASE) ---
+    # Matches John's known device and home base
+    if user == "john" and sig == TRUSTED_SIGNATURE and location == "nairobi":
+        return None  # Authorized
 
+    # --- ANOMALY TRIGGERS (ATTACK CASES) ---
+    
     # 1. IDENTITY TAKEOVER (The Alice Logic)
     if user == "alice":
         return {
@@ -55,7 +59,7 @@ def run_anomaly_detection(data: dict):
             "reason": f"Identity Mismatch: User 'alice' detected attempting to authorize John Kamau's session."
         }
 
-    # 2. DEVICE CLONING
+    # 2. DEVICE CLONING (Kisii Outlier)
     if sig != TRUSTED_SIGNATURE and location == "kisii":
         return {
             "type": "DEVICE_CLONING",
@@ -65,7 +69,9 @@ def run_anomaly_detection(data: dict):
             "reason": f"Hardware Conflict: Rogue signature ({sig}) detected in unauthorized zone ({location})."
         }
 
-    # 3. SIM SWAP
+    # 3. SIM SWAP (Network Layer)
+    sim_match = data.get("sim_match", True)
+    gps_active = data.get("gps_active", True)
     if not sim_match and not gps_active:
         return {
             "type": "SIM_SWAP",
@@ -81,7 +87,6 @@ def run_anomaly_detection(data: dict):
 
 @app.post("/api/mobile/register")
 async def register_device(request: Request, db: Session = Depends(get_db)):
-    """Registration endpoint that catches the JK6594 exploit"""
     data = await request.json()
     auth_key = data.get("auth_key")
     user = data.get("userName", "").lower()
@@ -151,7 +156,6 @@ def get_alerts(db: Session = Depends(get_db)):
 
 @app.get("/api/v2/alerts/{alert_id}")
 def get_single_alert(alert_id: int, db: Session = Depends(get_db)):
-    """Powers the Analyze/Forensic Lab page"""
     alert = db.query(FraudAlert).filter(FraudAlert.id == alert_id).first()
     if not alert:
         raise HTTPException(status_code=404, detail="Alert not found")
