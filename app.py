@@ -15,6 +15,9 @@ from database import SessionLocal, engine, get_db, FraudAlert, Base
 
 app = FastAPI(title="LogSense - AI Forensic Engine v3.0")
 
+# --- PATH CONFIGURATION (Fixes Render FileNotFoundError) ---
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 # --- SECURITY & CONNECTIVITY ---
 app.add_middleware(
     CORSMiddleware,
@@ -24,13 +27,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize Database
-Base.metadata.create_all(bind=engine)
+# Initialize Database on Startup
+@app.on_event("startup")
+def startup_event():
+    Base.metadata.create_all(bind=engine)
 
 # Forensic Baselines & Master Keys
 TRUSTED_SIGNATURE = "778899"
 REGISTRATION_SECRET = "JK6594" 
-MAX_VELOCITY_LIMIT = 40000
 
 # --- CORE ANALYTICS ENGINE ---
 def run_anomaly_detection(data: dict):
@@ -81,14 +85,6 @@ def run_anomaly_detection(data: dict):
 
 # --- API ENDPOINTS ---
 
-@app.post("/api/mobile/register")
-async def register_device(request: Request, db: Session = Depends(get_db)):
-    """Silent registration for identity provisioning."""
-    data = await request.json()
-    if data.get("auth_key") == REGISTRATION_SECRET:
-        return {"status": "SUCCESS", "message": "Identity Provisioned Successfully."}
-    return JSONResponse(status_code=403, content={"status": "FAILED", "message": "Invalid Key"})
-
 @app.post("/api/mobile/transaction")
 async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
     """Active forensic detection for mobile transactions."""
@@ -132,39 +128,36 @@ async def mobile_transaction(request: Request, db: Session = Depends(get_db)):
 
 @app.get("/api/v2/alerts")
 def get_alerts(db: Session = Depends(get_db)):
-    """Fetch all alerts for the Dashboard feed."""
     return db.query(FraudAlert).order_by(desc(FraudAlert.timestamp)).all()
 
 @app.get("/api/v2/alerts/{alert_id}")
 def get_alert_detail(alert_id: int, db: Session = Depends(get_db)):
-    """Fetch specific alert for Forensic Lab analysis."""
     alert = db.query(FraudAlert).filter(FraudAlert.id == alert_id).first()
     if not alert:
         raise HTTPException(status_code=404, detail="Alert not found")
     return alert
 
-@app.post("/api/v2/alerts/clear")
-def clear_alerts(db: Session = Depends(get_db)):
-    """Wipe database logs."""
-    db.query(FraudAlert).delete()
-    db.commit()
-    return {"status": "FORENSIC_LOG_CLEARED"}
+# --- DASHBOARD & STATIC ROUTES (Fixed Filenames) ---
 
-# --- DASHBOARD & STATIC ROUTES ---
 @app.get("/")
 @app.get("/dashboard")
 async def dashboard(): 
-    return FileResponse("dashboard.html")
+    path = os.path.join(BASE_DIR, "dashboard.html")
+    return FileResponse(path)
 
 @app.get("/alerts")
 async def alerts_page(): 
-    return FileResponse("alerts.html")
+    path = os.path.join(BASE_DIR, "alerts.html")
+    return FileResponse(path)
 
-@app.get("/analyze-view")
+@app.get("/analyze")
 async def analyze_page(): 
-    return FileResponse("analyze-view.html")
+    # Corrected filename: analyze.html
+    path = os.path.join(BASE_DIR, "analyze.html")
+    if not os.path.exists(path):
+        raise HTTPException(status_code=404, detail=f"File {path} not found")
+    return FileResponse(path)
 
 if __name__ == "__main__":
     import uvicorn
-    # Use port 10000 for Render compatibility
     uvicorn.run(app, host="0.0.0.0", port=10000)
